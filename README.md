@@ -10,7 +10,8 @@ This is called Visual-Inertial Odometry (VIO) and it can be used in, among other
 ### Out-of-the-box
 
 The SDK supports a limited set of devices out-of-the-box. This means that the SDK can be used without any manual calibration, integration or parameter tuning, with these devices. If you want to test the SDK as easily as possible, we recommend buying one of these devices.
-At the moment, the only supported device is the OAK-D by Luxonis. See the folder [`python/oak`](python/oak) for more information about the OAK-D wrapper.
+At the moment, the only supported device is the [OAK-D by Luxonis](https://store.opencv.ai/products/oak-d).
+See the folder [`python/oak`](python/oak) for more information about the OAK-D wrapper.
 
 ### Other devices
 
