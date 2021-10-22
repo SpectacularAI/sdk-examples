@@ -19,6 +19,16 @@ The SDK can be integrated on any device with adequate sensors and processing cap
 
 For more information, contact us at https://www.spectacularai.com/#contact.
 
+## Known limitations in the SDK
+
+(We're working on these)
+
+ * No tracking status. If the tracking breaks (e.g., when pointing at a blank wall), there is no indication of the failure from the SDK
+ * No loop closures. The current version of the SDK performs only local VIO. It will eventually drift and the SDK makes no attempts to correct this
+ * API documentation to be published soon
+
+Possible other bugs and other problems can be reported as issues in this Github repository.
+
 ## Copyright
 
 The examples in this repository are licensed under Apache 2.0 (see LICENSE).
