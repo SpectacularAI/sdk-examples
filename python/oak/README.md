@@ -22,6 +22,8 @@ NOTE: Version 4.5.4.58 (most recent as of October 22, 2021) of `opencv-python` i
  * **3D pen**. Draw in the air: cover the OAK-D color camera to activate the ink. [`python pen_3d.py`](pen_3d.py)
  * **Advanced Spatial AI example**. Spectacular AI VIO + Tiny YOLO object detection.
     See [`depthai_combination.py`](depthai_combination.py) for additional dependencies that also need to be installed.
+ * **Mixed reality**. In less than 130 lines of Python, with the good old OpenGL functions like `glTranslatef` used for rendering.
+    Also requires `PyOpenGL_accelerate` to be installed, see [`mixed_reality.py`](mixed_reality.py) for details.
 
 ### License
 
