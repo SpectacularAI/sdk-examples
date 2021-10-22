@@ -422,7 +422,8 @@ if __name__ == '__main__':
                     if cv2.waitKey(1) == ord('q'):
                         break
                 else:
-                    if not vio_session.work():
-                        time.sleep(0.005)
+                    time.sleep(0.005)
+
+            vio_session.close()
 
         visu_3d.start_in_parallel_with(main_loop)
