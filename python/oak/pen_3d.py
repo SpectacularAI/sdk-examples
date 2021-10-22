@@ -147,8 +147,8 @@ class MatplotlibVisualization:
 if __name__ == '__main__':
     pipeline, vio_pipeline = make_pipelines()
 
-    with depthai.Device(pipeline) as device:
-        vio_session = vio_pipeline.startSession(device)
+    with depthai.Device(pipeline) as device, \
+        vio_pipeline.startSession(device) as vio_session:
 
         visu_3d = MatplotlibVisualization()
 
@@ -178,7 +178,6 @@ if __name__ == '__main__':
                         elif cv_key == ord('c'): # for clear
                             visu_3d.clear()
                 else:
-                    if not vio_session.work():
-                        time.sleep(0.005)
+                    time.sleep(0.005)
 
         visu_3d.start_in_parallel_with(main_loop)
