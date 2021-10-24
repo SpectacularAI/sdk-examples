@@ -68,7 +68,8 @@ class CubeModel:
 
 class Renderer:
     def __init__(self, w, h):
-        self.frame_queue = []
+        self.image_queue = []
+        self.vio_queue = []
         self.should_quit = False
 
         def render_loop():
@@ -80,52 +81,63 @@ class Renderer:
             clock = pygame.time.Clock()
             prev_frame_time = 0
 
+            background_frame_number = 0
+            background_used = True
+
             while True:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         self.should_quit = True
                         return
-                try:
-                    cam, img = self.frame_queue.pop(0)
-                    got_frame = True
-                except IndexError:
-                    got_frame = False
-                    # print('skip')
-                    pass
 
-                if got_frame:
-                    self._draw(cam, img)
-                    pygame.display.flip()
+                # print(len(self.image_queue), len(self.vio_queue))
+                if background_used and len(self.image_queue) > 0:
+                    img, background_frame_number = self.image_queue.pop(0)
+                    self._draw_background(img)
+                    background_used = False
 
-                    cur_time = time.monotonic()
-                    # print("dt %gms" % ((cur_time - prev_frame_time)*1000))
-                    prev_frame_time = cur_time
-                    clock.tick(FPS)
+                if not background_used and len(self.vio_queue) > 0:
+                    cam, frame_number = self.vio_queue.pop(0)
+                    assert(frame_number >= background_frame_number)
+                    if frame_number == background_frame_number:
+                        self._draw_model(cam)
+                        pygame.display.flip()
+
+                        cur_time = time.monotonic()
+                        # print("dt %gms" % ((cur_time - prev_frame_time)*1000))
+                        prev_frame_time = cur_time
+                        clock.tick(FPS)
+                    else:
+                        print('warn: skipped input frame')
+                    background_used = True
 
                 pygame.time.wait(1)
 
         self.thread = threading.Thread(target = render_loop)
         self.thread.start()
 
-    def push_frame(self, cam, img):
+    def push_image(self, img, tag):
+        self.image_queue.append((img, tag))
+
+    def push_vio(self, cam, tag):
         if self.should_quit:
             self.thread.join()
             return False
-        self.frame_queue.append((cam, img))
+        self.vio_queue.append((cam, tag))
         return True
 
-    def _draw(self, cam, img):
+    def _draw_background(self, img):
         # copy image as AR background
         glDrawPixels(img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getRaw().data)
 
+    def _draw_model(self, cam):
         # setup OpenGL camera based on VIO output
         glLoadIdentity()
         near, far = 0.01, 30.0 # clip
         glMultMatrixd(cam.camera.getProjectionMatrixOpenGL(near, far).transpose())
         glMultMatrixd(cam.getWorldToCameraMatrix().transpose())
         glClear(GL_DEPTH_BUFFER_BIT)
-
         self.model.draw()
 
 pipeline, vio_pipeline = make_pipelines()
@@ -135,9 +147,6 @@ with depthai.Device(pipeline) as device, \
 
     renderer = None
     img_queue = device.getOutputQueue(name="cam_out", maxSize=4, blocking=False)
-
-    # buffer for frames: show together with the corresponding VIO output
-    frames = {}
     frame_number = 1
 
     while True:
@@ -145,22 +154,18 @@ with depthai.Device(pipeline) as device, \
             img = img_queue.get()
             img_time = img.getTimestamp().total_seconds()
             vio_session.addTrigger(img_time, frame_number)
-            frames[frame_number] = img
+
+            if renderer is None:
+                renderer = Renderer(img.getWidth(), img.getHeight())
+
+            renderer.push_image(img, frame_number)
             frame_number += 1
 
         elif vio_session.hasOutput():
             out = vio_session.getOutput()
-
             if out.tag > 0:
-                img = frames.get(out.tag)
-
-                if renderer is None:
-                    renderer = Renderer(img.getWidth(), img.getHeight())
-
+                assert(renderer is not None)
                 cam = vio_session.getRgbCameraPose(out)
-                if not renderer.push_frame(cam, img): break
-
-                # discard old tags
-                frames = { tag: v for tag, v in frames.items() if tag > out.tag }
+                if not renderer.push_vio(cam, out.tag): break
         else:
             time.sleep(0.005)
