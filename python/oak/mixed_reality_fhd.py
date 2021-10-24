@@ -17,24 +17,20 @@ from OpenGL.arrays import vbo
 from OpenGL.GL import shaders
 
 FPS = 30
+WINDOW_SCALE = 1.0
 
 def make_pipelines():
     pipeline = depthai.Pipeline()
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
 
-    RGB_OUTPUT_WIDTH = 1024
-    REF_ASPECT = 1920 / 1080.0
-    w = RGB_OUTPUT_WIDTH
-    h = int(round(w / REF_ASPECT))
-
     camRgb = pipeline.createColorCamera()
-    camRgb.setPreviewSize(w, h)
+
     camRgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
-    camRgb.setColorOrder(depthai.ColorCameraProperties.ColorOrder.RGB)
     camRgb.setFps(FPS)
+
     camRgb.initialControl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.OFF)
     camRgb.initialControl.setManualFocus(130)
-    out_source = camRgb.preview
+    out_source = camRgb.isp
 
     xout_camera = pipeline.createXLinkOut()
     xout_camera.setStreamName("cam_out")
@@ -89,7 +85,8 @@ class Renderer:
         def render_loop():
             from pygame.locals import DOUBLEBUF, OPENGL
             pygame.init()
-            pygame.display.set_mode((w, h), DOUBLEBUF | OPENGL)
+            win_w, win_h = [round(x * WINDOW_SCALE) for x in (w, h)]
+            pygame.display.set_mode((win_w, win_h), DOUBLEBUF | OPENGL)
 
             VERTEX_SHADER_FLIP_TEX_Y = """
             #version 120
@@ -99,35 +96,49 @@ class Renderer:
             }
             """
 
-            TRIVIAL_FRAGMENT_SHADER = """
+            FRAGMENT_SHADER_YUV_TO_RGB = """
             #version 120
-            uniform sampler2D tex;
+            uniform sampler2D tex_y;
+            uniform sampler2D tex_u;
+            uniform sampler2D tex_v;
             void main()
             {
-                vec4 color = texture2D(tex, gl_TexCoord[0].st);
-                // vec4 color = vec4(gl_TexCoord[0].st, 0.0, 1.0);
-                gl_FragColor = color;
+                vec2 texCoord = gl_TexCoord[0].st;
+                float y = texture2D(tex_y, texCoord).r;
+                float u = texture2D(tex_u, texCoord).r;
+                float v = texture2D(tex_v, texCoord).r;
+                const float y_offs = 16.0 / 255.0;
+                gl_FragColor = vec4(
+                    1.164 * (y - y_offs) + 1.596 * (v - 0.5),
+                    1.164 * (y - y_offs) - 0.813 * (v - 0.5) - 0.391 * (u - 0.5),
+                    1.164 * (y - y_offs) + 2.018 * (u - 0.5),
+                    1.0);
             }
             """
 
-            self.background_shader = create_gl_program(VERTEX_SHADER_FLIP_TEX_Y, TRIVIAL_FRAGMENT_SHADER)
+            self.background_shader = create_gl_program(VERTEX_SHADER_FLIP_TEX_Y, FRAGMENT_SHADER_YUV_TO_RGB)
             self.background_vbo = vbo.VBO(np.array(Renderer.SCREEN_QUAD_TRIANGLE_FAN, 'f'))
 
-            self.background_texture = glGenTextures(1)
+            # YUV
+            self.background_textures = [glGenTextures(1) for i in range(3)]
+            self.background_texture_uniforms = []
 
             shaders.glUseProgram(self.background_shader)
-            glUniform1i(glGetUniformLocation(self.background_shader, "tex"), 0)
-            shaders.glUseProgram(0)
+            for i in range(len(self.background_textures)):
+                glActiveTexture(GL_TEXTURE0)
+                self.background_texture_uniforms.append(
+                    glGetUniformLocation(self.background_shader, "tex_%s" % ("yuv"[i])))
+                glBindTexture(GL_TEXTURE_2D, self.background_textures[i])
+                downscale = 1
+                if i > 0: downscale = 2
+                tex_w, tex_h = w // downscale, h // downscale
 
-            glActiveTexture(GL_TEXTURE0)
-            glBindTexture(GL_TEXTURE_2D, self.background_texture)
-
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0,  GL_RGB, GL_UNSIGNED_BYTE, None)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, tex_w, tex_h, 0, GL_RGB, GL_UNSIGNED_BYTE, None)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
             glBindTexture(GL_TEXTURE_2D, 0)
-
+            shaders.glUseProgram(0)
 
             self.model = CubeModel()
             clock = pygame.time.Clock()
@@ -180,15 +191,26 @@ class Renderer:
         return True
 
     def _draw_background(self, img):
-        glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, self.background_texture)
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getRaw().data)
-
-        # copy image as AR background
-        #glDrawPixels(img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getRaw().data)
-
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
         shaders.glUseProgram(self.background_shader)
+
+        raw_yuv = img.getRaw().data
+        for i in range(len(self.background_textures)):
+            w, h = img.getWidth(), img.getHeight()
+            offset = 0
+            if i > 0:
+                downscale = 2
+                tex_w, tex_h = w // downscale, h // downscale
+                offset = w * h + (tex_w * tex_h) * (i - 1)
+            else:
+                tex_w, tex_h = w, h
+
+            data = raw_yuv[offset:(offset+tex_w*tex_h)]
+
+            glActiveTexture(GL_TEXTURE0 + i)
+            glBindTexture(GL_TEXTURE_2D, self.background_textures[i])
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, tex_w, tex_h, GL_LUMINANCE, GL_UNSIGNED_BYTE, data)
+            glUniform1i(self.background_texture_uniforms[i], i)
 
         self.background_vbo.bind()
         glEnableClientState(GL_VERTEX_ARRAY)
@@ -199,7 +221,11 @@ class Renderer:
         glDisableClientState(GL_VERTEX_ARRAY)
         self.background_vbo.unbind()
 
-        glBindTexture(GL_TEXTURE_2D, 0)
+        for i in range(len(self.background_textures)):
+            glActiveTexture(GL_TEXTURE0 + i)
+            glBindTexture(GL_TEXTURE_2D, 0)
+
+        glActiveTexture(GL_TEXTURE0)
         shaders.glUseProgram(0)
 
     def _draw_model(self, cam):
