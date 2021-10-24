@@ -10,8 +10,11 @@ import spectacularAI
 import pygame
 import threading
 import time
+import numpy as np
 
 from OpenGL.GL import * # all prefixed with gl so OK to import *
+from OpenGL.arrays import vbo
+from OpenGL.GL import shaders
 
 FPS = 30
 
@@ -28,7 +31,6 @@ def make_pipelines():
     camRgb.setPreviewSize(w, h)
     camRgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
     camRgb.setColorOrder(depthai.ColorCameraProperties.ColorOrder.RGB)
-    camRgb.setImageOrientation(depthai.CameraImageOrientation.VERTICAL_FLIP) # for OpenGL
     camRgb.setFps(FPS)
     camRgb.initialControl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.OFF)
     camRgb.initialControl.setManualFocus(130)
@@ -66,7 +68,19 @@ class CubeModel:
                 glVertex3fv(self.vertices[vertex])
         glEnd()
 
+def create_gl_program(vertex_source, fragment_source):
+    vertex_shader = shaders.compileShader(vertex_source, GL_VERTEX_SHADER)
+    fragment_shader = shaders.compileShader(fragment_source, GL_FRAGMENT_SHADER)
+    return shaders.compileProgram(vertex_shader, fragment_shader)
+
 class Renderer:
+    SCREEN_QUAD_TRIANGLE_FAN = [[x, y, 0] for x, y in [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 0]
+    ]]
+
     def __init__(self, w, h):
         self.image_queue = []
         self.vio_queue = []
@@ -76,6 +90,44 @@ class Renderer:
             from pygame.locals import DOUBLEBUF, OPENGL
             pygame.init()
             pygame.display.set_mode((w, h), DOUBLEBUF | OPENGL)
+
+            VERTEX_SHADER_FLIP_TEX_Y = """
+            #version 120
+            void main() {
+                gl_Position = vec4(gl_Vertex.xy * 2.0 - vec2(1.0), 0.0, 1.0);
+                gl_TexCoord[0] = vec4(gl_Vertex.x, 1.0 - gl_Vertex.y, 0.0, 1.0);
+            }
+            """
+
+            TRIVIAL_FRAGMENT_SHADER = """
+            #version 120
+            uniform sampler2D tex;
+            void main()
+            {
+                vec4 color = texture2D(tex, gl_TexCoord[0].st);
+                // vec4 color = vec4(gl_TexCoord[0].st, 0.0, 1.0);
+                gl_FragColor = color;
+            }
+            """
+
+            self.background_shader = create_gl_program(VERTEX_SHADER_FLIP_TEX_Y, TRIVIAL_FRAGMENT_SHADER)
+            self.background_vbo = vbo.VBO(np.array(Renderer.SCREEN_QUAD_TRIANGLE_FAN, 'f'))
+
+            self.background_texture = glGenTextures(1)
+
+            shaders.glUseProgram(self.background_shader)
+            glUniform1i(glGetUniformLocation(self.background_shader, "tex"), 0)
+            shaders.glUseProgram(0)
+
+            glActiveTexture(GL_TEXTURE0)
+            glBindTexture(GL_TEXTURE_2D, self.background_texture)
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0,  GL_RGB, GL_UNSIGNED_BYTE, None)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+            glBindTexture(GL_TEXTURE_2D, 0)
+
 
             self.model = CubeModel()
             clock = pygame.time.Clock()
@@ -128,8 +180,27 @@ class Renderer:
         return True
 
     def _draw_background(self, img):
+        glActiveTexture(GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.background_texture)
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getRaw().data)
+
         # copy image as AR background
-        glDrawPixels(img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getRaw().data)
+        #glDrawPixels(img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getRaw().data)
+
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
+        shaders.glUseProgram(self.background_shader)
+
+        self.background_vbo.bind()
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glVertexPointerf(self.background_vbo)
+
+        glDrawArrays(GL_TRIANGLE_FAN, 0, len(Renderer.SCREEN_QUAD_TRIANGLE_FAN))
+
+        glDisableClientState(GL_VERTEX_ARRAY)
+        self.background_vbo.unbind()
+
+        glBindTexture(GL_TEXTURE_2D, 0)
+        shaders.glUseProgram(0)
 
     def _draw_model(self, cam):
         # setup OpenGL camera based on VIO output
