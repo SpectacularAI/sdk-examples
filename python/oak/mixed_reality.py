@@ -11,10 +11,14 @@ import time
 
 from OpenGL.GL import * # all prefixed with gl so OK to import *
 
+FPS = 24 # set to 30 for smoother frame rate
+
 def make_pipelines():
     pipeline = depthai.Pipeline()
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
 
+    # NOTE: this simple method of reading RGB data from the device does not
+    # scale to well to higher resolutions. Use YUV data with larger resolutions
     RGB_OUTPUT_WIDTH = 1024
     REF_ASPECT = 1920 / 1080.0
     w = RGB_OUTPUT_WIDTH
@@ -25,8 +29,9 @@ def make_pipelines():
     camRgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
     camRgb.setColorOrder(depthai.ColorCameraProperties.ColorOrder.RGB)
     camRgb.setImageOrientation(depthai.CameraImageOrientation.VERTICAL_FLIP) # for OpenGL
+    camRgb.setFps(FPS)
     camRgb.initialControl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.OFF)
-    camRgb.initialControl.setManualFocus(130) # seems to be about 1m, not sure about the units
+    camRgb.initialControl.setManualFocus(130) # seems to be about 1m
     out_source = camRgb.preview
 
     xout_camera = pipeline.createXLinkOut()
@@ -58,11 +63,6 @@ def draw_cube():
     glEnd()
 
 def draw(cam, img):
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            return False
-
     # copy image as AR background
     glDrawPixels(img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getRaw().data)
 
@@ -81,15 +81,9 @@ def draw(cam, img):
     glLineWidth(2.0)
     draw_cube()
 
-    pygame.display.flip()
-    pygame.time.wait(1)
-    return True
-
 pipeline, vio_pipeline = make_pipelines()
 
-with depthai.Device(pipeline) as device, \
-    vio_pipeline.startSession(device) as vio_session:
-
+def main_loop(device, vio_session):
     display_initialized = False
     img_queue = device.getOutputQueue(name="cam_out", maxSize=4, blocking=False)
 
@@ -113,12 +107,27 @@ with depthai.Device(pipeline) as device, \
 
                 if not display_initialized:
                     display_initialized = True
+                    clock = pygame.time.Clock()
                     init_display(img.getWidth(), img.getHeight())
 
                 cam = vio_session.getRgbCameraPose(out)
-                if not draw(cam, img): break
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        return
+
+                draw(cam, img)
+
+                pygame.display.flip()
+                # uncomment for smooth frame rate at higher latency
+                # clock.tick(FPS)
 
                 # discard old tags
                 frames = { tag: v for tag, v in frames.items() if tag > out.tag }
         else:
-            time.sleep(0.005)
+            pygame.time.wait(1)
+
+with depthai.Device(pipeline) as device, \
+    vio_pipeline.startSession(device) as vio_session:
+    main_loop(device, vio_session)
