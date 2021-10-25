@@ -1,5 +1,7 @@
 # Spectacular AI Python SDK for OAK-D
 
+![SDK install demo](https://spectacularai.github.io/demo-gifs/gif/pip-install.gif)
+
 ## Prerequisites
 
  * An [OAK-D device](https://store.opencv.ai/products/oak-d)
