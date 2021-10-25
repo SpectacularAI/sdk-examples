@@ -11,7 +11,9 @@
 ## Installation
 
  1. Install the Python pacakge: `pip install spectacularAI`
- 2. Install the extra dependencies for the examples: `pip install matplotlib opencv-python==4.5.3.56`
+ 2. Install the extra dependencies for the examples:
+    `pip install matplotlib` and
+    `pip install  --force-reinstall opencv-python==4.5.3.56`.
 
 NOTE: Version 4.5.4.58 (most recent as of October 22, 2021) of `opencv-python` is [broken on Ubuntu](https://github.com/opencv/opencv-python/issues/572), therefore recommending an older version.
 
