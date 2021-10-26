@@ -16,8 +16,8 @@ from OpenGL.GL import * # all prefixed with gl so OK to import *
 from OpenGL.arrays import vbo
 from OpenGL.GL import shaders
 
-FPS = 30
-WINDOW_SCALE = 1.0
+FPS = 24
+WINDOW_SCALE = 1600/1920.0
 
 def make_pipelines():
     pipeline = depthai.Pipeline()
@@ -56,7 +56,7 @@ class CubeModel:
         glScalef(*([0.1] * 3))
 
         glColor3f(1, 0, 1);
-        glLineWidth(2.0)
+        glLineWidth(3.0)
 
         glBegin(GL_LINES)
         for edge in self.edges:
@@ -170,7 +170,7 @@ class Renderer:
                         cur_time = time.monotonic()
                         # print("dt %gms" % ((cur_time - prev_frame_time)*1000))
                         prev_frame_time = cur_time
-                        clock.tick(FPS)
+                        clock.tick(FPS + 1)
                     else:
                         print('warn: skipped input frame')
                     background_used = True
