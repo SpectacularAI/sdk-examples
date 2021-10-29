@@ -1,6 +1,6 @@
 # Spectacular AI SDK examples
 
-![Spatial AI](https://spectacularai.github.io/demo-gifs/gif/spatial-ai.gif)
+![Spatial AI](https://spectacularai.github.io/docs/gif/spatial-ai.gif)
 
 **Spectacular AI SDK** fuses data from cameras and IMU sensors (accelerometer and gyroscope)
 and outputs an accurate 6-degree-of-freedom pose of a device.
