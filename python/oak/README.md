@@ -1,6 +1,6 @@
 # Spectacular AI Python SDK for OAK-D
 
-![SDK install demo](https://spectacularai.github.io/demo-gifs/gif/pip-install.gif)
+![SDK install demo](https://spectacularai.github.io/docs/gif/pip-install.gif)
 
 ## Prerequisites
 
@@ -27,6 +27,10 @@ NOTE: Version 4.5.4.58 (most recent as of October 22, 2021) of `opencv-python` i
  * **Mixed reality**. In less than 130 lines of Python, with the good old OpenGL functions like `glTranslatef` used for rendering.
     Also requires `PyOpenGL_accelerate` to be installed, see [`mixed_reality.py`](mixed_reality.py) for details.
 
-### License
+## API documentation
+
+https://spectacularai.github.io/docs/sdk/python/latest
+
+## License
 
 For more info, see the [main README.md](../../README.md).
