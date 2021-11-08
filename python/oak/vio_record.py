@@ -33,12 +33,14 @@ import sys
 import argparse
 import subprocess
 import os
+import json
 
 p = argparse.ArgumentParser(
     description="Record session")
 p.add_argument("--output", help="Recording output folder", default="data")
 p.add_argument("--norgb", help="Disable recording RGB video feed", action="store_true")
 p.add_argument("--noconvert", help="Skip converting h265 video file", action="store_true")
+p.add_argument('--nopreview', help='Do not show a live preview', action="store_true")
 args =  p.parse_args()
 
 pipeline = depthai.Pipeline()
@@ -59,36 +61,53 @@ if not args.norgb:
     camRgb.video.link(videoEnc.input)
     videoEnc.bitstream.link(xout.input)
 
-frame_number = 1
+def main_loop(plotter=None):
+    frame_number = 1
 
-try:
     with depthai.Device(pipeline) as device, \
         vio_pipeline.startSession(device) as vio_session, \
         open(args.output + "/rgb_video.h265", "wb") as videoFile:
 
         if not args.norgb: outQ = device.getOutputQueue(name="h265", maxSize=30, blocking=False)
-
         print("Recording!")
         print("")
-        print("Press Ctrl+C to stop recording")
+        if plotter is None:
+            print("Press Ctrl+C to stop recording")
+        else:
+            print("Close the visualization window to stop recording")
 
-        while True:
-            if not args.norgb:
-                while outQ.has():
-                    frame = outQ.get()
-                    vio_session.addTrigger(frame.getTimestamp().total_seconds(), frame_number)
-                    frame.getData().tofile(videoFile)
-                    frame_number += 1
-            out = vio_session.waitForOutput()
+        try:
+            while True:
+                if not args.norgb:
+                    while outQ.has():
+                        frame = outQ.get()
+                        vio_session.addTrigger(frame.getTimestamp().total_seconds(), frame_number)
+                        frame.getData().tofile(videoFile)
+                        frame_number += 1
+                out = vio_session.waitForOutput()
+                if plotter is not None:
+                    if not plotter(json.loads(out.asJson())): break
 
-except KeyboardInterrupt:
-    ffmpegCommand = "ffmpeg -framerate 30 -i {} -c copy {}".format(args.output + "/rgb_video.h265",
-        args.output + "/rgb_video.mp4")
-    if not args.noconvert:
-        result = subprocess.run(ffmpegCommand, shell=True)
-        if result.returncode == 0: os.remove(args.output + "/rgb_video.h265")
-    else:
-        print("")
-        print("Use ffmpeg to convert video into a viewable format:")
-        print("    " + ffmpegCommand)
+        finally:
+            ffmpegCommand = "ffmpeg -framerate 30 -y -i {} -c copy {}".format(args.output + "/rgb_video.h265",
+                args.output + "/rgb_video.mp4")
+            if not args.noconvert:
+                result = subprocess.run(ffmpegCommand, shell=True)
+                if result.returncode == 0: os.remove(args.output + "/rgb_video.h265")
+            else:
+                print("")
+                print("Use ffmpeg to convert video into a viewable format:")
+                print("    " + ffmpegCommand)
 
+if args.nopreview:
+    main_loop()
+else:
+    import threading
+    from vio_visu import make_plotter
+    import matplotlib.pyplot as plt
+    plotter, anim = make_plotter()
+
+    reader_thread = threading.Thread(target = lambda: main_loop(plotter))
+    reader_thread.start()
+    plt.show()
+    reader_thread.join()
