@@ -5,7 +5,7 @@
 #include <opencv2/opencv.hpp>
 #endif
 
-int main() {
+int main(int argc, char** argv) {
     // Create Depth AI (OAK-D) pipeline
     dai::Pipeline pipeline;
 
@@ -13,6 +13,9 @@ int main() {
     spectacularAI::daiPlugin::Configuration config;
     // config.useStereo = false;
     // config.useFeatureTracker = false;
+
+    // If a folder is given as an argument, record session there
+    if (argc >= 2) config.recordingFolder = argv[1];
 
     spectacularAI::daiPlugin::Pipeline vioPipeline(pipeline, config);
 

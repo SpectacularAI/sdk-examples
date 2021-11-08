@@ -4,7 +4,7 @@ import time
 
 pipeline = depthai.Pipeline()
 
-vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, useStereo=False)
+vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
 # optional config args: vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config, useStereo=False)
 
 with depthai.Device(pipeline) as device, \
