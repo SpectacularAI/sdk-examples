@@ -32,6 +32,7 @@ import signal
 import sys
 import argparse
 import subprocess
+import os
 
 p = argparse.ArgumentParser(
     description="Record session")
@@ -58,7 +59,6 @@ if not args.norgb:
     camRgb.video.link(videoEnc.input)
     videoEnc.bitstream.link(xout.input)
 
-
 frame_number = 1
 
 try:
@@ -68,6 +68,10 @@ try:
 
         if not args.norgb: outQ = device.getOutputQueue(name="h265", maxSize=30, blocking=False)
 
+        print("Recording!")
+        print("")
+        print("Press Ctrl+C to stop recording")
+
         while True:
             if not args.norgb:
                 while outQ.has():
@@ -76,9 +80,15 @@ try:
                     frame.getData().tofile(videoFile)
                     frame_number += 1
             out = vio_session.waitForOutput()
-            print(out.asJson())
 
 except KeyboardInterrupt:
+    ffmpegCommand = "ffmpeg -framerate 30 -i {} -c copy {}".format(args.output + "/rgb_video.h265",
+        args.output + "/rgb_video.mp4")
     if not args.noconvert:
-        subprocess.run("ffmpeg -framerate 30 -i {} -c copy {}".format(args.output + "/rgb_video.h265",
-            args.output + "/rgb_video.mp4"), shell=True)
+        result = subprocess.run(ffmpegCommand, shell=True)
+        if result.returncode == 0: os.remove(args.output + "/rgb_video.h265")
+    else:
+        print("")
+        print("Use ffmpeg to convert video into a viewable format:")
+        print("    " + ffmpegCommand)
+
