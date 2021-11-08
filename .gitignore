@@ -2,4 +2,4 @@
 __pycache__
 venv
 target/
-python/oak/data/
+data/
