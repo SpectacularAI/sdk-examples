@@ -1,17 +1,19 @@
 """
 Simple VIO result visualizer Python. Reads outputs from the
 Spectacular AI OAK-D plugin and plots them in real time.
-
 Plug in the OAK-D to an USB3 port using an USB3 cable before running.
+
+Can also visualize pre-recorded results from a JSONL file or from a pipe.
+The device does not have to be attached in this case. (See vio_record.py)
 """
 import time
 import json
 import threading
 import matplotlib.pyplot as plt
-import depthai
-import spectacularAI
 
-def read_vio():
+def live_vio_reader():
+    import depthai
+    import spectacularAI
     pipeline = depthai.Pipeline()
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
 
@@ -20,7 +22,18 @@ def read_vio():
 
         while True:
             out = vio_session.waitForOutput()
-            yield(out)
+            yield(json.loads(out.asJson()))
+
+def file_vio_reader(in_stream):
+    while True:
+        line = in_stream.readline()
+        if not line: break
+        # hacky, ignore any possible warnings from depthai in stdout
+        # (which should not be there in the first place)
+        if 'warning' in line: continue
+        d = json.loads(line)
+        if 'position' not in d and 'pose' not in d: continue
+        yield(d)
 
 def make_plotter():
     import numpy as np
@@ -37,10 +50,8 @@ def make_plotter():
     vio_plot = ax.plot(
         xs=[], ys=[], zs=[],
         linestyle="-",
-        marker="",
-        #label='VIO trajectory',
+        marker=""
     )
-    #ax.legend()
     ax.set_xlabel("x (m)")
     ax.set_ylabel("y (m)")
     ax.set_zlabel("z (m)")
@@ -54,16 +65,16 @@ def make_plotter():
 
     def update_data(vio_out):
         if control['close']: return False
+        # supports two slightly different JSONL formats
+        if 'pose' in vio_out: vio_out = vio_out['pose']
         for c in 'xyz':
-            data[c].append(getattr(vio_out.pose.position, c))
+            data[c].append(vio_out['position'][c])
         return True
 
     def update_graph(frames):
         x, y, z = [np.array(data[c]) for c in 'xyz']
         vio_plot[0].set_data(x, y)
         vio_plot[0].set_3d_properties(z)
-        # plt.draw()
-        # plt.pause(0.01)
         return (vio_plot[0],)
 
     from matplotlib.animation import FuncAnimation
@@ -72,10 +83,20 @@ def make_plotter():
 
 if __name__ == '__main__':
     plotter, anim = make_plotter()
+    import argparse
+    parser = argparse.ArgumentParser(__doc__)
+    parser.add_argument('--file', type=argparse.FileType('r'),
+        help='Read data from a JSONL file or pipe instead of displaying it live',
+        default=None)
+    args = parser.parse_args()
 
     def reader_loop():
-        for vio_out in read_vio():
-            # print('\t'.join(['%+.04f' % vio_out['position'][c] for c in 'xyz']))
+        if args.file is None:
+            vio_source = live_vio_reader()
+        else:
+            vio_source = file_vio_reader(args.file)
+
+        for vio_out in vio_source:
             if not plotter(vio_out): break
 
     reader_thread = threading.Thread(target = reader_loop)
