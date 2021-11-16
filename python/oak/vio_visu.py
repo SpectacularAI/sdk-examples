@@ -67,8 +67,12 @@ def make_plotter():
         if control['close']: return False
         # supports two slightly different JSONL formats
         if 'pose' in vio_out: vio_out = vio_out['pose']
+        # SDK < 0.12 does not expose the TRACKING status
+        is_tracking = vio_out.get('status', 'TRACKING') == 'TRACKING'
         for c in 'xyz':
-            data[c].append(vio_out['position'][c])
+            val = vio_out['position'][c]
+            if not is_tracking: val = np.nan
+            data[c].append(val)
         return True
 
     def update_graph(frames):
