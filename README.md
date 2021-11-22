@@ -25,7 +25,6 @@ For more information, contact us at https://www.spectacularai.com/#contact.
 
 (We're working on these)
 
- * No tracking status. If the tracking breaks (e.g., when pointing at a blank wall), there is no indication of the failure from the SDK
  * No loop closures. The current version of the SDK performs only local VIO. It will eventually drift and the SDK makes no attempts to correct this
 
 Possible other bugs and other problems can be reported as issues in this Github repository.
