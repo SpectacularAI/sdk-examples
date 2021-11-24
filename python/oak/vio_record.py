@@ -1,5 +1,5 @@
 """
-Recording session for later playback
+Record data for later playback
 
 Requirements:
 
@@ -10,15 +10,15 @@ Requirements:
         ap-get:   sudo apt-get install ffmpeg
         yuM:      sudo yum install ffmpeg
 
-    On Windows you must download and install it from https://www.ffmpeg.org and
-    then update your environment Path variable to contain the binary path. To do
-    this, press Windows Key, type Path and press Enter. Open Environment Settings,
-    edit the row named Path and add location of the ffmpeg bin folder to the list,
-    for example: "C:\Program Files\ffmpeg\bin". To check that it works, open
-    command prompt and type ffmpeg, you should see version information.
+On Windows, you must download and install it from https://www.ffmpeg.org and
+then update your environment Path variable to contain the binary path. To do
+this, press Windows Key, type Path and press Enter. Open Environment Settings,
+edit the row named Path and add location of the ffmpeg bin folder to the list,
+for example: "C:\Program Files\ffmpeg\bin". To check that it works, open
+command prompt and type ffmpeg, you should see version information.
 
-    To view the depth video file, you must use ffplay, because normal video players
-    cannot play 16bit grayscale video.
+To view the depth video file, you must use ffplay, because normal video players
+cannot play 16bit grayscale video.
 
 Plug in the OAK-D and run:
 
@@ -37,8 +37,7 @@ import json
 
 config = spectacularAI.depthai.Configuration()
 
-p = argparse.ArgumentParser(
-    description="Record session")
+p = argparse.ArgumentParser(__doc__)
 p.add_argument("--output", help="Recording output folder", default="data")
 p.add_argument("--no_rgb", help="Disable recording RGB video feed", action="store_true")
 p.add_argument("--gray", help="Record (rectified) gray video data", action="store_true")
