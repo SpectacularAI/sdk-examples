@@ -35,40 +35,76 @@ import subprocess
 import os
 import json
 
+config = spectacularAI.depthai.Configuration()
+
 p = argparse.ArgumentParser(
     description="Record session")
 p.add_argument("--output", help="Recording output folder", default="data")
-p.add_argument("--norgb", help="Disable recording RGB video feed", action="store_true")
-p.add_argument("--noconvert", help="Skip converting h265 video file", action="store_true")
-p.add_argument('--nopreview', help='Do not show a live preview', action="store_true")
+p.add_argument("--no_rgb", help="Disable recording RGB video feed", action="store_true")
+p.add_argument("--gray", help="Record (rectified) gray video data", action="store_true")
+p.add_argument("--no_convert", help="Skip converting h265 video file", action="store_true")
+p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
+p.add_argument("--resolution", help="Gray input resolution (gray)",
+    default=config.inputResolution,
+    choices=['400p', '800p'])
 args =  p.parse_args()
 
 pipeline = depthai.Pipeline()
 
+config.recordingFolder = args.output
+config.inputResolution = args.resolution
+
 # Enable recoding by setting recordingFolder option
-vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, recordingFolder=args.output)
+vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
 
 # Optionally also record other video streams not used by the Spectacular AI SDK, these
 # can be used for example to render AR content or for debugging.
-if not args.norgb:
+if not args.no_rgb:
     camRgb = pipeline.create(depthai.node.ColorCamera)
     videoEnc = pipeline.create(depthai.node.VideoEncoder)
     xout = pipeline.create(depthai.node.XLinkOut)
-    xout.setStreamName("h265")
+    xout.setStreamName("h265-rgb")
     camRgb.setBoardSocket(depthai.CameraBoardSocket.RGB)
     camRgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
-    videoEnc.setDefaultProfilePreset(1920, 1080, 30, depthai.VideoEncoderProperties.Profile.H265_MAIN)
+    # no need to set input resolution anymore (update your depthai package if this does not work)
+    videoEnc.setDefaultProfilePreset(30, depthai.VideoEncoderProperties.Profile.H265_MAIN)
     camRgb.video.link(videoEnc.input)
     videoEnc.bitstream.link(xout.input)
+
+if args.gray:
+    def create_gray_encoder(node, name):
+        videoEnc = pipeline.create(depthai.node.VideoEncoder)
+        xout = pipeline.create(depthai.node.XLinkOut)
+        xout.setStreamName("h264-" + name)
+        videoEnc.setDefaultProfilePreset(30, depthai.VideoEncoderProperties.Profile.H264_MAIN)
+        node.link(videoEnc.input)
+        videoEnc.bitstream.link(xout.input)
+
+    create_gray_encoder(vio_pipeline.stereo.rectifiedLeft, 'left')
+    create_gray_encoder(vio_pipeline.stereo.rectifiedRight, 'right')
 
 def main_loop(plotter=None):
     frame_number = 1
 
     with depthai.Device(pipeline) as device, \
-        vio_pipeline.startSession(device) as vio_session, \
-        open(args.output + "/rgb_video.h265", "wb") as videoFile:
+        vio_pipeline.startSession(device) as vio_session:
 
-        if not args.norgb: outQ = device.getOutputQueue(name="h265", maxSize=30, blocking=False)
+        def open_gray_video(name):
+            grayVideoFile = open(args.output + '/rectified_' + name + '.h264', 'wb')
+            queue = device.getOutputQueue(name='h264-' + name, maxSize=10, blocking=False)
+            return (queue, grayVideoFile)
+
+        grayVideos = []
+        if args.gray:
+            grayVideos = [
+                open_gray_video('left'),
+                open_gray_video('right')
+            ]
+
+        if not args.no_rgb:
+            videoFile = open(args.output + "/rgb_video.h265", "wb")
+            rgbQueue = device.getOutputQueue(name="h265-rgb", maxSize=30, blocking=False)
+
         print("Recording!")
         print("")
         if plotter is None:
@@ -78,28 +114,45 @@ def main_loop(plotter=None):
 
         try:
             while True:
-                if not args.norgb:
-                    while outQ.has():
-                        frame = outQ.get()
+                if not args.no_rgb:
+                    while rgbQueue.has():
+                        frame = rgbQueue.get()
                         vio_session.addTrigger(frame.getTimestamp().total_seconds(), frame_number)
                         frame.getData().tofile(videoFile)
                         frame_number += 1
+
+                for (grayQueue, grayVideoFile) in grayVideos:
+                    if grayQueue.has():
+                        grayQueue.get().getData().tofile(grayVideoFile)
+
                 out = vio_session.waitForOutput()
                 if plotter is not None:
                     if not plotter(json.loads(out.asJson())): break
 
         finally:
-            ffmpegCommand = "ffmpeg -framerate 30 -y -i {} -c copy {}".format(args.output + "/rgb_video.h265",
-                args.output + "/rgb_video.mp4")
-            if not args.noconvert:
-                result = subprocess.run(ffmpegCommand, shell=True)
-                if result.returncode == 0: os.remove(args.output + "/rgb_video.h265")
-            else:
-                print("")
-                print("Use ffmpeg to convert video into a viewable format:")
-                print("    " + ffmpegCommand)
+            videoFileNames = []
 
-if args.nopreview:
+            if not args.no_rgb:
+                videoFileNames.append(videoFile.name)
+                videoFile.close()
+
+            for (_, grayVideoFile) in grayVideos:
+                videoFileNames.append(grayVideoFile.name)
+                grayVideoFile.close()
+
+            for fn in videoFileNames:
+                if not args.no_convert:
+                    withoutExt = fn.rpartition('.')[0]
+                    ffmpegCommand = "ffmpeg -framerate 30 -y -i {} -c copy {}.mp4".format(fn, withoutExt)
+                    result = subprocess.run(ffmpegCommand, shell=True)
+                    if result.returncode == 0:
+                        os.remove(fn)
+                else:
+                    print('')
+                    print("Use ffmpeg to convert video into a viewable format:")
+                    print("    " + ffmpegCommand)
+
+if args.no_preview:
     main_loop()
 else:
     import threading
