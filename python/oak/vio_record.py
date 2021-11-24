@@ -34,6 +34,7 @@ import argparse
 import subprocess
 import os
 import json
+import time
 
 config = spectacularAI.depthai.Configuration()
 
@@ -43,6 +44,7 @@ p.add_argument("--no_rgb", help="Disable recording RGB video feed", action="stor
 p.add_argument("--gray", help="Record (rectified) gray video data", action="store_true")
 p.add_argument("--no_convert", help="Skip converting h265 video file", action="store_true")
 p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
+p.add_argument('--no_vio', help='Only record input data, do not run VIO', action="store_true")
 p.add_argument("--resolution", help="Gray input resolution (gray)",
     default=config.inputResolution,
     choices=['400p', '800p'])
@@ -52,6 +54,9 @@ pipeline = depthai.Pipeline()
 
 config.recordingFolder = args.output
 config.inputResolution = args.resolution
+config.recordingOnly = args.no_vio
+
+if args.no_vio: args.no_preview = True
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
@@ -124,9 +129,12 @@ def main_loop(plotter=None):
                     if grayQueue.has():
                         grayQueue.get().getData().tofile(grayVideoFile)
 
-                out = vio_session.waitForOutput()
-                if plotter is not None:
-                    if not plotter(json.loads(out.asJson())): break
+                if args.no_vio:
+                    time.sleep(0.01)
+                else:
+                    out = vio_session.waitForOutput()
+                    if plotter is not None:
+                        if not plotter(json.loads(out.asJson())): break
 
         finally:
             videoFileNames = []
