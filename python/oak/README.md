@@ -10,7 +10,7 @@
 
 ## Installation
 
- 1. Install the Python pacakge: `pip install spectacularAI`
+Install the Python pacakge: `pip install spectacularAI`
 
 ## Examples
 
@@ -27,6 +27,10 @@ To install dependecies for all examples you can use: `pip install -r requirement
 ## API documentation
 
 https://spectacularai.github.io/docs/sdk/python/latest
+
+## Troubleshooting
+
+Rarely, the OAK-D device factory calibration may be inaccurate, which may cause the the VIO performance to be always very bad in all environments. If this is the case, the device can be recalibrated following these instructions: https://www.youtube.com/watch?v=nD0hy9164p8
 
 ## License
 
