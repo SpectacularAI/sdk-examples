@@ -6,14 +6,9 @@ Requirements:
 
     pip install opencv-python matplotlib
 
-Download the pre-trained NN model:
+To download the pre-trained NN model run following shell script (Git Bash recommended on Windows to run it):
 
-    # One example how to do this
-    git clone https://github.com/luxonis/depthai-python
-    cd depthai-python/examples
-    python install_requirements.py -sdai
-    cp -R models ../..
-    cd ../..
+    ./depthai_combination_install.sh
 
 Plug in the OAK-D and run:
 
