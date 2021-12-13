@@ -11,13 +11,10 @@
 ## Installation
 
  1. Install the Python pacakge: `pip install spectacularAI`
- 2. Install the extra dependencies for the examples:
-    `pip install matplotlib` and
-    `pip install  --force-reinstall opencv-python==4.5.3.56`.
-
-NOTE: Version 4.5.4.58 (most recent as of October 22, 2021) of `opencv-python` is [broken on Ubuntu](https://github.com/opencv/opencv-python/issues/572), therefore recommending an older version.
 
 ## Examples
+
+To install dependecies for all examples you can use: `pip install -r requirements.txt `
 
  * **Minimal example**. Prints 6-DoF poses as JSON text: [`python vio_jsonl.py`](vio_jsonl.py)
  * **Basic visualization**. Interactive 3D plot / draw in the air with the device: [`python vio_visu.py`](vio_visu.py)
