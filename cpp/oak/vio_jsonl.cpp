@@ -11,9 +11,9 @@ int main(int argc, char** argv) {
 
     // Optional configuration
     spectacularAI::daiPlugin::Configuration config;
-    // Example: enable these to support fisheye lenses (SDK 0.16+)
-    // config.meshRectification = true;
-    // config.depthScaleCorrection = true;
+    // Enable these to support fisheye lenses (SDK 0.16+)
+    config.meshRectification = true;
+    config.depthScaleCorrection = true;
 
     // If a folder is given as an argument, record session there
     if (argc >= 2) config.recordingFolder = argv[1];

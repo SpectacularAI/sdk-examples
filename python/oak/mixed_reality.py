@@ -24,6 +24,7 @@ args = parse_args()
 def make_pipelines():
     pipeline = depthai.Pipeline()
     config = spectacularAI.depthai.Configuration()
+    config.meshRectification = True
     if args.mapLoadPath is not None:
         config.mapLoadPath = args.mapLoadPath
         config.useSlam = True

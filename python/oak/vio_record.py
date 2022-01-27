@@ -54,6 +54,8 @@ args =  p.parse_args()
 pipeline = depthai.Pipeline()
 
 config.inputResolution = args.resolution
+config.meshRectification = True
+config.depthScaleCorrection = True
 if not args.no_inputs:
     config.recordingFolder = args.output
 if args.slam:

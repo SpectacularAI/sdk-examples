@@ -15,7 +15,7 @@ def live_vio_reader():
     import depthai
     import spectacularAI
     pipeline = depthai.Pipeline()
-    vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
+    vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, meshRectification=True)
 
     with depthai.Device(pipeline) as device, \
         vio_pipeline.startSession(device) as vio_session:
