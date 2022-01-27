@@ -30,7 +30,18 @@ https://spectacularai.github.io/docs/sdk/python/latest
 
 ## Troubleshooting
 
-Rarely, the OAK-D device factory calibration may be inaccurate, which may cause the the VIO performance to be always very bad in all environments. If this is the case, the device can be recalibrated following these instructions: https://www.youtube.com/watch?v=nD0hy9164p8
+Rarely, the OAK-D device factory calibration may be inaccurate, which may cause the the VIO performance to be always very bad in all environments. If this is the case, the device can be recalibrated following [these instructions](https://docs.luxonis.com/en/latest/pages/calibration/).
+
+### Fisheye cameras
+
+It is possible to fit certain OAK-D models with fisheye lenses. These are supported from Spectacular AI SDK version 0.16 onwards, but require the following `spectacularAI.Configuration` changes to be applied in `spectacularAI.Pipeline`:
+```
+meshRectification = True
+depthScaleCorrection = True
+```
+These settings are work-arounds that also (currently) work with normal OAK-D lenses, but may stop working with future DepthAI versions, and increase initialization time, and therefore they are not recommended for general use. The settings are enabled in all examples in the [`oak-fisheye` branch](https://github.com/SpectacularAI/sdk-examples/tree/oak-fisheye) of this repository.
+
+Also remember to calibrate the camera according to [Luxonis' instructions](https://docs.luxonis.com/en/latest/pages/calibration/), if you have changed the lenses or the device did not include a factory calibration.
 
 ## License
 
