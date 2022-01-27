@@ -52,6 +52,8 @@ pipeline = depthai.Pipeline()
 
 config.recordingFolder = args.output
 config.inputResolution = args.resolution
+config.meshRectification = True
+config.depthScaleCorrection = True
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)

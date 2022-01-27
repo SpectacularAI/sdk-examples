@@ -15,7 +15,7 @@ FPS = 24 # set to 30 for smoother frame rate
 
 def make_pipelines():
     pipeline = depthai.Pipeline()
-    vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
+    vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, meshRectification=True, depthScaleCorrection=True)
 
     # NOTE: this simple method of reading RGB data from the device does not
     # scale to well to higher resolutions. Use YUV data with larger resolutions
