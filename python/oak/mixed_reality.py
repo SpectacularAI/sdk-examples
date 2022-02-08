@@ -13,9 +13,20 @@ from OpenGL.GL import * # all prefixed with gl so OK to import *
 
 FPS = 24 # set to 30 for smoother frame rate
 
+def parse_args():
+    import argparse
+    p = argparse.ArgumentParser(__doc__)
+    p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
+    return p.parse_args()
+
 def make_pipelines():
     pipeline = depthai.Pipeline()
-    vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
+    config = spectacularAI.depthai.Configuration()
+    args = parse_args()
+    if args.mapLoadPath is not None:
+        config.mapLoadPath = args.mapLoadPath
+        config.useSlam = True
+    vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
 
     # NOTE: this simple method of reading RGB data from the device does not
     # scale to well to higher resolutions. Use YUV data with larger resolutions
