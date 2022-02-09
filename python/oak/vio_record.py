@@ -55,7 +55,7 @@ config.recordingFolder = args.output
 config.inputResolution = args.resolution
 if args.slam:
     config.useSlam = True
-    config.mapSavePath = os.path.join(args.output, 'slam_map.bin')
+    config.mapSavePath = os.path.join(args.output, 'slam_map._')
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
