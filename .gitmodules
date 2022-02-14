@@ -1,0 +1,6 @@
+[submodule "cpp/offline/lodepng"]
+	path = cpp/offline/lodepng
+	url = https://github.com/lvandeve/lodepng
+[submodule "cpp/offline/json"]
+	path = cpp/offline/json
+	url = https://github.com/nlohmann/json
