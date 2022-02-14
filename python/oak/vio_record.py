@@ -43,6 +43,7 @@ p.add_argument("--no_rgb", help="Disable recording RGB video feed", action="stor
 p.add_argument("--gray", help="Record (rectified) gray video data", action="store_true")
 p.add_argument("--no_convert", help="Skip converting h265 video file", action="store_true")
 p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
+p.add_argument('--slam', help='Record SLAM map', action="store_true")
 p.add_argument("--resolution", help="Gray input resolution (gray)",
     default=config.inputResolution,
     choices=['400p', '800p'])
@@ -52,6 +53,9 @@ pipeline = depthai.Pipeline()
 
 config.recordingFolder = args.output
 config.inputResolution = args.resolution
+if args.slam:
+    config.useSlam = True
+    config.mapSavePath = os.path.join(args.output, 'slam_map._')
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
