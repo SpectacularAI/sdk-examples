@@ -13,12 +13,14 @@ int main(int argc, char *argv[]) {
     std::vector<std::string> arguments(argv, argv + argc);
     std::unique_ptr<std::ofstream> outputFile;
     std::unique_ptr<Input> input;
+    std::string recordingFolder = "";
     for (size_t i = 1; i < arguments.size(); ++i) {
         const std::string &argument = arguments.at(i);
         if (argument == "-o") {
             outputFile = std::make_unique<std::ofstream>(arguments.at(++i));
             assert(outputFile->is_open());
         }
+        else if (argument == "-r") recordingFolder = arguments.at(++i);
         else if (argument == "-i") input = Input::buildJsonl(arguments.at(++i));
     }
     std::ostream &output = outputFile ? *outputFile : std::cout;
@@ -29,10 +31,11 @@ int main(int argc, char *argv[]) {
     // It should not be used in real-time scenarios.
     config << "processingQueueSize: 0\n";
     config << input->getConfig();
-    std::unique_ptr<spectacularAI::Vio> vio = spectacularAI::Vio::builder()
+    auto builder = spectacularAI::Vio::builder()
         .setConfigurationYAML(config.str())
-        .setCalibrationJSON(input->getCalibration())
-        .build();
+        .setCalibrationJSON(input->getCalibration());
+    if (!recordingFolder.empty()) builder.setRecordingFolder(recordingFolder);
+    std::unique_ptr<spectacularAI::Vio> vio = builder.build();
 
     vio->setOutputCallback([&](spectacularAI::VioOutputPtr vioOutput) {
         output << vioOutput->asJson().c_str() << std::endl;
