@@ -17,12 +17,13 @@ def parse_args():
     import argparse
     p = argparse.ArgumentParser(__doc__)
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
+    p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
     return p.parse_args()
+args = parse_args()
 
 def make_pipelines():
     pipeline = depthai.Pipeline()
     config = spectacularAI.depthai.Configuration()
-    args = parse_args()
     if args.mapLoadPath is not None:
         config.mapLoadPath = args.mapLoadPath
         config.useSlam = True
@@ -56,24 +57,57 @@ def init_display(w, h):
     pygame.init()
     pygame.display.set_mode((w, h), DOUBLEBUF | OPENGL)
 
-CUBE_VERTICES = (
-    (1, -1, -1), (1, 1, -1), (-1, 1, -1), (-1, -1, -1),
-    (1, -1, 1), (1, 1, 1), (-1, -1, 1), (-1, 1, 1)
-)
-
-CUBE_EDGES = (
-    (0,1), (0,3), (0,4), (2,1), (2,3), (2,7),
-    (6,3), (6,4), (6,7), (5,1), (5,4), (5,7)
-)
-
 def draw_cube():
+    CUBE_VERTICES = (
+        (1, -1, -1), (1, 1, -1), (-1, 1, -1), (-1, -1, -1),
+        (1, -1, 1), (1, 1, 1), (-1, -1, 1), (-1, 1, 1)
+    )
+
+    CUBE_EDGES = (
+        (0,1), (0,3), (0,4), (2,1), (2,3), (2,7),
+        (6,3), (6,4), (6,7), (5,1), (5,4), (5,7)
+    )
+    glPushMatrix()
+    # cube world position
+    glTranslatef(0.5, 0, 0)
+    glScalef(*([0.1] * 3))
+
     glBegin(GL_LINES)
     for edge in CUBE_EDGES:
         for vertex in edge:
             glVertex3fv(CUBE_VERTICES[vertex])
     glEnd()
+    glPopMatrix()
 
-def draw(cam, img):
+def load_and_draw_obj_as_wireframe(in_stream):
+    vertices = []
+    glBegin(GL_LINES)
+    for line in in_stream:
+        if line.startswith('#'): continue
+        cmd, _, rest = line.partition(' ')
+        data = rest.split()
+        if cmd == 'v':
+            vertices.append([float(c) for c in data])
+        elif cmd == 'f':
+            indices = [int(c.split('/')[0]) for c in data]
+            for i in range(len(indices)):
+                glVertex3fv(vertices[indices[i] - 1])
+                glVertex3fv(vertices[indices[(i + 1) % len(indices)] - 1])
+        # skip everything else
+    glEnd()
+
+def load_obj():
+    gl_list = glGenLists(1)
+    glNewList(gl_list, GL_COMPILE)
+    if args.objLoadPath is None:
+        draw_cube()
+    else:
+        with open(args.objLoadPath, 'r') as f:
+            load_and_draw_obj_as_wireframe(f)
+    glEndList()
+    return gl_list
+
+def draw(cam, img, obj):
     # copy image as AR background
     glDrawPixels(img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getRaw().data)
 
@@ -83,14 +117,10 @@ def draw(cam, img):
     glMultMatrixd(cam.camera.getProjectionMatrixOpenGL(near, far).transpose())
     glMultMatrixd(cam.getWorldToCameraMatrix().transpose())
 
-    # cube world position
-    glTranslatef(0.5, 0, 0);
-    glScalef(*([0.1] * 3))
-
     glClear(GL_DEPTH_BUFFER_BIT)
-    glColor3f(1, 0, 1);
+    glColor3f(1, 0, 1)
     glLineWidth(2.0)
-    draw_cube()
+    glCallList(obj)
 
 pipeline, vio_pipeline = make_pipelines()
 
@@ -101,6 +131,7 @@ def main_loop(device, vio_session):
     # buffer for frames: show together with the corresponding VIO output
     frames = {}
     frame_number = 1
+    obj = None
 
     while True:
         if img_queue.has():
@@ -120,6 +151,7 @@ def main_loop(device, vio_session):
                     display_initialized = True
                     clock = pygame.time.Clock()
                     init_display(img.getWidth(), img.getHeight())
+                    obj = load_obj()
 
                 cam = vio_session.getRgbCameraPose(out)
 
@@ -128,7 +160,7 @@ def main_loop(device, vio_session):
                         pygame.quit()
                         return
 
-                draw(cam, img)
+                draw(cam, img, obj)
 
                 pygame.display.flip()
                 # uncomment for smooth frame rate at higher latency
