@@ -40,6 +40,7 @@ config = spectacularAI.depthai.Configuration()
 p = argparse.ArgumentParser(__doc__)
 p.add_argument("--output", help="Recording output folder", default="data")
 p.add_argument("--no_rgb", help="Disable recording RGB video feed", action="store_true")
+p.add_argument("--no_inputs", help="Disable recording JSONL and depth", action="store_true")
 p.add_argument("--gray", help="Record (rectified) gray video data", action="store_true")
 p.add_argument("--no_convert", help="Skip converting h265 video file", action="store_true")
 p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
@@ -51,10 +52,13 @@ args =  p.parse_args()
 
 pipeline = depthai.Pipeline()
 
-config.recordingFolder = args.output
 config.inputResolution = args.resolution
+if not args.no_inputs:
+    config.recordingFolder = args.output
 if args.slam:
     config.useSlam = True
+    try: os.makedirs(args.output) # SLAM only
+    except: pass
     config.mapSavePath = os.path.join(args.output, 'slam_map._')
 
 # Enable recoding by setting recordingFolder option
