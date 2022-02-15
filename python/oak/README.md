@@ -23,6 +23,12 @@ To install dependecies for all examples you can use: `pip install -r requirement
     See [`depthai_combination.py`](depthai_combination.py) for additional dependencies that also need to be installed.
  * **Mixed reality**. In less than 130 lines of Python, with the good old OpenGL functions like `glTranslatef` used for rendering.
     Also requires `PyOpenGL_accelerate` to be installed, see [`mixed_reality.py`](mixed_reality.py) for details.
+ * **Remote visualization over SSH**. Can be achieved by combining the `vio_jsonl.py` and `vio_visu.py` scripts as follows:
+
+        ssh user@example.org 'python -u /full/path/to/vio_jsonl.py' | python -u vio_visu.py --file=-
+        
+    Here `user@example.org` represents a machine (e.g., Raspberry Pi) that is connected to the OAK-D, but is not necessarily attached to a monitor.
+    The above command can then be executed on a laptop/desktop machine, which then shows the trajectory of the OAK-D remotely (like in [this video](https://youtu.be/mBZ8bszNnwI?t=17)).
 
 ## API documentation
 
