@@ -19,9 +19,8 @@ def parse_args():
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
     return p.parse_args()
-args = parse_args()
 
-def make_pipelines():
+def make_pipelines(args):
     pipeline = depthai.Pipeline()
     config = spectacularAI.depthai.Configuration()
     if args.mapLoadPath is not None:
@@ -96,20 +95,20 @@ def load_and_draw_obj_as_wireframe(in_stream):
         # skip everything else
     glEnd()
 
-def load_obj():
+def load_obj(objLoadPath):
     gl_list = glGenLists(1)
     glNewList(gl_list, GL_COMPILE)
-    if args.objLoadPath is None:
+    if objLoadPath is None:
         draw_cube()
     else:
-        with open(args.objLoadPath, 'r') as f:
+        with open(objLoadPath, 'r') as f:
             load_and_draw_obj_as_wireframe(f)
     glEndList()
     return gl_list
 
-def draw(cam, img, obj):
+def draw(cam, width, height, data, obj):
     # copy image as AR background
-    glDrawPixels(img.getWidth(), img.getHeight(), GL_RGB, GL_UNSIGNED_BYTE, img.getRaw().data)
+    glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, data)
 
     # setup OpenGL camera based on VIO output
     glLoadIdentity()
@@ -122,9 +121,7 @@ def draw(cam, img, obj):
     glLineWidth(2.0)
     glCallList(obj)
 
-pipeline, vio_pipeline = make_pipelines()
-
-def main_loop(device, vio_session):
+def main_loop(args, device, vio_session):
     display_initialized = False
     img_queue = device.getOutputQueue(name="cam_out", maxSize=4, blocking=False)
 
@@ -151,7 +148,7 @@ def main_loop(device, vio_session):
                     display_initialized = True
                     clock = pygame.time.Clock()
                     init_display(img.getWidth(), img.getHeight())
-                    obj = load_obj()
+                    obj = load_obj(args.objLoadPath)
 
                 cam = vio_session.getRgbCameraPose(out)
 
@@ -160,7 +157,7 @@ def main_loop(device, vio_session):
                         pygame.quit()
                         return
 
-                draw(cam, img, obj)
+                draw(cam, img.getWidth(), img.getHeight(), img.getRaw().data, obj)
 
                 pygame.display.flip()
                 # uncomment for smooth frame rate at higher latency
@@ -171,6 +168,9 @@ def main_loop(device, vio_session):
         else:
             pygame.time.wait(1)
 
-with depthai.Device(pipeline) as device, \
-    vio_pipeline.startSession(device) as vio_session:
-    main_loop(device, vio_session)
+if __name__ == '__main__':
+    args = parse_args()
+    pipeline, vio_pipeline = make_pipelines(args)
+    with depthai.Device(pipeline) as device, \
+        vio_pipeline.startSession(device) as vio_session:
+        main_loop(args, device, vio_session)
