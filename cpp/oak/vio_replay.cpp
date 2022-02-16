@@ -13,7 +13,6 @@ int main(int argc, char** argv) {
             .setDataFolder(dataFolder)
             .build();
 
-    cv::Mat preview;
     replayApi->setExtendedOutputCallback([&](spectacularAI::VioOutputPtr output, spectacularAI::FrameSet frames){
         std::cout << output->asJson() << std::endl;
         #ifdef EXAMPLE_USE_OPENCV
