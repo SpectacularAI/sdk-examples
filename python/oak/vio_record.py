@@ -35,6 +35,7 @@ import subprocess
 import os
 import json
 import threading
+import time
 
 config = spectacularAI.depthai.Configuration()
 
@@ -46,6 +47,8 @@ p.add_argument("--gray", help="Record (rectified) gray video data", action="stor
 p.add_argument("--no_convert", help="Skip converting h265 video file", action="store_true")
 p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
 p.add_argument('--slam', help='Record SLAM map', action="store_true")
+p.add_argument('--no_vio', help='Only records inputs and doesn\'t compute vio', action="store_true")
+p.add_argument('--no_feature_tracking', help='Disables HW accelerated feature tracking and uses CPU instead', action="store_true")
 p.add_argument("--resolution", help="Gray input resolution (gray)",
     default=config.inputResolution,
     choices=['400p', '800p'])
@@ -61,6 +64,9 @@ if args.slam:
     try: os.makedirs(args.output) # SLAM only
     except: pass
     config.mapSavePath = os.path.join(args.output, 'slam_map._')
+
+config.useFeatureTracker = not args.no_feature_tracking
+config.recordingOnly = args.no_vio
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
@@ -131,9 +137,12 @@ def main_loop(plotter=None):
                 if grayQueue.has():
                     grayQueue.get().getData().tofile(grayVideoFile)
 
-            out = vio_session.waitForOutput()
-            if plotter is not None:
-                if not plotter(json.loads(out.asJson())): break
+            if not args.no_vio:
+                out = vio_session.waitForOutput()
+                if plotter is not None:
+                    if not plotter(json.loads(out.asJson())): break
+            else:
+                time.sleep(1)
 
     videoFileNames = []
 
