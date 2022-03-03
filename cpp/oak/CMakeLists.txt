@@ -38,9 +38,17 @@ endif()
 add_executable(vio_jsonl vio_jsonl.cpp)
 target_link_libraries(vio_jsonl ${EXAMPLE_LIBS})
 
+add_executable(vio_replay vio_replay.cpp)
+target_link_libraries(vio_replay ${EXAMPLE_LIBS})
+
 if(MSVC)
   add_custom_command(TARGET vio_jsonl POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_jsonl> $<TARGET_FILE_DIR:vio_jsonl>
+    COMMAND_EXPAND_LISTS
+  )
+
+  add_custom_command(TARGET vio_replay POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_replay> $<TARGET_FILE_DIR:vio_replay>
     COMMAND_EXPAND_LISTS
   )
 endif()
