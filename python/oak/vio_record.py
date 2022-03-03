@@ -34,6 +34,7 @@ import argparse
 import subprocess
 import os
 import json
+import threading
 
 config = spectacularAI.depthai.Configuration()
 
@@ -90,6 +91,7 @@ if args.gray:
     create_gray_encoder(vio_pipeline.stereo.rectifiedLeft, 'left')
     create_gray_encoder(vio_pipeline.stereo.rectifiedRight, 'right')
 
+should_quit = False
 def main_loop(plotter=None):
     frame_number = 1
 
@@ -114,60 +116,61 @@ def main_loop(plotter=None):
 
         print("Recording!")
         print("")
-        if plotter is None:
-            print("Press Ctrl+C to stop recording")
-        else:
+        if plotter is not None:
             print("Close the visualization window to stop recording")
 
-        try:
-            while True:
-                if not args.no_rgb:
-                    while rgbQueue.has():
-                        frame = rgbQueue.get()
-                        vio_session.addTrigger(frame.getTimestamp().total_seconds(), frame_number)
-                        frame.getData().tofile(videoFile)
-                        frame_number += 1
-
-                for (grayQueue, grayVideoFile) in grayVideos:
-                    if grayQueue.has():
-                        grayQueue.get().getData().tofile(grayVideoFile)
-
-                out = vio_session.waitForOutput()
-                if plotter is not None:
-                    if not plotter(json.loads(out.asJson())): break
-
-        finally:
-            videoFileNames = []
-
+        while not should_quit:
             if not args.no_rgb:
-                videoFileNames.append(videoFile.name)
-                videoFile.close()
+                while rgbQueue.has():
+                    frame = rgbQueue.get()
+                    vio_session.addTrigger(frame.getTimestamp().total_seconds(), frame_number)
+                    frame.getData().tofile(videoFile)
+                    frame_number += 1
 
-            for (_, grayVideoFile) in grayVideos:
-                videoFileNames.append(grayVideoFile.name)
-                grayVideoFile.close()
+            for (grayQueue, grayVideoFile) in grayVideos:
+                if grayQueue.has():
+                    grayQueue.get().getData().tofile(grayVideoFile)
 
-            for fn in videoFileNames:
-                if not args.no_convert:
-                    withoutExt = fn.rpartition('.')[0]
-                    ffmpegCommand = "ffmpeg -framerate 30 -y -i {} -avoid_negative_ts make_zero -c copy {}.mp4".format(fn, withoutExt)
-                    result = subprocess.run(ffmpegCommand, shell=True)
-                    if result.returncode == 0:
-                        os.remove(fn)
-                else:
-                    print('')
-                    print("Use ffmpeg to convert video into a viewable format:")
-                    print("    " + ffmpegCommand)
+            out = vio_session.waitForOutput()
+            if plotter is not None:
+                if not plotter(json.loads(out.asJson())): break
+
+    videoFileNames = []
+
+    if not args.no_rgb:
+        videoFileNames.append(videoFile.name)
+        videoFile.close()
+
+    for (_, grayVideoFile) in grayVideos:
+        videoFileNames.append(grayVideoFile.name)
+        grayVideoFile.close()
+
+    for fn in videoFileNames:
+        if not args.no_convert:
+            withoutExt = fn.rpartition('.')[0]
+            ffmpegCommand = "ffmpeg -framerate 30 -y -i {} -avoid_negative_ts make_zero -c copy {}.mp4".format(fn, withoutExt)
+
+            result = subprocess.run(ffmpegCommand, shell=True)
+            if result.returncode == 0:
+                os.remove(fn)
+        else:
+            print('')
+            print("Use ffmpeg to convert video into a viewable format:")
+            print("    " + ffmpegCommand)
 
 if args.no_preview:
-    main_loop()
+    plotter = None
 else:
-    import threading
     from vio_visu import make_plotter
     import matplotlib.pyplot as plt
     plotter, anim = make_plotter()
 
-    reader_thread = threading.Thread(target = lambda: main_loop(plotter))
-    reader_thread.start()
+reader_thread = threading.Thread(target = lambda: main_loop(plotter))
+reader_thread.start()
+if plotter is None:
+    input("---- Press ENTER to stop recording ----")
+    should_quit = True
+else:
     plt.show()
-    reader_thread.join()
+
+reader_thread.join()
