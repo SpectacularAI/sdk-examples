@@ -106,9 +106,10 @@ def load_obj(objLoadPath):
     glEndList()
     return gl_list
 
-def draw(cam, width, height, data, obj):
+def draw(cam, width, height, data, obj, is_tracking):
     # copy image as AR background
     glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, data)
+    if not is_tracking: return
 
     # setup OpenGL camera based on VIO output
     glLoadIdentity()
@@ -157,7 +158,8 @@ def main_loop(args, device, vio_session):
                         pygame.quit()
                         return
 
-                draw(cam, img.getWidth(), img.getHeight(), img.getRaw().data, obj)
+                is_tracking = out.status == spectacularAI.TrackingStatus.TRACKING
+                draw(cam, img.getWidth(), img.getHeight(), img.getRaw().data, obj, is_tracking)
 
                 pygame.display.flip()
                 # uncomment for smooth frame rate at higher latency
