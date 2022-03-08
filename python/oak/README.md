@@ -26,7 +26,7 @@ To install dependecies for all examples you can use: `pip install -r requirement
  * **Remote visualization over SSH**. Can be achieved by combining the `vio_jsonl.py` and `vio_visu.py` scripts as follows:
 
         ssh user@example.org 'python -u /full/path/to/vio_jsonl.py' | python -u vio_visu.py --file=-
-        
+
     Here `user@example.org` represents a machine (e.g., Raspberry Pi) that is connected to the OAK-D, but is not necessarily attached to a monitor.
     The above command can then be executed on a laptop/desktop machine, which then shows the trajectory of the OAK-D remotely (like in [this video](https://youtu.be/mBZ8bszNnwI?t=17)).
 
@@ -48,6 +48,12 @@ depthScaleCorrection = True
 These settings are work-arounds that also (currently) work with normal OAK-D lenses, but may stop working with future DepthAI versions, and increase initialization time, and therefore they are not recommended for general use. The settings are enabled in all examples in the [`oak-fisheye` branch](https://github.com/SpectacularAI/sdk-examples/tree/oak-fisheye) of this repository.
 
 Also calibrate the camera according to [these instructions](https://spectacularai.github.io/docs/pdf/oak_fisheye_calibration_instructions.pdf), if you have changed the lenses or the device did not include a factory calibration.
+
+### OAK-D Gen 2 models
+
+Currently require setting certain parameters manually:
+
+ * OAK-D-Pro-W (dev): IMU-to-camera matrix needs to be changed, see this branch: https://github.com/SpectacularAI/sdk-examples/tree/oak-d-pro-w-dev
 
 ## License
 
