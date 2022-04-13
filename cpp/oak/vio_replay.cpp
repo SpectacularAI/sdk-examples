@@ -1,5 +1,7 @@
-#include <iostream>
+#include <spectacularAI/vio.hpp>
 #include <spectacularAI/replay.hpp>
+
+#include <iostream>
 #ifdef EXAMPLE_USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif
@@ -9,11 +11,11 @@ int main(int argc, char** argv) {
 
     std::string dataFolder = argv[1];
 
-    auto replayApi = spectacularAI::Replay::builder()
-            .setDataFolder(dataFolder)
-            .build();
+    spectacularAI::Vio::Builder vioBuilder = spectacularAI::Vio::builder();
+    auto replayApi = spectacularAI::Replay::builder(dataFolder, vioBuilder)
+        .build();
 
-    replayApi->setExtendedOutputCallback([&](spectacularAI::VioOutputPtr output, spectacularAI::FrameSet frames){
+    replayApi->setExtendedOutputCallback([&](spectacularAI::VioOutputPtr output, spectacularAI::FrameSet frames) {
         std::cout << output->asJson() << std::endl;
         #ifdef EXAMPLE_USE_OPENCV
         for (int i = 0; i < frames.size(); i++) {
@@ -29,6 +31,8 @@ int main(int argc, char** argv) {
                 cv::waitKey(1);
             }
         }
+        #else
+        (void)frames;
         #endif
     });
 
