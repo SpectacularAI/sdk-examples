@@ -7,6 +7,7 @@
  * An [OAK-D device](https://store.opencv.ai/products/oak-d)
  * Supported operating systems: Windows 10 or Linux (e.g., Ubuntu 20+)
  * Supported Python versions 3.6+
+ * Linux only: set up [OAK-D udev rules](https://docs.luxonis.com/en/latest/pages/troubleshooting/#udev-rules-on-linux)
 
 ## Installation
 
@@ -14,7 +15,7 @@ Install the Python pacakge: `pip install spectacularAI`
 
 ## Examples
 
-To install dependecies for all examples you can use: `pip install -r requirements.txt `
+To install dependecies for all examples you can use: `pip install -r requirements.txt`. On Linux, you may also need to `sudo apt install python3-tk` to run the Matplotlib-based visualizations.
 
  * **Minimal example**. Prints 6-DoF poses as JSON text: [`python vio_jsonl.py`](vio_jsonl.py)
  * **Basic visualization**. Interactive 3D plot / draw in the air with the device: [`python vio_visu.py`](vio_visu.py)
