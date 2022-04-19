@@ -34,6 +34,14 @@ To install dependecies for all examples you can use: `pip install -r requirement
 
 https://spectacularai.github.io/docs/sdk/python/latest
 
+### Coordinate systems
+
+The SDK uses the following coordinate conventions, which are also elaborated in the diagram below:
+ * **World coordinate system**: Z-is-up (another popular choice is Y-is-up, used by, e.g., ARCore and Intel RealSense SDK)
+ * **Camera coordinate system**: OpenCV convention (see [here](https://learnopencv.com/geometry-of-image-formation/) for a nice illustration)
+
+![SDK coordinate systems](https://spectacularai.github.io/docs/png/SpectacularAI-coordinate-systems-oak-d.png)
+
 ## Troubleshooting
 
 Rarely, the OAK-D device factory calibration may be inaccurate, which may cause the the VIO performance to be always very bad in all environments. If this is the case, the device can be recalibrated following [Luxonis' instructions](https://docs.luxonis.com/en/latest/pages/calibration/) (see also [our instructions for fisheye cameras](https://spectacularai.github.io/docs/pdf/oak_fisheye_calibration_instructions.pdf) for extra tips).
