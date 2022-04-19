@@ -37,8 +37,10 @@ https://spectacularai.github.io/docs/sdk/python/latest
 ### Coordinate systems
 
 The SDK uses the following coordinate conventions, which are also elaborated in the diagram below:
- * **World coordinate system**: Z-is-up (another popular choice is Y-is-up, used by, e.g., ARCore and Intel RealSense SDK)
- * **Camera coordinate system**: OpenCV convention (see [here](https://learnopencv.com/geometry-of-image-formation/) for a nice illustration)
+ * **World coordinate system**: Right-handed Z-is-up
+ * **Camera coordinate system**: OpenCV convention (see [here](https://learnopencv.com/geometry-of-image-formation/) for a nice illustration) which is also right-handed
+
+These conventions are _different_ from, e.g., Intel RealSense SDK (cf. [here](https://github.com/IntelRealSense/librealsense/blob/master/doc/t265.md#sensor-origin-and-coordinate-system)), ARCore, Unity and most OpenGL tutorials, most of which use an "Y-is-up" coordinate system, often different camera coordinates systems, and sometimes different pixel (or "NDC") coordinate conventions.
 
 ![SDK coordinate systems](https://spectacularai.github.io/docs/png/SpectacularAI-coordinate-systems-oak-d.png)
 
