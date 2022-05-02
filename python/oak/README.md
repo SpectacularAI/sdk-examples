@@ -24,6 +24,8 @@ To install dependecies for all examples you can use: `pip install -r requirement
     See [`depthai_combination.py`](depthai_combination.py) for additional dependencies that also need to be installed.
  * **Mixed reality**. In less than 130 lines of Python, with the good old OpenGL functions like `glTranslatef` used for rendering.
     Also requires `PyOpenGL_accelerate` to be installed, see [`mixed_reality.py`](mixed_reality.py) for details.
+ * **Data recording** for, e.g., replay and troubleshooting: [`vio_record.py`](vio_record.py)
+ * **GNSS-VIO** example, reads external GNSS from standard input [`vio_gnss.py`](vio_gnss.py)
  * **Remote visualization over SSH**. Can be achieved by combining the `vio_jsonl.py` and `vio_visu.py` scripts as follows:
 
         ssh user@example.org 'python -u /full/path/to/vio_jsonl.py' | python -u vio_visu.py --file=-
