@@ -25,6 +25,7 @@ import spectacularAI
 import sys
 import threading
 import json
+import sys
 
 # A separate thread that reads gnss position as JSON from stdin and
 # sends it to vio_session
@@ -53,6 +54,8 @@ def gnssInput(vio_session):
 
 pipeline = depthai.Pipeline()
 config = spectacularAI.depthai.Configuration()
+
+if len(sys.argv) >= 2: config.recordingFolder = sys.argv[1]
 
 # Optional imuToGnss translation in meters
 #config.imuToGnss = spectacularAI.Vector3d(0.0, 0.0, 0.0)
