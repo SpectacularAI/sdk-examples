@@ -16,15 +16,15 @@ sudo apt-get update
 sudo apt-get install libsqlite3-dev libpcl-dev libopencv-dev git cmake libproj-dev libqt5svg5-dev
 
 # (Recommended) g2o
-git clone https://github.com/RainerKuemmerle/g2o.git wrappers/rtabmap/3rdparty/g2o
-cd wrappers/rtabmap/3rdparty/g2o
+git clone https://github.com/RainerKuemmerle/g2o.git 3rdparty/g2o
+cd 3rdparty/g2o
 mkdir build && cd build
 cmake -DBUILD_WITH_MARCH_NATIVE=OFF -DG2O_BUILD_APPS=OFF -DG2O_BUILD_EXAMPLES=OFF -DG2O_USE_OPENGL=OFF ..
 make -j4
 sudo make install
 
-git clone https://github.com/introlab/rtabmap.git wrappers/rtabmap/3rdparty/rtabmap
-cd wrappers/rtabmap/3rdparty/rtabmap/build
+git clone https://github.com/introlab/rtabmap.git 3rdparty/rtabmap
+cd 3rdparty/rtabmap/build
 cmake ..
 make -j4
 sudo make install
