@@ -1,12 +1,12 @@
 # RTAB-Map RGB-D mapping example
 
-This example demonstrates how one could implement their own 3D mapping application on top of the spectacularAI mapping API.
-In this example, resulting keyframe data (RGB-D images, point clouds) and the estimated poses are input to the popular RTAB-Map SLAM library (https://github.com/introlab/rtabmap).
+This example demonstrates how one could implement their own 3D mapping application on top of the SpectacularAI Mapping API.
+In this example, the resulting keyframe data (RGB-D images, point clouds) and the estimated poses are input to the popular [RTAB-Map SLAM library ](https://github.com/introlab/rtabmap).
 RTAB-Map then builds both, a 3D model and a (re-)localization map of the environment in real-time.
 
 ## Dependencies
 
-For access to the C++ SDK, contact us at https://www.spectacularai.com/#contact. Available for multiple OSes and CPU architectures.
+For access to the C++ SDK, contact us at https://www.spectacularai.com/#contact. The SDK is available for multiple OSes and CPU architectures.
 
 Also, RTAB-Map library and its dependencies must be installed (https://github.com/introlab/rtabmap/wiki/Installation).
 
