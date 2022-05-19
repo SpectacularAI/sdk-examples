@@ -77,6 +77,7 @@ public:
 
 	virtual ~MapBuilder()
 	{
+
 	}
 
 	bool isPaused() const {return paused_;}

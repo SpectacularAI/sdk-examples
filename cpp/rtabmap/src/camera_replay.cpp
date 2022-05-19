@@ -37,46 +37,9 @@ Transform convert(const spectacularAI::Pose &pose) {
     return Transform(p.x, p.y, p.z, q.x, q.y, q.z, q.w);
 }
 
-cv::Mat convertColor(const std::shared_ptr<spectacularAI::mapping::Frame> &frame) {
-    assert(frame);
-    cv::Mat bgr;
-    const std::uint8_t* data = frame->image->getDataReadOnly();
-    int type = colorFormatToOpenCVType(frame->image->getColorFormat());
-
-    cv::Mat color = cv::Mat(
-        frame->image->getHeight(),
-        frame->image->getWidth(),
-        type,
-        const_cast<uint8_t *>(data)).clone();
-
-    if (type == CV_8UC4) {
-        cv::cvtColor(color, bgr, cv::COLOR_RGBA2BGR);
-    } else if (type == CV_8UC3) {
-        cv::cvtColor(color, bgr, cv::COLOR_RGB2BGR);
-    } else if (type == CV_8UC1) {
-        cv::cvtColor(color, bgr, cv::COLOR_GRAY2BGR);
-    }
-
-    return bgr;
-}
-
-cv::Mat convertDepth(const std::shared_ptr<spectacularAI::mapping::Frame> &frame) {
-    assert(frame);
-    assert(frame->image->getColorFormat() == spectacularAI::ColorFormat::GRAY16);
-    const std::uint8_t* data = frame->image->getDataReadOnly();
-
-    return cv::Mat(
-        frame->image->getHeight(),
-        frame->image->getWidth(),
-        CV_16UC1,
-        const_cast<uint8_t *>(data)).clone();
-}
-
 CameraModel convert(
-    const std::string &cameraName,
     const std::shared_ptr<const spectacularAI::Camera> &camera,
-    int width,  int height,
-    const Transform &localTransform
+    int width,  int height
 ) {
     // K is the camera intrinsic 3x3 CV_64FC1
     // D is the distortion coefficients 1x5 CV_64FC1
@@ -93,10 +56,45 @@ CameraModel convert(
     P.at<double>(2, 3) = 1;
 
     return CameraModel(
-        cameraName,
+        "",
         cv::Size(width, height),
         K, D, R, P,
-        localTransform);
+        Transform::getIdentity());
+}
+
+cv::Mat convertColor(const std::shared_ptr<const spectacularAI::Bitmap> &image) {
+    assert(image);
+    cv::Mat bgr;
+    const std::uint8_t* data = image->getDataReadOnly();
+    int type = colorFormatToOpenCVType(image->getColorFormat());
+
+    cv::Mat color = cv::Mat(
+        image->getHeight(),
+        image->getWidth(),
+        type,
+        const_cast<uint8_t *>(data)).clone();
+
+    if (type == CV_8UC4) {
+        cv::cvtColor(color, bgr, cv::COLOR_RGBA2BGR);
+    } else if (type == CV_8UC3) {
+        cv::cvtColor(color, bgr, cv::COLOR_RGB2BGR);
+    } else if (type == CV_8UC1) {
+        cv::cvtColor(color, bgr, cv::COLOR_GRAY2BGR);
+    }
+
+    return bgr;
+}
+
+cv::Mat convertDepth(const std::shared_ptr<const spectacularAI::Bitmap> &image) {
+    assert(image);
+    assert(image->getColorFormat() == spectacularAI::ColorFormat::GRAY16);
+    const std::uint8_t* data = image->getDataReadOnly();
+
+    return cv::Mat(
+        image->getHeight(),
+        image->getWidth(),
+        CV_16UC1,
+        const_cast<uint8_t *>(data)).clone();
 }
 
 } // anonymous namespace
@@ -115,7 +113,7 @@ CameraReplay::CameraReplay(
 CameraReplay::~CameraReplay() {}
 
 bool CameraReplay::init(const std::string &calibrationFolder, const std::string &cameraName) {
-    (void)calibrationFolder;
+    (void)calibrationFolder, (void)cameraName;
 
     auto mapperFn = [&](std::shared_ptr<const spectacularAI::mapping::MapperOutput> output) {
         for (int64_t frameId : output->updatedKeyframes) {
@@ -131,40 +129,31 @@ bool CameraReplay::init(const std::string &calibrationFolder, const std::string 
 
             // Update keyframe pose.
             auto& frameSet = search->second->frameSet;
-            poses[frameId] = convert(frameSet.rgbFrame->cameraPose.pose);
+            poses[frameId] = convert(frameSet->rgbFrame->cameraPose.pose);
 
             // Only save images & point cloud for new keyframes.
             if (keyFrames.find(frameId) != keyFrames.end()) continue;
             UINFO("New keyframe with id=%ld", frameId);
 
-            double timestamp = frameSet.rgbFrame->cameraPose.pose.time;
+            double timestamp = frameSet->rgbFrame->cameraPose.pose.time;
             cv::Mat bgr;
             cv::Mat depth;
 
-            if (frameSet.rgbFrame) {
-                bgr = convertColor(frameSet.rgbFrame);
-            } else {
-                UWARN("Keyframe %ld has no color image! Discarding...", frameId);
+            if (!frameSet->rgbFrame || !frameSet->depthFrame) {
+                UWARN("Keyframe %ld has color/depth image! Discarding...", frameId);
                 continue;
             }
 
-            if (frameSet.depthFrame) {
-                depth = convertDepth(frameSet.depthFrame);
-            } else {
-                UWARN("Keyframe %ld has no depth image! Discarding...", frameId);
-                continue;
-            }
+            std::shared_ptr<spectacularAI::mapping::Frame> rgbFrame = frameSet->getUndistortedFrame(frameSet->rgbFrame);
+            std::shared_ptr<spectacularAI::mapping::Frame> depthFrame = frameSet->getAlignedDepthFrame(rgbFrame);
 
             if (!model.isValidForProjection()) {
-                model = convert(
-                    cameraName,
-                    frameSet.rgbFrame->cameraPose.camera,
-                    frameSet.rgbFrame->image->getWidth(),
-                    frameSet.rgbFrame->image->getHeight(),
-                    Transform::getIdentity());
-
+                model = convert(rgbFrame->cameraPose.camera, rgbFrame->image->getWidth(), rgbFrame->image->getHeight());
                 assert(model.isValidForProjection());
             }
+
+            bgr = convertColor(rgbFrame->image);
+            depth = convertDepth(depthFrame->image);
 
             SensorData data = SensorData(bgr, depth, model, frameId, timestamp);
 

@@ -4,7 +4,6 @@
 #include <string>
 #include <rtabmap/core/CameraModel.h>
 #include <rtabmap/core/Camera.h>
-#include <spectacularAI/vio.hpp>
 
 namespace rtabmap {
 
