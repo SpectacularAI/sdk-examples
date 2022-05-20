@@ -66,7 +66,8 @@ Also calibrate the camera according to [these instructions](https://spectaculara
 
 Currently require setting certain parameters manually:
 
- * OAK-D-Pro-W (dev): IMU-to-camera matrix needs to be changed, see this branch: https://github.com/SpectacularAI/sdk-examples/tree/oak-d-pro-w-dev
+ * OAK-D S2: IMU-to-camera matrix needs to be changed, see this branch: https://github.com/SpectacularAI/sdk-examples/tree/oak-d-s2
+ * OAK-D-Pro-W (dev): IMU-to-camera matrix needs to be changed and fisheye configuration enabled manually, see this branch: https://github.com/SpectacularAI/sdk-examples/tree/oak-d-pro-w-dev
 
 ## License
 
