@@ -67,6 +67,12 @@ if args.no_feature_tracker:
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
+vio_pipeline.imuToCameraLeft = [
+    [0, 1, 0, 0],
+    [1, 0, 0, 0],
+    [0, 0,-1, 0],
+    [0, 0, 0, 1]
+]
 
 # Optionally also record other video streams not used by the Spectacular AI SDK, these
 # can be used for example to render AR content or for debugging.

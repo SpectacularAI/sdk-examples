@@ -27,6 +27,12 @@ def make_pipelines(args):
         config.mapLoadPath = args.mapLoadPath
         config.useSlam = True
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
+    vio_pipeline.imuToCameraLeft = [
+        [0, 1, 0, 0],
+        [1, 0, 0, 0],
+        [0, 0,-1, 0],
+        [0, 0, 0, 1]
+    ]
 
     # NOTE: this simple method of reading RGB data from the device does not
     # scale to well to higher resolutions. Use YUV data with larger resolutions

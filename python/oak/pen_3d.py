@@ -16,6 +16,12 @@ if SHOW_CAM:
 def make_pipelines():
     pipeline = depthai.Pipeline()
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
+    vio_pipeline.imuToCameraLeft = [
+        [0, 1, 0, 0],
+        [1, 0, 0, 0],
+        [0, 0,-1, 0],
+        [0, 0, 0, 1]
+    ]
 
     RGB_OUTPUT_WIDTH = 200 # very small on purpose
     REF_ASPECT = 1920 / 1080.0
