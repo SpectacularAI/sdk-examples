@@ -2,6 +2,7 @@
 #include <fstream>
 #include <librealsense2/rs.hpp>
 #include <spectacularAI/realsense/plugin.hpp>
+#include <spectacularAI/mapping.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <cassert>
@@ -12,12 +13,23 @@
 #include <deque>
 #include <atomic>
 #include <cstdlib>
+#include <set>
 
 namespace {
 struct ImageToSave {
     std::string fileName;
     cv::Mat mat;
 };
+
+int colorFormatToOpenCVType(spectacularAI::ColorFormat colorFormat) {
+    switch (colorFormat) {
+        case spectacularAI::ColorFormat::GRAY: return CV_8UC1;
+        case spectacularAI::ColorFormat::GRAY16: return CV_16UC1;
+        case spectacularAI::ColorFormat::RGB: return CV_8UC3;
+        case spectacularAI::ColorFormat::RGBA: return CV_8UC4;
+        default: return -1;
+    }
+}
 
 std::function<void()> buildImageWriter(
     std::deque<ImageToSave> &queue,
@@ -38,30 +50,63 @@ std::function<void()> buildImageWriter(
             auto img = queue.front();
             queue.pop_front();
             lock.unlock();
-
             cv::imwrite(img.fileName.c_str(), img.mat);
         }
     };
 }
+
+cv::Mat copyImage(std::shared_ptr<const spectacularAI::Bitmap> bitmap) {
+        int cvType = colorFormatToOpenCVType(bitmap->getColorFormat());
+        return cv::Mat(
+            bitmap->getHeight(),
+            bitmap->getWidth(),
+            cvType,
+            const_cast<std::uint8_t *>(bitmap->getDataReadOnly())
+        ).clone();
 }
+
+std::string matrix4ToString(const spectacularAI::Matrix4d &matrix) {
+    std::stringstream ss;
+    ss << "[";
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            ss << matrix[i][j];
+    ss << "]";
+    return ss.str();
+}
+
+void serializePosesToFile(std::ofstream& posesFile, std::shared_ptr<spectacularAI::mapping::KeyFrame> keyframe) {
+    auto& frameSet = keyframe->frameSet;
+    std::stringstream ss;
+    ss << "{\"frameId\": " << (keyframe->id) << ","
+        << "\"poses\": {";
+    if (frameSet.rgbFrame) {
+        ss << "\"rgb\": " << matrix4ToString(frameSet.rgbFrame->cameraPose.pose.asMatrix());
+    }
+    if (frameSet.depthFrame) {
+        if (frameSet.rgbFrame) ss << ",";
+        ss << "\"depth\": " << matrix4ToString(frameSet.depthFrame->cameraPose.pose.asMatrix());
+    }
+    ss << "}}";
+    std::cout << "saving " << ss.str() << std::endl;
+    posesFile << ss.str() << std::endl;
+}
+} // namespace
 
 int main(int argc, char** argv) {
     // If a folder is given as an argument, record session there
     std::string recordingFolder;
-    int keyFrameInterval = 10;
     if (argc >= 2) {
         recordingFolder = argv[1];
-        if (argc >= 3) {
-            keyFrameInterval = std::stoi(argv[2]);
-        }
     } else {
         std::cerr
-            << "Usage: " << argv[0] << " /path/to/recording/folder [N]" << std::endl
-            << "where N is the frame sampling interval, default: " << keyFrameInterval << std::endl;
+            << "Usage: " << argv[0] << " /path/to/recording/folder" << std::endl;
         return 1;
     }
 
-    spectacularAI::rsPlugin::Pipeline vioPipeline;
+    spectacularAI::rsPlugin::Configuration vioConfig;
+    vioConfig.useSlam = true;
+    spectacularAI::rsPlugin::Pipeline vioPipeline(vioConfig);
 
     {
         // Find RealSense device
@@ -99,66 +144,44 @@ int main(int argc, char** argv) {
     fileNameBuf.resize(1000, 0);
     std::shared_ptr<spectacularAI::rsPlugin::Session> vioSession;
 
-    auto callback = [
-        &frameCounter,
-        &fileNameBuf,
-        &vioSession,
-        &queueMutex,
-        &imageQueue,
-        &shouldQuit,
-        keyFrameInterval,
-        recordingFolder
-    ](const rs2::frame &frame)
-    {
-        if (shouldQuit) return;
-        auto frameset = frame.as<rs2::frameset>();
-        if (frameset && frameset.get_profile().stream_type() == RS2_STREAM_DEPTH) {
-            auto vio = vioSession; // atomic
-            if (!vio) return;
+    std::ofstream posesFile = std::ofstream(recordingFolder + "/poses.jsonl");
+    std::set<int64_t> savedFrames;
+    vioPipeline.setMapperCallback([&](std::shared_ptr<const spectacularAI::mapping::MapperOutput> output){
+        for (int64_t frameId : output->updatedKeyframes) {
+            auto search = output->map->keyframes.find(frameId);
+            if (search == output->map->keyframes.end()) {
+                continue; // deleted frame
+            }
 
-            if ((frameCounter++ % keyFrameInterval) != 0) return;
-            int keyFrameNumber = ((frameCounter - 1) / keyFrameInterval) + 1;
+            auto& frameSet = search->second->frameSet;
 
-            vio->addTrigger(frame.get_timestamp() * 1e-3, keyFrameNumber);
-
-            rs2_stream depthAlignTarget = RS2_STREAM_COLOR;
-            rs2::align alignDepth(depthAlignTarget);
-
-            // This line can be commented out to disable aligning.
-            frameset = alignDepth.process(frameset);
-
-            const rs2::video_frame &depth = frameset.get_depth_frame();
-            const rs2::video_frame &color = frameset.get_color_frame();
-            assert(depth.get_profile().format() == RS2_FORMAT_Z16);
-            assert(color.get_profile().format() == RS2_FORMAT_BGR8);
-
-            // Display images for testing.
-            uint8_t *colorData = const_cast<uint8_t*>((const uint8_t*)color.get_data());
-            cv::Mat colorMat(color.get_height(), color.get_width(), CV_8UC3, colorData);
-
-            uint8_t *depthData = const_cast<uint8_t*>((const uint8_t*)depth.get_data());
-            cv::Mat depthMat(depth.get_height(), depth.get_width(), CV_16UC1, depthData);
-
-            char *fileName = fileNameBuf.data();
-            std::snprintf(fileName, fileNameBuf.size(), "%s/depth_%04d.png", recordingFolder.c_str(), keyFrameNumber);
-            cv::imwrite(fileName, depthMat);
-
-            ImageToSave depthImg, colorImg;
-            depthImg.fileName = fileName; // copy
-            depthImg.mat = depthMat.clone();
-
-            std::snprintf(fileName, fileNameBuf.size(), "%s/rgb_%04d.png", recordingFolder.c_str(), keyFrameNumber);
-            colorImg.fileName = fileName;
-            colorImg.mat = colorMat.clone();
-
-            std::lock_guard<std::mutex> lock(queueMutex);
-            imageQueue.push_back(depthImg);
-            imageQueue.push_back(colorImg);
+            if (savedFrames.count(frameId) == 0) {
+                // Only save images once, despide frames pose possibly being updated several times
+                savedFrames.insert(frameId);
+                std::lock_guard<std::mutex> lock(queueMutex);
+                char *fileName = fileNameBuf.data();
+                // Copy images to ensure they are in memory later for saving
+                if (frameSet.rgbFrame && frameSet.rgbFrame->image) {
+                    std::snprintf(fileName, fileNameBuf.size(), "%s/rgb_%04ld.png", recordingFolder.c_str(), frameId);
+                    imageQueue.push_back(ImageToSave {fileName, copyImage(frameSet.rgbFrame->image)});
+                }
+                if (frameSet.depthFrame && frameSet.depthFrame->image) {
+                    std::snprintf(fileName, fileNameBuf.size(), "%s/depth_%04ld.png", recordingFolder.c_str(), frameId);
+                    imageQueue.push_back(ImageToSave {fileName, copyImage(frameSet.depthFrame->image)});
+                }
+                // TODO: Save pointclouds as JSON?
+            }
         }
-    };
 
-    vioSession = vioPipeline.startSession(rsConfig, callback);
-    std::ofstream vioOutJsonl(recordingFolder + "/vio.jsonl");
+        // Save only final fully optimized poses, might not contain poses for all frames in case they were deleted
+        if (output->finalMap) {
+            for (auto it = output->map->keyframes.begin(); it != output->map->keyframes.end(); it++) {
+                serializePosesToFile(posesFile, it->second);
+            }
+        }
+    });
+
+    vioSession = vioPipeline.startSession(rsConfig);
 
     std::thread inputThread([&]() {
         std::cerr << "Press Enter to quit." << std::endl << std::endl;
@@ -168,13 +191,13 @@ int main(int argc, char** argv) {
 
     while (!shouldQuit) {
         auto vioOut = vioSession->waitForOutput();
-        if (vioOut->tag > 0) {
-            vioOutJsonl << "{\"tag\":" << vioOut->tag << ",\"vio\":" << vioOut->asJson() << "}" << std::endl;
-        }
     }
+
+    vioSession = nullptr; // Ensure Vio is done before we quit
 
     inputThread.join();
     for (auto &t : imageWriterThreads) t.join();
     std::cerr << "Bye!" << std::endl;
     return 0;
 }
+

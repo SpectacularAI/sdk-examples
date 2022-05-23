@@ -55,4 +55,13 @@ if (BUILD_MAPPER)
       COMMAND_EXPAND_LISTS
     )
   endif()
+
+  add_executable(vio_mapper_legacy vio_mapper_legacy.cpp)
+  target_link_libraries(vio_mapper_legacy ${EXAMPLE_LIBS} ${MAPPER_LIBS})
+  if(MSVC)
+    add_custom_command(TARGET vio_mapper_legacy POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_mapper_legacy> $<TARGET_FILE_DIR:vio_mapper_legacy>
+      COMMAND_EXPAND_LISTS
+    )
+  endif()
 endif()
