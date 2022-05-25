@@ -3,15 +3,24 @@
 
 #include <QApplication>
 #include <rtabmap/core/Rtabmap.h>
+#include <rtabmap/core/RtabmapThread.h>
 #include <rtabmap/utilite/UThread.h>
 #include <rtabmap/utilite/ULogger.h>
 
 #include "../include/spectacularAI/rtabmap/map_builder.h"
 #include "../include/spectacularAI/rtabmap/camera_replay.h"
+#include "../include/spectacularAI/rtabmap/camera_k4a.h"
 
 void showUsage() {
-    std::cout << "Usage: rtabmap_mapper --input (-i) path/to/dataset --output (-o) path/to/output/database.db \n"
-                 "Optional parameters: --config (-c) path/to/rtabmap_config.ini" << std::endl;
+    std::cout << "Usage: rtabmap_mapper driver\n"
+        << "  driver options: replay, k4a"
+        << "  Optional parameters:\n"
+        << "  --output (-o) path/to/output/database.db  [If set, RTAB-Map database is saved to this file]\n"
+        << "  --config (-c) path/to/rtabmap_config.ini  [If set, RTAB-Map settings are overriden by this file]\n"
+        << "  --input (-i) path/to/dataset              [Input dataset path for replay camera driver]\n"
+        << std::endl;
+
+    exit(EXIT_SUCCESS);
 }
 
 int main(int argc, char *argv[]) {
@@ -19,82 +28,92 @@ int main(int argc, char *argv[]) {
     ULogger::setLevel(ULogger::kWarning);
 
     const std::vector<std::string> arguments(argv, argv + argc);
-    std::string dataFolder;
+    std::string driver;
     std::string outputPath;
     std::string rtabmapConfigFile;
+    std::string inputDataFolder;
+    float imageRate = 0; // as fast as possible
 
-    for (size_t i = 1; i < arguments.size(); ++i) {
+    if (arguments.size() < 2) {
+        showUsage();
+        return EXIT_SUCCESS;
+    }
+
+    for (size_t i = 2; i < arguments.size(); ++i) {
         const std::string &argument = arguments.at(i);
         if (argument == "-i" || argument == "--input")
-            dataFolder = arguments.at(++i);
+            inputDataFolder = arguments.at(++i);
         else if (argument == "-o" || argument == "--output")
             outputPath = arguments.at(++i);
         else if (argument == "-c" || argument == "--config")
             rtabmapConfigFile = arguments.at(++i);
         else if (argument == "-h" || argument == "--help") {
             showUsage();
-            return EXIT_SUCCESS;
         } else {
+            UERROR("Unknown argument: %s", argument.c_str());
             showUsage();
-            UFATAL("Unknown argument: %s", argument.c_str());
         }
     }
 
-    if (dataFolder.empty()) {
+    Camera *camera = 0;
+    driver = arguments.at(1);
+    if (driver == "replay") {
+        if(!CameraReplay::available()) {
+            UERROR("Not built with CameraReplay support...");
+            exit(EXIT_FAILURE);
+        }
+        camera = new CameraReplay(inputDataFolder, imageRate);
+    } else if (driver == "k4a") {
+        if(!CameraK4A::available()) {
+            UERROR("Not built with CameraK4A support...");
+            exit(EXIT_FAILURE);
+        }
+        camera = new CameraK4A(imageRate);
+    } else {
+        UERROR("Unknown camera driver: %s", driver.c_str());
         showUsage();
-        UFATAL("Empty input path!");
     }
 
-    if (outputPath.empty()) {
-        showUsage();
-        UFATAL("Empty output path!");
+    if(!camera->init()) {
+   	    UFATAL("Camera init failed!");
     }
 
-    // Create CameraReplay, which is a RTAB-Map wrapper around the SpectacularAI mapping API.
-    // Essentially it just captures all keyframes (RGB-D image, point cloud, pose) and converts them
-    // to RTAB-Map format.
-    CameraReplay camera(dataFolder);
-    if(camera.init()) {
-        // Initialize Rtabmap instance (with given configuration file).
-        Rtabmap rtabmap;
-        rtabmap.init(rtabmapConfigFile);
+    CameraThread* cameraThread = new CameraThread(camera);
 
-        QApplication app(argc, argv);
-        MapBuilder mapBuilder;
-        mapBuilder.show();
-        QApplication::processEvents();
+    // GUI stuff, there the handler will receive RtabmapEvent and construct the map
+    // We give it the camera so the GUI can pause/resume the camera
+    QApplication app(argc, argv);
+    MapBuilder mapBuilder(cameraThread);
 
-        // Image loop
-        CameraInfo info;
-        SensorData data = camera.takeImage(&info);
-        while (data.isValid() && mapBuilder.isVisible()) {
-            QApplication::processEvents();
+    // Create RTAB-Map to process OdometryEvent
+    Rtabmap *rtabmap = new Rtabmap();
+    rtabmap->init(rtabmapConfigFile);
+    RtabmapThread rtabmapThread(rtabmap); // ownership is transfered
 
-            // Input data to RTAB-Map
-            if (rtabmap.process(data, info.odomPose)) {
-                mapBuilder.processStatistics(rtabmap.getStatistics());
+    // Setup handlers
+    rtabmapThread.registerToEventsManager();
+    mapBuilder.registerToEventsManager();
 
-                if (rtabmap.getLoopClosureId() > 0) {
-                    std::cout << "RTAB-Map loop closure detected: " << rtabmap.getLastLocationId()
-                              << "->" << rtabmap.getLoopClosureId() << std::endl;
-                }
-            }
+    // Let's start the threads
+    rtabmapThread.start();
+    cameraThread->start();
 
-            while (mapBuilder.isPaused() && mapBuilder.isVisible()) {
-                uSleep(100);
-                QApplication::processEvents();
-            }
+    mapBuilder.show();
+    app.exec(); // main loop
 
-            data = camera.takeImage(&info);
-        }
+    // remove handlers
+    mapBuilder.unregisterFromEventsManager();
+    rtabmapThread.unregisterFromEventsManager();
 
-        if (mapBuilder.isVisible()) {
-            std::cout << "Processed all frames" << std::endl;
-            app.exec();
-        }
+    // Kill all threads
+    cameraThread->join(true);
+    rtabmapThread.join(true);
+    delete cameraThread;
 
-        // Save RTAB-Map database
-        rtabmap.close(true, outputPath);
+    // Close RTAB-Map and optionally save RTAB-Map database
+    bool save = !outputPath.empty();
+    rtabmap->close(save, outputPath);
+    if (save) {
         std::cout << "Saved RTAB-Map database to " + outputPath << std::endl;
     }
 
