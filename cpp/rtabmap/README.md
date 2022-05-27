@@ -45,7 +45,7 @@ cmake -DBUILD_K4A=ON -DBUILD_REALSENSE=ON .. && make
 
 With an existing dataset, run:
 ```
-rtabmap_mapper driver
+rtabmap_mapper driver # (driver options: replay, k4a, realsense)
 ```
 
 Optionally, you can also give the program a RTAB-Map config file with argument `--config path/to/rtabmap_config.ini`.
