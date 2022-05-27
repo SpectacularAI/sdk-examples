@@ -77,10 +77,9 @@ void CameraReplay::startReplay() {
     // Replay API callback function to capture vio poses for each frame (for smooth visualisation).
     auto vioFn = [&](spectacularAI::VioOutputPtr vioOutput) {
         if (vioOutput) {
-            Transform pose;
             auto &position = vioOutput->pose.position;
             auto &rotation = vioOutput->pose.orientation;
-            pose = Transform(position.x, position.y, position.z,
+            Transform pose = Transform(position.x, position.y, position.z,
                 rotation.x, rotation.y, rotation.z, rotation.w);
 
             this->post(new PoseEvent(pose));
