@@ -32,6 +32,11 @@ private:
 
 #ifdef SPECTACULARAI_CAMERA_K4A
     std::shared_ptr<spectacularAI::k4aPlugin::Session> session;
+
+    // K4A device configuration
+    const std::string colorResolution = "720p";
+    const int depthMode = K4A_DEPTH_MODE_WFOV_2X2BINNED;
+    const int frameRate = 30;
 #endif
 };
 

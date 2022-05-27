@@ -21,7 +21,9 @@ CameraK4A::CameraK4A(
     CameraSpectacularAI(imageRate, localTransform) {}
 
 CameraK4A::~CameraK4A() {
+#ifdef SPECTACULARAI_CAMERA_K4A
     session = nullptr;
+#endif
 }
 
 bool CameraK4A::init(const std::string &calibrationFolder, const std::string &cameraName) {
@@ -40,6 +42,7 @@ bool CameraK4A::init(const std::string &calibrationFolder, const std::string &ca
     internalParameters.insert(std::make_pair("skipFirstNCandidates", "10")); // Skip couple first keyframes to ensure gravity estimate is accurate.
     config.useSlam = true; // ICP requires SLAM enabled
     config.internalParameters = internalParameters;
+    config.k4aConfig = spectacularAI::k4aPlugin::getK4AConfiguration(colorResolution, depthMode, frameRate);
 
     // Create vio pipeline using the config, and then start k4a device and VIO.
     spectacularAI::k4aPlugin::Pipeline vioPipeline(config);
@@ -90,6 +93,7 @@ SensorData CameraK4A::captureImage(CameraInfo *info) {
 }
 
 void CameraK4A::postPoseEvent() {
+#ifdef SPECTACULARAI_CAMERA_K4A
     // Get the most recent vio pose estimate from the queue.
     std::shared_ptr<const spectacularAI::VioOutput> vioOutput;
     if (session->hasOutput()) {
@@ -97,14 +101,14 @@ void CameraK4A::postPoseEvent() {
     }
 
     if (vioOutput) {
-        Transform pose;
         auto &position = vioOutput->pose.position;
         auto &rotation = vioOutput->pose.orientation;
-        pose = Transform(position.x, position.y, position.z,
+        Transform pose = Transform(position.x, position.y, position.z,
             rotation.x, rotation.y, rotation.z, rotation.w);
 
         this->post(new PoseEvent(pose));
     }
+#endif
 }
 
 } // namespace rtabmap
