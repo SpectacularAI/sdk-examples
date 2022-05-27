@@ -105,7 +105,7 @@ void CameraRealsense::postPoseEvent() {
 #ifdef SPECTACULARAI_CAMERA_REALSENSE
     // Get the most recent vio pose estimate from the queue.
     std::shared_ptr<const spectacularAI::VioOutput> vioOutput;
-    if (session->hasOutput()) {
+    while (session->hasOutput()) {
         vioOutput = session->getOutput();
     }
 
