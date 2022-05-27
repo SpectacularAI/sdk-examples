@@ -45,8 +45,8 @@ cmake -DBUILD_K4A=ON -DBUILD_REALSENSE=ON .. && make
 
 With an existing dataset, run:
 ```
-rtabmap_mapper -i path/to/dataset -o path/to/rtabmap_output.db
+rtabmap_mapper driver
 ```
 
-Optionally, you can also give the program a RTAB-Map config file with argument `-c path/to/rtabmap_config.ini`.
+Optionally, you can also give the program a RTAB-Map config file with argument `--config path/to/rtabmap_config.ini`.
 A config file, mainly optimized for Azure Kinect, is also provided here as `rtabmap_config.ini`.
