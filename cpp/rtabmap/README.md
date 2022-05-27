@@ -1,7 +1,7 @@
 # RTAB-Map RGB-D mapping example
 
 This example demonstrates how one could implement their own 3D mapping application on top of the SpectacularAI Mapping API.
-In this example, the resulting keyframe data (RGB-D images, point clouds) and the estimated poses are input to the popular [RTAB-Map SLAM library ](https://github.com/introlab/rtabmap).
+In this example, the resulting keyframe data (RGB-D images, point clouds) and the estimated poses are input to the popular [RTAB-Map SLAM library](https://github.com/introlab/rtabmap).
 RTAB-Map then builds both, a 3D model and a (re-)localization map of the environment in real-time.
 
 ## Dependencies
@@ -35,6 +35,10 @@ sudo make install
 ```
 mkdir target && cd target
 cmake .. && make
+```
+or with Azure Kinect and Realsense support
+```
+cmake -DBUILD_K4A=ON -DBUILD_REALSENSE=ON .. && make
 ```
 
 ## Running
