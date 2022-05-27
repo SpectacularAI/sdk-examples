@@ -3,9 +3,14 @@ project(rtabmap_mapper)
 set(CMAKE_CXX_STANDARD 20)
 
 option(BUILD_K4A "Azure Kinect support" OFF)
+option(BUILD_REALSENSE "Realsense support" OFF)
 
 if (NOT BUILD_K4A)
   set(AVAILABILITY_CAMERA_K4A "//")
+endif()
+
+if (NOT BUILD_REALSENSE)
+  set(AVAILABILITY_CAMERA_REALSENSE "//")
 endif()
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/include/spectacularAI/rtabmap/camera_availability.h.in
@@ -18,8 +23,12 @@ find_package(PCL 1.7 REQUIRED)
 find_package(Threads REQUIRED)
 
 if (BUILD_K4A)
-  find_package(k4a REQUIRED)
   find_package(spectacularAI_k4aPlugin REQUIRED)
+endif()
+
+if (BUILD_REALSENSE)
+  find_package(realsense2 REQUIRED)
+  find_package(spectacularAI_realsensePlugin REQUIRED)
 endif()
 
 SET(SOURCES
@@ -27,6 +36,7 @@ SET(SOURCES
   src/camera_spectacularai.cpp
   src/camera_replay.cpp
   src/camera_k4a.cpp
+  src/camera_realsense.cpp
   src/util.cpp)
 
 # Find Qt5 first
@@ -61,8 +71,14 @@ set(LIBRARIES
 if (BUILD_K4A)
     set(LIBRARIES
       ${LIBRARIES}
-      k4a::k4a
       spectacularAI::k4aPlugin)
+endif()
+
+if (BUILD_REALSENSE)
+    set(LIBRARIES
+      ${LIBRARIES}
+      realsense2::realsense2
+      spectacularAI::realsensePlugin)
 endif()
 
 if(QT4_FOUND)
