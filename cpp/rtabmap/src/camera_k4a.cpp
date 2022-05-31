@@ -16,9 +16,15 @@ bool CameraK4A::available() {
 }
 
 CameraK4A::CameraK4A(
+    const std::string &recordingFolder,
     float imageRate,
     const rtabmap::Transform &localTransform) :
-    CameraSpectacularAI(imageRate, localTransform) {}
+    CameraSpectacularAI(imageRate, localTransform)
+#ifdef SPECTACULARAI_CAMERA_K4A
+    ,
+    recordingFolder(recordingFolder)
+#endif
+    {}
 
 CameraK4A::~CameraK4A() {
 #ifdef SPECTACULARAI_CAMERA_K4A
@@ -40,9 +46,9 @@ bool CameraK4A::init(const std::string &calibrationFolder, const std::string &ca
     std::map<std::string, std::string> internalParameters;
     internalParameters.insert(std::make_pair("applyLoopClosures", "False")); // Let RTAB-Map handle loop closures
     internalParameters.insert(std::make_pair("skipFirstNCandidates", "10")); // Skip couple first keyframes to ensure gravity estimate is accurate.
-    config.useSlam = true; // ICP requires SLAM enabled
     config.internalParameters = internalParameters;
     config.k4aConfig = spectacularAI::k4aPlugin::getK4AConfiguration(colorResolution, depthMode, frameRate);
+    config.recordingFolder = recordingFolder;
 
     // Create vio pipeline using the config, and then start k4a device and VIO.
     spectacularAI::k4aPlugin::Pipeline vioPipeline(config);

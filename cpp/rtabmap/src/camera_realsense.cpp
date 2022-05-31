@@ -20,9 +20,15 @@ bool CameraRealsense::available() {
 }
 
 CameraRealsense::CameraRealsense(
+    const std::string &recordingFolder,
     float imageRate,
     const rtabmap::Transform &localTransform) :
-    CameraSpectacularAI(imageRate, localTransform) {}
+    CameraSpectacularAI(imageRate, localTransform)
+#ifdef SPECTACULARAI_CAMERA_REALSENSE
+    ,
+    recordingFolder(recordingFolder)
+#endif
+    {}
 
 CameraRealsense::~CameraRealsense() {
 #ifdef SPECTACULARAI_CAMERA_REALSENSE
@@ -39,6 +45,7 @@ bool CameraRealsense::init(const std::string &calibrationFolder, const std::stri
     };
 
     spectacularAI::rsPlugin::Configuration config;
+    config.recordingFolder = recordingFolder;
     spectacularAI::rsPlugin::Pipeline vioPipeline(config);
     {
         // Find RealSense device

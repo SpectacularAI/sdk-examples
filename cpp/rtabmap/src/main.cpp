@@ -18,6 +18,7 @@ void showUsage() {
         << "  Optional parameters:\n"
         << "  --output (-o) path/to/output/database.db  [If set, RTAB-Map database is saved to this file]\n"
         << "  --config (-c) path/to/rtabmap_config.ini  [If set, RTAB-Map settings are overriden by this file]\n"
+        << "  --record (-r) path/to/recording           [If set, captured data is saved to this location]\n"
         << "  --input (-i) path/to/dataset              [Input dataset path for replay camera driver]\n"
         << std::endl;
 
@@ -33,6 +34,7 @@ int main(int argc, char *argv[]) {
     std::string outputPath;
     std::string rtabmapConfigFile;
     std::string inputDataFolder;
+    std::string recordingFolder;
     float imageRate = 0; // as fast as possible
 
     if (arguments.size() < 2) {
@@ -48,6 +50,8 @@ int main(int argc, char *argv[]) {
             outputPath = arguments.at(++i);
         else if (argument == "-c" || argument == "--config")
             rtabmapConfigFile = arguments.at(++i);
+        else if (argument == "-r" || argument == "--record")
+            recordingFolder = arguments.at(++i);
         else if (argument == "-h" || argument == "--help") {
             showUsage();
         } else {
@@ -69,13 +73,13 @@ int main(int argc, char *argv[]) {
             UERROR("Not built with CameraK4A support...");
             exit(EXIT_FAILURE);
         }
-        camera = new CameraK4A(imageRate);
+        camera = new CameraK4A(recordingFolder, imageRate);
     } else if (driver == "realsense") {
         if (!CameraRealsense::available()) {
             UERROR("Not built with CameraRealsense support...");
             exit(EXIT_FAILURE);
         }
-        camera = new CameraRealsense(imageRate);
+        camera = new CameraRealsense(recordingFolder, imageRate);
     } else {
         UERROR("Unknown camera driver: %s", driver.c_str());
         showUsage();
@@ -123,6 +127,7 @@ int main(int argc, char *argv[]) {
     if (save) {
         std::cout << "Saved RTAB-Map database to " + outputPath << std::endl;
     }
+    std::cout << "Finished!" << std::endl;
 
     return EXIT_SUCCESS;
 }

@@ -16,6 +16,7 @@ public:
 
 public:
     CameraK4A(
+        const std::string &recordingFolder,
         float imageRate = 0,
         const Transform &localTransform = Transform::getIdentity());
     virtual ~CameraK4A();
@@ -31,7 +32,8 @@ private:
     void postPoseEvent();
 
 #ifdef SPECTACULARAI_CAMERA_K4A
-    std::shared_ptr<spectacularAI::k4aPlugin::Session> session;
+    std::unique_ptr<spectacularAI::k4aPlugin::Session> session;
+    const std::string recordingFolder;
 
     // K4A device configuration
     const std::string colorResolution = "720p";

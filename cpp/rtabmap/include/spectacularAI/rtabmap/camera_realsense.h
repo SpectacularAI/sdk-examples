@@ -16,6 +16,7 @@ public:
 
 public:
     CameraRealsense(
+        const std::string &recordingFolder,
         float imageRate = 0,
         const Transform &localTransform = Transform::getIdentity());
     virtual ~CameraRealsense();
@@ -31,7 +32,8 @@ private:
     void postPoseEvent();
 
 #ifdef SPECTACULARAI_CAMERA_REALSENSE
-    std::shared_ptr<spectacularAI::rsPlugin::Session> session;
+    std::unique_ptr<spectacularAI::rsPlugin::Session> session;
+    const std::string recordingFolder;
 #endif
 };
 
