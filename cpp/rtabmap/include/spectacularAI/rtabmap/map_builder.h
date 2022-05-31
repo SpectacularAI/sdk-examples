@@ -246,7 +246,7 @@ protected Q_SLOTS:
             cloudViewer_->setBackgroundColor(cloudViewer_->getDefaultBackgroundColor());
 
             // update camera position
-            cloudViewer_->updateCameraTargetPosition(odometryCorrection_ * pose);
+            cloudViewer_->updateCameraTargetPosition(odometryCorrection_ * pose * opticalRotation_);
         }
     }
 
@@ -296,6 +296,7 @@ protected:
 
     float cloudMaxDepth_ = 10;
     float cloudDecimation_ = 8;
+    Transform opticalRotation_ = Transform(0, 0, 0, 0, -M_PI/2, 0);
 };
 
 #endif /* MAPBUILDER_H_ */
