@@ -6,6 +6,7 @@
 
 #ifdef SPECTACULARAI_CAMERA_K4A
 #include <spectacularAI/k4a/plugin.hpp>
+#include <spectacularAI/mapping.hpp>
 #endif
 
 namespace rtabmap {
@@ -54,9 +55,9 @@ bool CameraK4A::init(const std::string &calibrationFolder, const std::string &ca
     config.recordingFolder = recordingFolder;
 
     // Create vio pipeline using the config, and then start k4a device and VIO.
-    spectacularAI::k4aPlugin::Pipeline vioPipeline(config);
-    vioPipeline.setMapperCallback(mapperFn);
-    session = vioPipeline.startSession();
+    vioPipeline = std::make_unique<spectacularAI::k4aPlugin::Pipeline >(config);
+    vioPipeline->setMapperCallback(mapperFn);
+    session = vioPipeline->startSession();
 
     return true;
 #else

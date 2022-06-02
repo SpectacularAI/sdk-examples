@@ -31,6 +31,7 @@ private:
     void postPoseEvent();
 
 #ifdef SPECTACULARAI_CAMERA_REALSENSE
+    std::unique_ptr<spectacularAI::rsPlugin::Pipeline> vioPipeline;
     std::unique_ptr<spectacularAI::rsPlugin::Session> session;
     const std::string recordingFolder;
 #endif

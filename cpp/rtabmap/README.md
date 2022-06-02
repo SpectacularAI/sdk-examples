@@ -6,7 +6,7 @@ RTAB-Map then builds both, a 3D model and a (re-)localization map of the environ
 
 ## Dependencies
 
-For access to the C++ SDK, contact us at https://www.spectacularai.com/#contact. The SDK is available for multiple OSes and CPU architectures.
+For non-commercial use the SDK for Intel RealSense device is available at https://github.com/SpectacularAI/sdk. For commercial use and support for other devices, contact us at https://www.spectacularai.com/#contact. The SDK is available for multiple OSes and CPU architectures.
 
 Also, RTAB-Map library and its dependencies must be installed (https://github.com/introlab/rtabmap/wiki/Installation).
 
@@ -32,13 +32,15 @@ sudo make install
 
 ## Build
 
+To build with RealSense support once you've downloaded and set up the [SDK](https://github.com/SpectacularAI/sdk).
 ```
 mkdir target && cd target
-cmake .. && make
+cmake .. -DBUILD_REALSENSE=ON && make
 ```
-or with Azure Kinect and Realsense support
+
+or with Azure Kinect and replay support:
 ```
-cmake -DBUILD_K4A=ON -DBUILD_REALSENSE=ON .. && make
+cmake -DBUILD_K4A=ON -DBUILD_REALSENSE=ON -DBUILD_REPLAY=ON .. && make
 ```
 
 ## Running

@@ -32,6 +32,8 @@ private:
 
 #ifdef SPECTACULARAI_CAMERA_K4A
     std::unique_ptr<spectacularAI::k4aPlugin::Session> session;
+    std::unique_ptr<spectacularAI::k4aPlugin::Pipeline> vioPipeline;
+
     const std::string recordingFolder;
 
     // K4A device configuration

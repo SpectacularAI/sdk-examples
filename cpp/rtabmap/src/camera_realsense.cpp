@@ -47,8 +47,13 @@ bool CameraRealsense::init(const std::string &calibrationFolder, const std::stri
 
     spectacularAI::rsPlugin::Configuration config;
     config.recordingFolder = recordingFolder;
-    config.useSlam = true;
-    spectacularAI::rsPlugin::Pipeline vioPipeline(config);
+
+    std::map<std::string, std::string> internalParameters;
+    internalParameters.insert(std::make_pair("applyLoopClosures", "False")); // Let RTAB-Map handle loop closures
+    internalParameters.insert(std::make_pair("skipFirstNCandidates", "10")); // Skip couple first keyframes to ensure gravity estimate is accurate.
+    config.internalParameters = internalParameters;
+
+    vioPipeline = std::make_unique<spectacularAI::rsPlugin::Pipeline>(config);
     {
         // Find RealSense device
         rs2::context rsContext;
@@ -58,14 +63,14 @@ bool CameraRealsense::init(const std::string &calibrationFolder, const std::stri
             return false;
         }
         rs2::device device = devices.front();
-        vioPipeline.configureDevice(device);
+        vioPipeline->configureDevice(device);
     }
 
     // Start pipeline
     rs2::config rsConfig;
-    vioPipeline.configureStreams(rsConfig);
-    vioPipeline.setMapperCallback(mapperFn);
-    session = vioPipeline.startSession(rsConfig);
+    vioPipeline->configureStreams(rsConfig);
+    vioPipeline->setMapperCallback(mapperFn);
+    session = vioPipeline->startSession(rsConfig);
 
     return true;
 #else
