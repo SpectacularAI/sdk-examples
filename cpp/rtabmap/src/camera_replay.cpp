@@ -1,15 +1,22 @@
 #include "../include/spectacularAI/rtabmap/camera_replay.h"
 #include "../include/spectacularAI/rtabmap/util.h"
 
-#include <spectacularAI/vio.hpp>
-#include <spectacularAI/replay.hpp>
 #include <rtabmap/utilite/UTimer.h>
 #include <rtabmap/utilite/UThreadC.h>
+
+#ifdef SPECTACULARAI_CORE
+#include <spectacularAI/vio.hpp>
+#include <spectacularAI/replay.hpp>
+#endif
 
 namespace rtabmap {
 
 bool CameraReplay::available() {
+#ifdef SPECTACULARAI_CORE
     return true;
+#else
+    return false;
+#endif
 }
 
 CameraReplay::CameraReplay(
@@ -69,6 +76,8 @@ SensorData CameraReplay::captureImage(CameraInfo *info) {
 }
 
 void CameraReplay::startReplay() {
+    #ifdef SPECTACULARAI_CORE
+
     // Mapping API callback function to receive new, updated and deleted keyframes.
     auto mapperFn = [&](std::shared_ptr<const spectacularAI::mapping::MapperOutput> output) {
        this->mappingApiCallback(output);
@@ -104,6 +113,8 @@ void CameraReplay::startReplay() {
             uSleep(1);
         }
     }
+
+    #endif
 }
 
 } // namespace rtabmap

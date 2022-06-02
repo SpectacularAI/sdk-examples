@@ -1,12 +1,13 @@
 #include "../include/spectacularAI/rtabmap/camera_realsense.h"
 #include "../include/spectacularAI/rtabmap/util.h"
 
-#include <spectacularAI/vio.hpp>
 #include <rtabmap/utilite/UTimer.h>
 #include <rtabmap/utilite/UThread.h>
 
 #ifdef SPECTACULARAI_CAMERA_REALSENSE
 #include <librealsense2/rs.hpp>
+#include <spectacularAI/realsense/plugin.hpp>
+#include <spectacularAI/mapping.hpp>
 #endif
 
 namespace rtabmap {
@@ -46,6 +47,7 @@ bool CameraRealsense::init(const std::string &calibrationFolder, const std::stri
 
     spectacularAI::rsPlugin::Configuration config;
     config.recordingFolder = recordingFolder;
+    config.useSlam = true;
     spectacularAI::rsPlugin::Pipeline vioPipeline(config);
     {
         // Find RealSense device

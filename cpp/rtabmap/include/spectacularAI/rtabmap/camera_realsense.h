@@ -1,7 +1,6 @@
 #ifndef SPECTACULAR_AI_CAMERA_REALSENSE_HPP
 #define SPECTACULAR_AI_CAMERA_REALSENSE_HPP
 
-#include "camera_availability.h"
 #include "camera_spectacularai.h"
 
 #ifdef SPECTACULARAI_CAMERA_REALSENSE

@@ -2,34 +2,24 @@ cmake_minimum_required(VERSION 3.5)
 project(rtabmap_mapper)
 set(CMAKE_CXX_STANDARD 20)
 
+option(BUILD_REPLAY "Replay support" OFF)
 option(BUILD_K4A "Azure Kinect support" OFF)
 option(BUILD_REALSENSE "Realsense support" OFF)
 
-if (NOT BUILD_K4A)
-  set(AVAILABILITY_CAMERA_K4A "//")
+if (NOT BUILD_REALSENSE AND NOT BUILD_K4A AND NOT BUILD_REALSENSE)
+  message(FATAL_ERROR " \
+You must build with support for at least one data source.\n \
+It can be one or more of: \n \
+  -DBUILD_REPLAY=ON       # With Core SDK\n \
+  -DBUILD_K4A=ON          # With Azure Kinect plugin\n \
+  -DBUILD_REALSENSE=ON    # With RealSense plugin\n \
+")
 endif()
 
-if (NOT BUILD_REALSENSE)
-  set(AVAILABILITY_CAMERA_REALSENSE "//")
-endif()
-
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/include/spectacularAI/rtabmap/camera_availability.h.in
-               ${CMAKE_CURRENT_SOURCE_DIR}/include/spectacularAI/rtabmap/camera_availability.h)
-
-find_package(spectacularAI REQUIRED)
 find_package(RTABMap REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 find_package(Threads REQUIRED)
-
-if (BUILD_K4A)
-  find_package(spectacularAI_k4aPlugin REQUIRED)
-endif()
-
-if (BUILD_REALSENSE)
-  find_package(realsense2 REQUIRED)
-  find_package(spectacularAI_realsensePlugin REQUIRED)
-endif()
 
 SET(SOURCES
   src/main.cpp
@@ -65,20 +55,27 @@ set(LIBRARIES
   ${QT_LIBRARIES}
   ${PCL_LIBRARIES}
   Threads::Threads
-  spectacularAI::spectacularAI
 )
 
+if (BUILD_REPLAY)
+  find_package(spectacularAI REQUIRED)
+  list(APPEND LIBRARIES spectacularAI::spectacularAI)
+  add_definitions(-DSPECTACULARAI_CORE)
+endif()
+
 if (BUILD_K4A)
-    set(LIBRARIES
-      ${LIBRARIES}
-      spectacularAI::k4aPlugin)
+  find_package(spectacularAI_k4aPlugin REQUIRED)
+  list(APPEND LIBRARIES spectacularAI::k4aPlugin)
+  add_definitions(-DSPECTACULARAI_CAMERA_K4A)
 endif()
 
 if (BUILD_REALSENSE)
-    set(LIBRARIES
-      ${LIBRARIES}
-      realsense2::realsense2
-      spectacularAI::realsensePlugin)
+  find_package(realsense2 REQUIRED)
+  find_package(spectacularAI_realsensePlugin REQUIRED)
+  list(APPEND LIBRARIES
+    realsense2::realsense2
+    spectacularAI::realsensePlugin)
+  add_definitions(-DSPECTACULARAI_CAMERA_REALSENSE)
 endif()
 
 if(QT4_FOUND)

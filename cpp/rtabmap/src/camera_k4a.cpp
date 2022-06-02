@@ -1,9 +1,12 @@
 #include "../include/spectacularAI/rtabmap/camera_k4a.h"
 #include "../include/spectacularAI/rtabmap/util.h"
 
-#include <spectacularAI/vio.hpp>
 #include <rtabmap/utilite/UTimer.h>
 #include <rtabmap/utilite/UThread.h>
+
+#ifdef SPECTACULARAI_CAMERA_K4A
+#include <spectacularAI/k4a/plugin.hpp>
+#endif
 
 namespace rtabmap {
 

@@ -2,11 +2,13 @@
 #define SPECTACULAR_AI_UTIL3D_HPP
 
 #include <string>
-#include <spectacularAI/vio.hpp>
 #include <rtabmap/core/LaserScan.h>
 #include <rtabmap/core/CameraModel.h>
 #include <rtabmap/utilite/UEvent.h>
 #include <rtabmap/core/Transform.h>
+
+#include <spectacularAI/types.hpp>
+#include <spectacularAI/mapping.hpp>
 
 namespace rtabmap {
 

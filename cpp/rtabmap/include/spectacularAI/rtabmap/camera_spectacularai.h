@@ -3,10 +3,11 @@
 
 #include <string>
 #include <thread>
-#include <spectacularAI/mapping.hpp>
 #include <rtabmap/core/Camera.h>
 #include <rtabmap/core/CameraModel.h>
 #include <rtabmap/utilite/UEventsSender.h>
+
+#include <spectacularAI/mapping.hpp>
 
 namespace rtabmap {
 
