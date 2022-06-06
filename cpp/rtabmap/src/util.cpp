@@ -13,7 +13,7 @@ LaserScan laserScanFromPointCloudXYZ(const std::shared_ptr<const spectacularAI::
 
     for (unsigned int i = 0; i < cloud->size(); ++i) {
         float *ptr = laserScan.ptr<float>(0, oi++);
-        const spectacularAI::Vector3d &p = cloud->getPosition(i);
+        const spectacularAI::Vector3f &p = cloud->getPosition(i);
         ptr[0] = p.x;
         ptr[1] = p.y;
         ptr[2] = p.z;
@@ -28,7 +28,7 @@ LaserScan laserScanFromPointCloudXYZRGB(const std::shared_ptr<const spectacularA
 
     for (unsigned int i = 0; i < cloud->size(); ++i) {
         float *ptr = laserScan.ptr<float>(0, oi++);
-        const spectacularAI::Vector3d &p = cloud->getPosition(i);
+        const spectacularAI::Vector3f &p = cloud->getPosition(i);
         const std::array<std::uint8_t, 3> &rgb = cloud->getRGB24(i);
         ptr[0] = p.x;
         ptr[1] = p.y;
@@ -46,8 +46,8 @@ LaserScan laserScanFromPointCloudXYZNormal(const std::shared_ptr<const spectacul
 
     for (unsigned int i = 0; i < cloud->size(); ++i) {
         float *ptr = laserScan.ptr<float>(0, oi++);
-        const spectacularAI::Vector3d &p = cloud->getPosition(i);
-        const spectacularAI::Vector3d &n = cloud->getNormal(i);
+        const spectacularAI::Vector3f &p = cloud->getPosition(i);
+        const spectacularAI::Vector3f &n = cloud->getNormal(i);
         ptr[0] = p.x;
         ptr[1] = p.y;
         ptr[2] = p.z;
@@ -65,8 +65,8 @@ LaserScan laserScanFromPointCloudXYZRGBNormal(const std::shared_ptr<const specta
 
     for (unsigned int i = 0; i < cloud->size(); ++i) {
         float *ptr = laserScan.ptr<float>(0, oi++);
-        const spectacularAI::Vector3d &p = cloud->getPosition(i);
-        const spectacularAI::Vector3d &n = cloud->getNormal(i);
+        const spectacularAI::Vector3f &p = cloud->getPosition(i);
+        const spectacularAI::Vector3f &n = cloud->getNormal(i);
         const std::array<std::uint8_t, 3> &rgb = cloud->getRGB24(i);
         ptr[0] = p.x;
         ptr[1] = p.y;
