@@ -6,7 +6,7 @@ option(BUILD_REPLAY "Replay support" OFF)
 option(BUILD_K4A "Azure Kinect support" OFF)
 option(BUILD_REALSENSE "Realsense support" OFF)
 
-if (NOT BUILD_REALSENSE AND NOT BUILD_K4A AND NOT BUILD_REALSENSE)
+if (NOT BUILD_REPLAY AND NOT BUILD_K4A AND NOT BUILD_REALSENSE)
   message(FATAL_ERROR " \
 You must build with support for at least one data source.\n \
 It can be one or more of: \n \
