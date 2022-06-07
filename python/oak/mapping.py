@@ -22,6 +22,18 @@ def saveAsPng(outputFolder, frameId, cameraName, frame):
     cv2.imwrite(fileName, cv2.cvtColor(frame.image.toArray(), cv2.COLOR_RGB2BGR))
 
 
+def savePointCloudAsJson(outputFolder, frameId, pointCloud):
+    if not pointCloud: return
+    fileName = outputFolder + "/pointCloud_" + f'{frameId:05}' + ".json"
+    pointCloudObj = {
+        "positions": pointCloud.getPositionData().tolist()
+    }
+    if pointCloud.hasNormals(): pointCloudObj["normals"] = pointCloud.getNormalData().tolist()
+    if pointCloud.hasColors(): pointCloudObj["colors"] = pointCloud.getRGB24Data().tolist()
+    with open(fileName, 'w') as outfile:
+        json.dump(pointCloudObj, outfile)
+
+
 def onMappingOutput(output):
     global running
     global savedKeyFrames
@@ -52,6 +64,7 @@ def onMappingOutput(output):
             saveAsPng(args.outputFolder, frameId, "secondary", frameSet.secondaryFrame)
             saveAsPng(args.outputFolder, frameId, "rgb", frameSet.rgbFrame)
             saveAsPng(args.outputFolder, frameId, "depth", frameSet.depthFrame)
+            savePointCloudAsJson(args.outputFolder, frameId, keyFrame.pointCloud)
             if args.preview and frameSet.primaryFrame and frameSet.primaryFrame.image:
                 cv2.imshow("Primary camera", cv2.cvtColor(frameSet.primaryFrame.image.toArray(), cv2.COLOR_RGB2BGR))
                 cv2.setWindowTitle("Primary camera", "Primary camera #{} (Q or ESC to exit)".format(frameId))
@@ -70,9 +83,13 @@ else:
     print("Starting OAK-D device")
     pipeline = depthai.Pipeline()
     config = spectacularAI.depthai.Configuration()
+    # To get point cloud normals and colors
+    config.internalParameters = {
+        "computeStereoPointCloud": "true",
+        "pointCloudNormalsEnabled": "true"
+    }
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
     with depthai.Device(pipeline) as device, \
         vio_pipeline.startSession(device) as vio_session:
         while running:
             out = vio_session.waitForOutput()
-
