@@ -75,17 +75,17 @@ std::string matrix4ToString(const spectacularAI::Matrix4d &matrix) {
     return ss.str();
 }
 
-void serializePosesToFile(std::ofstream& posesFile, std::shared_ptr<spectacularAI::mapping::KeyFrame> keyframe) {
+void serializePosesToFile(std::ofstream& posesFile, std::shared_ptr<const spectacularAI::mapping::KeyFrame> keyframe) {
     auto& frameSet = keyframe->frameSet;
     std::stringstream ss;
     ss << "{\"frameId\": " << (keyframe->id) << ","
         << "\"poses\": {";
-    if (frameSet.rgbFrame) {
-        ss << "\"rgb\": " << matrix4ToString(frameSet.rgbFrame->cameraPose.pose.asMatrix());
+    if (frameSet->rgbFrame) {
+        ss << "\"rgb\": " << matrix4ToString(frameSet->rgbFrame->cameraPose.pose.asMatrix());
     }
-    if (frameSet.depthFrame) {
-        if (frameSet.rgbFrame) ss << ",";
-        ss << "\"depth\": " << matrix4ToString(frameSet.depthFrame->cameraPose.pose.asMatrix());
+    if (frameSet->depthFrame) {
+        if (frameSet->rgbFrame) ss << ",";
+        ss << "\"depth\": " << matrix4ToString(frameSet->depthFrame->cameraPose.pose.asMatrix());
     }
     ss << "}}";
     std::cout << "saving " << ss.str() << std::endl;
@@ -147,9 +147,9 @@ int main(int argc, char** argv) {
     std::ofstream posesFile = std::ofstream(recordingFolder + "/poses.jsonl");
     std::set<int64_t> savedFrames;
     vioPipeline.setMapperCallback([&](std::shared_ptr<const spectacularAI::mapping::MapperOutput> output){
-        for (int64_t frameId : output->updatedKeyframes) {
-            auto search = output->map->keyframes.find(frameId);
-            if (search == output->map->keyframes.end()) {
+        for (int64_t frameId : output->updatedKeyFrames) {
+            auto search = output->map->keyFrames.find(frameId);
+            if (search == output->map->keyFrames.end()) {
                 continue; // deleted frame
             }
 
@@ -161,13 +161,13 @@ int main(int argc, char** argv) {
                 std::lock_guard<std::mutex> lock(queueMutex);
                 char *fileName = fileNameBuf.data();
                 // Copy images to ensure they are in memory later for saving
-                if (frameSet.rgbFrame && frameSet.rgbFrame->image) {
+                if (frameSet->rgbFrame && frameSet->rgbFrame->image) {
                     std::snprintf(fileName, fileNameBuf.size(), "%s/rgb_%04ld.png", recordingFolder.c_str(), frameId);
-                    imageQueue.push_back(ImageToSave {fileName, copyImage(frameSet.rgbFrame->image)});
+                    imageQueue.push_back(ImageToSave {fileName, copyImage(frameSet->rgbFrame->image)});
                 }
-                if (frameSet.depthFrame && frameSet.depthFrame->image) {
+                if (frameSet->depthFrame && frameSet->depthFrame->image) {
                     std::snprintf(fileName, fileNameBuf.size(), "%s/depth_%04ld.png", recordingFolder.c_str(), frameId);
-                    imageQueue.push_back(ImageToSave {fileName, copyImage(frameSet.depthFrame->image)});
+                    imageQueue.push_back(ImageToSave {fileName, copyImage(frameSet->depthFrame->image)});
                 }
                 // TODO: Save pointclouds as JSON?
             }
@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
 
         // Save only final fully optimized poses, might not contain poses for all frames in case they were deleted
         if (output->finalMap) {
-            for (auto it = output->map->keyframes.begin(); it != output->map->keyframes.end(); it++) {
+            for (auto it = output->map->keyFrames.begin(); it != output->map->keyFrames.end(); it++) {
                 serializePosesToFile(posesFile, it->second);
             }
         }
