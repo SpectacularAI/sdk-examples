@@ -75,7 +75,6 @@ class Open3DVisualization:
 
     def run(self):
         self.vis.create_window()
-        self.vis.set_full_screen(True)
         self.vis.add_geometry(self.cameraFrame.frame, reset_bounding_box=False)
         self.viewControl = self.vis.get_view_control()
         renderOption = self.vis.get_render_option()
