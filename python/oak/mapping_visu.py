@@ -63,14 +63,16 @@ class CoordinateFrame:
         self.camToWorld = camToWorld
 
 class Open3DVisualization:
-    def __init__(self, voxelSize, cameraFollow, colorOnly):
+    def __init__(self, voxelSize, cameraFollow, cameraSmooth, colorOnly):
         self.shouldClose = False
         self.pointClouds = {}
         self.cameraFrame = CoordinateFrame()
         self.vis = o3d.visualization.Visualizer()
         self.voxelSize = voxelSize
         self.cameraFollow = cameraFollow
+        self.cameraSmooth = cameraSmooth
         self.colorOnly = colorOnly
+        self.prevPos = None
         self.prevCamPos = None
 
     def run(self):
@@ -94,17 +96,18 @@ class Open3DVisualization:
 
         if self.cameraFollow:
             pos = camToWorld[0:3, 3]
-
-            # Smoothing
-            if self.prevCamPos is not None:
-                alpha = 0.3
-                pos = pos * alpha + self.prevCamPos * (1 - alpha)
-            self.prevCamPos = pos
-
             forward = camToWorld[0:3, 2]
             upVector = np.array([0, 0, 1])
-            self.viewControl.set_zoom(0.3)
             camPos = pos - forward * 0.1 + upVector * 0.05
+
+            if self.cameraSmooth and self.prevPos is not None:
+                alpha = np.array([0.01, 0.01, 0.001])
+                camPos = camPos * alpha + self.prevCamPos * (np.array([1, 1, 1])  - alpha)
+                pos = pos * alpha + self.prevPos * (np.array([1, 1, 1]) - alpha)
+
+            self.prevPos = pos
+            self.prevCamPos = camPos
+
             viewDir = pos - camPos
             viewDir /= np.linalg.norm(viewDir)
             leftDir = np.cross(upVector, viewDir)
@@ -112,6 +115,7 @@ class Open3DVisualization:
             self.viewControl.set_lookat(pos)
             self.viewControl.set_front(-viewDir)
             self.viewControl.set_up(upDir)
+            self.viewControl.set_zoom(0.3)
 
     def containsKeyFrame(self, keyFrameId):
         return keyFrameId in self.pointClouds
@@ -145,6 +149,7 @@ def parseArgs():
     p.add_argument("--outputFolder", help="Folder where to save the captured point clouds")
     p.add_argument("--voxel", help="Voxel size (m) for downsampling point clouds")
     p.add_argument("--follow", help="Make camera follow estimated pose; can make real-time mapping easier", action="store_true")
+    p.add_argument("--smooth", help="Apply some smoothing to 3rd person camera movement", action="store_true")
     p.add_argument("--color", help="Filter points without color", action="store_true")
     return p.parse_args()
 
@@ -153,7 +158,7 @@ if __name__ == '__main__':
     if args.outputFolder:
         os.makedirs(args.outputFolder)
     voxelSize = 0 if args.voxel is None else float(args.voxel)
-    visu3D = Open3DVisualization(voxelSize, args.follow, args.color)
+    visu3D = Open3DVisualization(voxelSize, args.follow, args.smooth, args.color)
 
     def onVioOutput(vioOutput):
         cameraPose = vioOutput.getCameraPose(0)
