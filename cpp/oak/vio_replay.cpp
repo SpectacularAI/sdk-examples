@@ -22,11 +22,7 @@ int main(int argc, char** argv) {
             // Note: typically not main thread
             auto &frame = frames[i];
             if (frame->image) {
-                cv::Mat img;
-                if (frame->image->getColorFormat() == spectacularAI::ColorFormat::RGB)
-                    cv::cvtColor(frame->image->asOpenCV(), img, cv::COLOR_RGB2BGR);
-                else
-                    img = frame->image->asOpenCV();
+                cv::Mat img = frame->image->asOpenCV();
                 cv::imshow("Video " + std::to_string(i), img);
                 cv::waitKey(1);
             }
