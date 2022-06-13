@@ -20,6 +20,8 @@ To install dependecies for all examples you can use: `pip install -r requirement
  * **Minimal example**. Prints 6-DoF poses as JSON text: [`python vio_jsonl.py`](vio_jsonl.py)
  * **Basic visualization**. Interactive 3D plot / draw in the air with the device: [`python vio_visu.py`](vio_visu.py)
  * **3D pen**. Draw in the air: cover the OAK-D color camera to activate the ink. [`python pen_3d.py`](pen_3d.py)
+ * **3D mapping**. Build and visualize 3D point cloud of the environment in real-time.
+    Also requires `open3d` to be installed, see [`mapping_visu.py`](mapping_visu.py) for details.
  * **Advanced Spatial AI example**. Spectacular AI VIO + Tiny YOLO object detection.
     See [`depthai_combination.py`](depthai_combination.py) for additional dependencies that also need to be installed.
  * **Mixed reality**. In less than 130 lines of Python, with the good old OpenGL functions like `glTranslatef` used for rendering.
