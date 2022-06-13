@@ -5,14 +5,16 @@ set(CMAKE_CXX_STANDARD 20)
 option(BUILD_REPLAY "Replay support" OFF)
 option(BUILD_K4A "Azure Kinect support" OFF)
 option(BUILD_REALSENSE "Realsense support" OFF)
+option(BUILD_OAK "OAK-D support" OFF)
 
-if (NOT BUILD_REPLAY AND NOT BUILD_K4A AND NOT BUILD_REALSENSE)
+if (NOT BUILD_REPLAY AND NOT BUILD_K4A AND NOT BUILD_REALSENSE AND NOT BUILD_OAK)
   message(FATAL_ERROR " \
 You must build with support for at least one data source.\n \
 It can be one or more of: \n \
   -DBUILD_REPLAY=ON       # With Core SDK\n \
   -DBUILD_K4A=ON          # With Azure Kinect plugin\n \
   -DBUILD_REALSENSE=ON    # With RealSense plugin\n \
+  -DBUILD_OAK=ON          # With OAK-D plugin\n \
 ")
 endif()
 
@@ -27,6 +29,7 @@ SET(SOURCES
   src/camera_replay.cpp
   src/camera_k4a.cpp
   src/camera_realsense.cpp
+  src/camera_oak.cpp
   src/util.cpp)
 
 # Find Qt5 first
@@ -76,6 +79,15 @@ if (BUILD_REALSENSE)
     realsense2::realsense2
     spectacularAI::realsensePlugin)
   add_definitions(-DSPECTACULARAI_CAMERA_REALSENSE)
+endif()
+
+if (BUILD_OAK)
+  find_package(depthai REQUIRED)
+  find_package(spectacularAI_depthaiPlugin REQUIRED)
+  list(APPEND LIBRARIES
+    depthai::core
+    spectacularAI::depthaiPlugin)
+  add_definitions(-DSPECTACULARAI_CAMERA_OAK)
 endif()
 
 if(QT4_FOUND)

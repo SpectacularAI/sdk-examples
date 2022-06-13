@@ -17,6 +17,7 @@ CameraSpectacularAI::CameraSpectacularAI(
 CameraSpectacularAI::~CameraSpectacularAI() {}
 
 void CameraSpectacularAI::mappingApiCallback(std::shared_ptr<const spectacularAI::mapping::MapperOutput> output) {
+    if (output->finalMap) shouldQuit = true;
     if (output->map->keyFrames.empty()) return;
 
     // Get the newest keyframe from mapping API.

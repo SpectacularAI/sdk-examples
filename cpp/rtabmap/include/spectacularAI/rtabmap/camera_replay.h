@@ -27,7 +27,6 @@ private:
     void startReplay();
 
     const std::string dataFolder;
-    bool shouldQuit = false;
 
     std::thread replayThread;
 };

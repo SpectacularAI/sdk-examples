@@ -11,10 +11,11 @@
 #include "../include/spectacularAI/rtabmap/camera_replay.h"
 #include "../include/spectacularAI/rtabmap/camera_k4a.h"
 #include "../include/spectacularAI/rtabmap/camera_realsense.h"
+#include "../include/spectacularAI/rtabmap/camera_oak.h"
 
 void showUsage() {
     std::cout << "Usage: rtabmap_mapper driver\n"
-        << "  driver options: replay, k4a, realsense"
+        << "  driver options: replay, k4a, realsense, oak"
         << "  Optional parameters:\n"
         << "  --output (-o) path/to/output/database.db  [If set, RTAB-Map database is saved to this file]\n"
         << "  --config (-c) path/to/rtabmap_config.ini  [If set, RTAB-Map settings are overriden by this file]\n"
@@ -80,6 +81,12 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
         camera = new CameraRealsense(recordingFolder, imageRate);
+    } else if (driver == "oak") {
+        if (!CameraOAK::available()) {
+            UERROR("Not built with CameraOAK support...");
+            exit(EXIT_FAILURE);
+        }
+        camera = new CameraOAK(recordingFolder, imageRate);
     } else {
         UERROR("Unknown camera driver: %s", driver.c_str());
         showUsage();

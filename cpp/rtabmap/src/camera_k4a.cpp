@@ -1,13 +1,7 @@
 #include "../include/spectacularAI/rtabmap/camera_k4a.h"
 #include "../include/spectacularAI/rtabmap/util.h"
 
-#include <rtabmap/utilite/UTimer.h>
 #include <rtabmap/utilite/UThread.h>
-
-#ifdef SPECTACULARAI_CAMERA_K4A
-#include <spectacularAI/k4a/plugin.hpp>
-#include <spectacularAI/mapping.hpp>
-#endif
 
 namespace rtabmap {
 
@@ -32,6 +26,7 @@ CameraK4A::CameraK4A(
 
 CameraK4A::~CameraK4A() {
 #ifdef SPECTACULARAI_CAMERA_K4A
+    shouldQuit = true;
     session = nullptr;
 #endif
 }
@@ -82,8 +77,7 @@ SensorData CameraK4A::captureImage(CameraInfo *info) {
 
 #ifdef SPECTACULARAI_CAMERA_K4A
     // Wait until new keyframe is available from mapping API.
-    UTimer timer;
-    while (!keyFrameData.isValid() && timer.elapsed() < NO_MORE_IMAGES_DELAY) {
+    while (!shouldQuit && !keyFrameData.isValid()) {
         postPoseEvent();
         uSleep(1);
     }

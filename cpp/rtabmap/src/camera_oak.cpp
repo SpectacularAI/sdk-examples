@@ -1,74 +1,66 @@
-#include "../include/spectacularAI/rtabmap/camera_realsense.h"
+#include "../include/spectacularAI/rtabmap/camera_oak.h"
 #include "../include/spectacularAI/rtabmap/util.h"
 
 #include <rtabmap/utilite/UThread.h>
 
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
-#include <librealsense2/rs.hpp>
-#endif
-
 namespace rtabmap {
 
-bool CameraRealsense::available() {
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
+bool CameraOAK::available() {
+#ifdef SPECTACULARAI_CAMERA_OAK
     return true;
 #else
     return false;
 #endif
 }
 
-CameraRealsense::CameraRealsense(
+CameraOAK::CameraOAK(
     const std::string &recordingFolder,
     float imageRate,
     const rtabmap::Transform &localTransform) :
     CameraSpectacularAI(imageRate, localTransform)
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
+#ifdef SPECTACULARAI_CAMERA_OAK
     ,
     recordingFolder(recordingFolder)
 #endif
     {}
 
-CameraRealsense::~CameraRealsense() {
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
+CameraOAK::~CameraOAK() {
+#ifdef SPECTACULARAI_CAMERA_OAK
     shouldQuit = true;
     session = nullptr;
 #endif
 }
 
-bool CameraRealsense::init(const std::string &calibrationFolder, const std::string &cameraName) {
+bool CameraOAK::init(const std::string &calibrationFolder, const std::string &cameraName) {
     (void)calibrationFolder, (void)cameraName;
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
+
+#ifdef SPECTACULARAI_CAMERA_OAK
     // Mapping API callback function to receive new, updated and deleted keyframes.
     auto mapperFn = [&](std::shared_ptr<const spectacularAI::mapping::MapperOutput> output) {
        this->mappingApiCallback(output);
     };
 
-    spectacularAI::rsPlugin::Configuration config;
-    config.recordingFolder = recordingFolder;
+    // Create Depth AI (OAK-D) pipeline
+    dai::Pipeline pipeline;
 
+    // Optional configuration
+    spectacularAI::daiPlugin::Configuration config;
     std::map<std::string, std::string> internalParameters;
     internalParameters.insert(std::make_pair("applyLoopClosures", "False")); // Let RTAB-Map handle loop closures
     internalParameters.insert(std::make_pair("skipFirstNCandidates", "10")); // Skip couple first keyframes to ensure gravity estimate is accurate.
+    internalParameters.insert(std::make_pair("computeStereoPointCloud", "true"));
+    internalParameters.insert(std::make_pair("pointCloudNormalsEnabled", "true"));
     config.internalParameters = internalParameters;
+    config.recordingFolder = recordingFolder;
+    // Example: enable these to support fisheye lenses (SDK 0.16+)
+    // config.meshRectification = true;
+    // config.depthScaleCorrection = true;
 
-    vioPipeline = std::make_unique<spectacularAI::rsPlugin::Pipeline>(config);
-    {
-        // Find RealSense device
-        rs2::context rsContext;
-        rs2::device_list devices = rsContext.query_devices();
-        if (devices.size() != 1) {
-            UERROR("Connect exactly one RealSense device!");
-            return false;
-        }
-        rs2::device device = devices.front();
-        vioPipeline->configureDevice(device);
-    }
+    vioPipeline = std::make_unique<spectacularAI::daiPlugin::Pipeline>(pipeline, config, mapperFn);
 
-    // Start pipeline
-    rs2::config rsConfig;
-    vioPipeline->configureStreams(rsConfig);
-    vioPipeline->setMapperCallback(mapperFn);
-    session = vioPipeline->startSession(rsConfig);
+    // Connect to device and start pipeline
+    device = std::make_shared<dai::Device>(pipeline);
+    session = vioPipeline->startSession(*device);
 
     return true;
 #else
@@ -76,22 +68,22 @@ bool CameraRealsense::init(const std::string &calibrationFolder, const std::stri
 #endif
 }
 
-bool CameraRealsense::isCalibrated() const {
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
+bool CameraOAK::isCalibrated() const {
+#ifdef SPECTACULARAI_CAMERA_OAK
     return model.isValidForProjection();
 #else
     return false;
 #endif
 }
 
-std::string CameraRealsense::getSerial() const {
+std::string CameraOAK::getSerial() const {
     return "";
 }
 
-SensorData CameraRealsense::captureImage(CameraInfo *info) {
+SensorData CameraOAK::captureImage(CameraInfo *info) {
     SensorData data;
 
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
+#ifdef SPECTACULARAI_CAMERA_OAK
     // Wait until new keyframe is available from mapping API.
     while (!shouldQuit && !keyFrameData.isValid()) {
         postPoseEvent();
@@ -112,8 +104,8 @@ SensorData CameraRealsense::captureImage(CameraInfo *info) {
     return data;
 }
 
-void CameraRealsense::postPoseEvent() {
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
+void CameraOAK::postPoseEvent() {
+#ifdef SPECTACULARAI_CAMERA_OAK
     // Get the most recent vio pose estimate from the queue.
     std::shared_ptr<const spectacularAI::VioOutput> vioOutput;
     while (session->hasOutput()) {

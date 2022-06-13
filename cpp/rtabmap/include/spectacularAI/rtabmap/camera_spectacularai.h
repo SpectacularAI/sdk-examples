@@ -26,12 +26,11 @@ public:
     virtual std::string getSerial() const = 0;
 
 protected:
-    virtual SensorData captureImage(CameraInfo *info = 0) = 0;
     virtual void mappingApiCallback(std::shared_ptr<const spectacularAI::mapping::MapperOutput> output);
 
     CameraModel model;
 
-    const float NO_MORE_IMAGES_DELAY = 10.0f;
+    bool shouldQuit = false;
     uint64_t latestProcessedKeyFrameId = 0;
     SensorData keyFrameData;
     Transform keyFramePose;

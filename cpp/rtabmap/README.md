@@ -32,10 +32,10 @@ sudo make install
 
 ## Build
 
-To build with RealSense support once you've downloaded and set up the [SDK](https://github.com/SpectacularAI/sdk).
+To build with RealSense and OAK-D support once you've downloaded and set up the [SDK](https://github.com/SpectacularAI/sdk).
 ```
 mkdir target && cd target
-cmake .. -DBUILD_REALSENSE=ON && make
+cmake -DBUILD_REALSENSE=ON -DBUILD_OAK=ON .. && make
 ```
 
 or with Azure Kinect and replay support:
@@ -47,7 +47,7 @@ cmake -DBUILD_K4A=ON -DBUILD_REALSENSE=ON -DBUILD_REPLAY=ON .. && make
 
 With an existing dataset, run:
 ```
-rtabmap_mapper driver # (driver options: replay, k4a, realsense)
+rtabmap_mapper driver # (driver options: replay, k4a, realsense, oak)
 ```
 
 Optionally, you can also give the program a RTAB-Map config file with argument `--config path/to/rtabmap_config.ini`.

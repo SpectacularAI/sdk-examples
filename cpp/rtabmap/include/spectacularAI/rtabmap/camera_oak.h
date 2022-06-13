@@ -1,24 +1,25 @@
-#ifndef SPECTACULAR_AI_CAMERA_REALSENSE_HPP
-#define SPECTACULAR_AI_CAMERA_REALSENSE_HPP
+#ifndef SPECTACULAR_AI_CAMERA_OAK_HPP
+#define SPECTACULAR_AI_CAMERA_OAK_HPP
 
 #include "camera_spectacularai.h"
 
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
-#include <spectacularAI/realsense/plugin.hpp>
+#ifdef SPECTACULARAI_CAMERA_OAK
+#include <spectacularAI/depthai/plugin.hpp>
+#include <depthai/depthai.hpp>
 #endif
 
 namespace rtabmap {
 
-class CameraRealsense : public CameraSpectacularAI {
+class CameraOAK : public CameraSpectacularAI {
 public:
     static bool available();
 
 public:
-    CameraRealsense(
+    CameraOAK(
         const std::string &recordingFolder,
         float imageRate = 0,
         const Transform &localTransform = Transform::getIdentity());
-    virtual ~CameraRealsense();
+    virtual ~CameraOAK();
 
     virtual bool init(const std::string &calibrationFolder = ".", const std::string &cameraName = "");
     virtual bool isCalibrated() const;
@@ -30,9 +31,10 @@ protected:
 private:
     void postPoseEvent();
 
-#ifdef SPECTACULARAI_CAMERA_REALSENSE
-    std::unique_ptr<spectacularAI::rsPlugin::Pipeline> vioPipeline;
-    std::unique_ptr<spectacularAI::rsPlugin::Session> session;
+#ifdef SPECTACULARAI_CAMERA_OAK
+    std::shared_ptr<dai::Device> device;
+    std::unique_ptr<spectacularAI::daiPlugin::Session> session;
+    std::unique_ptr<spectacularAI::daiPlugin::Pipeline> vioPipeline;
 
     const std::string recordingFolder;
 #endif
@@ -40,4 +42,4 @@ private:
 
 } // namespace rtabmap
 
-#endif // SPECTACULAR_AI_CAMERA_REALSENSE_HPP
+#endif // SPECTACULAR_AI_CAMERA_OAK_HPP

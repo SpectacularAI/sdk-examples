@@ -1,8 +1,7 @@
 #include "../include/spectacularAI/rtabmap/camera_replay.h"
 #include "../include/spectacularAI/rtabmap/util.h"
 
-#include <rtabmap/utilite/UTimer.h>
-#include <rtabmap/utilite/UThreadC.h>
+#include <rtabmap/utilite/UThread.h>
 
 #ifdef SPECTACULARAI_CORE
 #include <spectacularAI/vio.hpp>
@@ -27,10 +26,7 @@ CameraReplay::CameraReplay(
     dataFolder(dataFolder) {}
 
 CameraReplay::~CameraReplay() {
-    {
-        std::lock_guard<std::mutex> guard(dataMutex);
-        shouldQuit = true;
-    }
+    shouldQuit = true;
 
     if (replayThread.joinable()) {
         replayThread.join();
@@ -57,8 +53,7 @@ SensorData CameraReplay::captureImage(CameraInfo *info) {
     SensorData data;
 
     // Wait until new keyframe is available from mapping API.
-    UTimer timer;
-    while (!keyFrameData.isValid() && timer.elapsed() < NO_MORE_IMAGES_DELAY) {
+    while (!shouldQuit && !keyFrameData.isValid()) {
         uSleep(1);
     }
 
@@ -105,10 +100,10 @@ void CameraReplay::startReplay() {
     replayApi->setOutputCallback(vioFn);
 
     // Main loop, reads data from replay one line at a time.
-    while (!shouldQuit) {
+    bool moreData = true;
+    while (moreData && !shouldQuit) {
         if (!keyFrameData.isValid()) {
-            bool moreData = replayApi->replayOneLine();
-            if (!moreData) shouldQuit = true;
+            moreData = replayApi->replayOneLine();
         } else {
             uSleep(1);
         }
