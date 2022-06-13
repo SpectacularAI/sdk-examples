@@ -102,6 +102,7 @@ int main(int argc, char *argv[]) {
     // We give it the camera so the GUI can pause/resume the camera
     QApplication app(argc, argv);
     MapBuilder mapBuilder(cameraThread);
+    std::cout << "Press 'F' to toggle full screen, and press +/- to adjust point size!" << std::endl;
 
     // Create RTAB-Map to process OdometryEvent
     Rtabmap *rtabmap = new Rtabmap();

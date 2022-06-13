@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QVBoxLayout>
 #include <QtCore/QMetaType>
 #include <QAction>
+#include <QKeyEvent>
 
 #ifndef Q_MOC_RUN // Mac OS X issue
 #include "rtabmap/gui/CloudViewer.h"
@@ -56,12 +57,12 @@ class MapBuilder : public QWidget, public UEventsHandler
     Q_OBJECT
 public:
     // Camera ownership is not transferred!
-    MapBuilder(CameraThread *camera = 0) : camera_(camera),
-                                           odometryCorrection_(Transform::getIdentity()),
-                                           processingStatistics_(false),
-                                           lastOdometryProcessed_(true)
+    MapBuilder(CameraThread *camera = 0) :
+        camera_(camera),
+        odometryCorrection_(Transform::getIdentity()),
+        processingStatistics_(false),
+        lastOdometryProcessed_(true)
     {
-        this->setWindowFlags(Qt::Dialog);
         this->setWindowTitle(tr("3D Map"));
         this->setMinimumWidth(800);
         this->setMinimumHeight(600);
@@ -69,6 +70,8 @@ public:
         cloudViewer_ = new CloudViewer(this);
 
         QVBoxLayout *layout = new QVBoxLayout();
+        layout->setSpacing(0);
+        layout->setMargin(0);
         layout->addWidget(cloudViewer_);
         this->setLayout(layout);
 
@@ -80,6 +83,11 @@ public:
         this->addAction(pause);
         pause->setShortcut(Qt::Key_Space);
         connect(pause, SIGNAL(triggered()), this, SLOT(pauseDetection()));
+
+        QAction *fullScreen = new QAction(this);
+        this->addAction(fullScreen);
+        fullScreen->setShortcut(Qt::Key_F);
+        connect(fullScreen, SIGNAL(triggered()), this, SLOT(toggleFullScreen()));
     }
 
     virtual ~MapBuilder()
@@ -102,6 +110,18 @@ protected Q_SLOTS:
             {
                 camera_->start();
             }
+        }
+    }
+
+    virtual void toggleFullScreen()
+    {
+        UWARN("");
+
+        isFullScreen_ = !isFullScreen_;
+        if(isFullScreen_) {
+            showFullScreen();
+        } else {
+            showNormal();
         }
     }
 
@@ -294,6 +314,7 @@ protected:
     bool processingStatistics_;
     bool lastOdometryProcessed_;
 
+    bool isFullScreen_ = false;
     float cloudMaxDepth_ = 10;
     float cloudDecimation_ = 8;
     Transform opticalRotation_ = Transform(0, 0, 0, 0, -M_PI/2, 0);
