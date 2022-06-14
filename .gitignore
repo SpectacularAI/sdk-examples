@@ -4,4 +4,5 @@ venv
 target/
 data/
 python/oak/models/
+.vscode
 python/oak/output/
