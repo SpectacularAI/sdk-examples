@@ -20,16 +20,33 @@ def parse_args():
     p.add_argument("dataFolder", help="Folder containing the recorded session for replay", default="data")
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
+    p.add_argument('--latitude', help="Scene coordinate system origin coordinates (WGS84): latitude in degrees", default=None)
+    p.add_argument('--longitude', help="Scene coordinate system origin coordinates (WGS84): longitude in degrees", default=None)
+    p.add_argument('--altitude', help="Scene coordinate system origin coordinates (WGS84): altitude in meters", default=None)
     return p.parse_args()
 args = parse_args()
 
 display_initialized = False
 obj = None
+objPos = None # Position in WGS84 coordinates when GPS fusion is enabled
+if args.latitude and args.longitude and args.altitude:
+    objPos = spectacularAI.WgsCoordinates()
+    objPos.latitude = float(args.latitude)
+    objPos.longitude = float(args.longitude)
+    objPos.altitude = float(args.altitude)
 
 def onOutput(output, frameSet):
     global display_initialized
+    global objPos
     global obj
     global args
+
+    if output.globalPose and objPos == None:
+        # If we receive global pose i.e. recording contains GPS coordinates, then
+        # place object at the first received device coordinates if not provide
+        # through CLI arguments
+        objPos = output.globalPose.coordinates
+
     for frame in frameSet:
         if frame.image.getColorFormat() == spectacularAI.ColorFormat.RGB:
             img = frame.image.toArray()
@@ -49,7 +66,15 @@ def onOutput(output, frameSet):
                     return
 
             is_tracking = output.status == spectacularAI.TrackingStatus.TRACKING
-            draw(frame.cameraPose, width, height, img.data, obj, is_tracking)
+
+            if output.globalPose:
+                cameraIndex = 0
+                # Gives camera pose relative to objPos that sits at [0,0,0] in ENU
+                cameraPose = output.globalPose.getEnuCameraPose(cameraIndex, objPos)
+            else:
+                cameraPose = frame.cameraPose
+
+            draw(cameraPose, width, height, img.data, obj, is_tracking)
             pygame.display.flip()
             break # Skip other frames
 

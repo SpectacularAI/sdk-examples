@@ -113,7 +113,7 @@ def draw(cam, width, height, data, obj, is_tracking):
 
     # setup OpenGL camera based on VIO output
     glLoadIdentity()
-    near, far = 0.01, 30.0 # clip
+    near, far = 0.01, 100.0 # clip
     glMultMatrixd(cam.camera.getProjectionMatrixOpenGL(near, far).transpose())
     glMultMatrixd(cam.getWorldToCameraMatrix().transpose())
 
