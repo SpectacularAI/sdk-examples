@@ -20,9 +20,9 @@ def parse_args():
     p.add_argument("dataFolder", help="Folder containing the recorded session for replay", default="data")
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
-    p.add_argument('--latitude', help="Scene coordinate system origin coordinates (WGS84): latitude in degrees", default=None)
-    p.add_argument('--longitude', help="Scene coordinate system origin coordinates (WGS84): longitude in degrees", default=None)
-    p.add_argument('--altitude', help="Scene coordinate system origin coordinates (WGS84): altitude in meters", default=None)
+    p.add_argument('--latitude', help="Scene coordinate system geographic origin (WGS84): latitude in degrees", default=None)
+    p.add_argument('--longitude', help="Scene coordinate system geographic origin (WGS84): longitude in degrees", default=None)
+    p.add_argument('--altitude', help="Scene coordinate system geographic origin (WGS84): altitude in meters", default=None)
     return p.parse_args()
 args = parse_args()
 
