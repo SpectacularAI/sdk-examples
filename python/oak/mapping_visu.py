@@ -5,17 +5,26 @@ Press 'H' to view Open3D point cloud viewer options.
 Requirements: pip install open3d
 """
 
-import numpy as np
 import spectacularAI
-import threading
-import open3d as o3d
-import time
 import depthai
+import open3d as o3d
+import numpy as np
+import threading
+import time
 import os
+from enum import Enum
+
+# Status for point clouds (for updating Open3D renderer).
+class Status(Enum):
+    VALID = 0
+    NEW = 1
+    UPDATED = 2
+    REMOVED = 3
 
 # Wrapper around Open3D point cloud, which helps updating its world pose.
 class PointCloud:
     def __init__(self, keyFrame, voxelSize, colorOnly):
+        self.status = Status.NEW
         self.camToWorld = np.identity(4)
         self.cloud = self.__getKeyFramePointCloud(keyFrame, voxelSize, colorOnly)
 
@@ -65,8 +74,8 @@ class CoordinateFrame:
 class Open3DVisualization:
     def __init__(self, voxelSize, cameraManual, cameraSmooth, colorOnly):
         self.shouldClose = False
-        self.pointClouds = {}
         self.cameraFrame = CoordinateFrame()
+        self.pointClouds = {}
         self.vis = o3d.visualization.Visualizer()
         self.voxelSize = voxelSize
         self.cameraFollow = not cameraManual
@@ -86,6 +95,30 @@ class Open3DVisualization:
         print("Close the window to stop mapping")
         while not self.shouldClose:
             self.shouldClose = not self.vis.poll_events()
+
+            # Update camera coordinate axes
+            self.vis.update_geometry(self.cameraFrame.frame)
+
+            # Update point clouds (add, move, remove)
+            for pcId in list(self.pointClouds.keys()):
+                pc = self.pointClouds[pcId]
+
+                if pc.status == Status.VALID:
+                    continue
+
+                elif pc.status == Status.NEW:
+                    reset = len(self.pointClouds) == 1
+                    self.vis.add_geometry(pc.cloud, reset_bounding_box=reset)
+                    pc.status = Status.VALID
+
+                elif pc.status == Status.UPDATED:
+                    self.vis.update_geometry(pc.cloud)
+                    pc.status = Status.VALID
+
+                elif pc.status == Status.REMOVED:
+                    self.vis.remove_geometry(pc.cloud, reset_bounding_box=False)
+                    del self.pointClouds[pcId]
+
             self.vis.update_renderer()
             time.sleep(0.01)
 
@@ -93,7 +126,6 @@ class Open3DVisualization:
 
     def updateCameraFrame(self, camToWorld):
         self.cameraFrame.updateWorldPose(camToWorld)
-        self.vis.update_geometry(self.cameraFrame.frame)
 
         if self.cameraFollow:
             pos = camToWorld[0:3, 3]
@@ -123,25 +155,19 @@ class Open3DVisualization:
 
     def addKeyFrame(self, keyFrameId, keyFrame):
         camToWorld = keyFrame.frameSet.primaryFrame.cameraPose.getCameraToWorldMatrix()
-
         pc = PointCloud(keyFrame, self.voxelSize, self.colorOnly)
         pc.updateWorldPose(camToWorld)
         self.pointClouds[keyFrameId] = pc
 
-        reset = len(self.pointClouds) == 1
-        self.vis.add_geometry(pc.cloud, reset_bounding_box=reset)
-
     def updateKeyFrame(self, keyFrameId, keyFrame):
         camToWorld = keyFrame.frameSet.primaryFrame.cameraPose.getCameraToWorldMatrix()
-
         pc = self.pointClouds[keyFrameId]
         pc.updateWorldPose(camToWorld)
-
-        self.vis.update_geometry(pc.cloud)
+        pc.status = Status.UPDATED
 
     def removeKeyFrame(self, keyFrameId):
-        pc = self.pointClouds.pop(keyFrameId)
-        self.vis.remove_geometry(pc.cloud, reset_bounding_box=False)
+        pc = self.pointClouds[keyFrameId]
+        pc.status = Status.REMOVED
 
 def parseArgs():
     import argparse
@@ -172,13 +198,11 @@ if __name__ == '__main__':
 
             # Remove deleted key frames from visualisation
             if not keyFrame:
-                if visu3D.containsKeyFrame(frameId):
-                    visu3D.removeKeyFrame(frameId)
+                if visu3D.containsKeyFrame(frameId): visu3D.removeKeyFrame(frameId)
                 continue
 
             # Check that point cloud exists
-            if not keyFrame.pointCloud:
-                continue
+            if not keyFrame.pointCloud: continue
 
             # Render key frame point clouds
             if visu3D.containsKeyFrame(frameId):
