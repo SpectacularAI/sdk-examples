@@ -80,4 +80,4 @@ def onOutput(output, frameSet):
 
 replay = spectacularAI.Replay(args.dataFolder)
 replay.setExtendedOutputCallback(onOutput)
-replay.startReplay()
+replay.runReplay()

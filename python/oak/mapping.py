@@ -24,8 +24,8 @@ def onMappingOutput(output):
     if output.finalMap:
         # Final optimized poses, let's save them to jsonl file
         with open(args.outputFolder + "/poses.jsonl", "w") as outFile:
-            for frameId in output.map.keyframes:
-                keyFrame = output.map.keyframes.get(frameId)
+            for frameId in output.map.keyFrames:
+                keyFrame = output.map.keyFrames.get(frameId)
                 outputJson = {
                     "frameId": frameId,
                     "poses": {}
@@ -38,8 +38,8 @@ def onMappingOutput(output):
                 outFile.write(json.dumps(outputJson) + "\n")
     else:
         # New frames, let's save the images to disk
-        for frameId in output.updatedKeyframes:
-            keyFrame = output.map.keyframes.get(frameId)
+        for frameId in output.updatedKeyFrames:
+            keyFrame = output.map.keyFrames.get(frameId)
             if not keyFrame or savedKeyFrames.get(keyFrame):
                 continue
             savedKeyFrames[keyFrame] = True
@@ -48,7 +48,7 @@ def onMappingOutput(output):
             saveAsPng(args.outputFolder, frameId, "secondary", frameSet.secondaryFrame)
             saveAsPng(args.outputFolder, frameId, "rgb", frameSet.rgbFrame)
             saveAsPng(args.outputFolder, frameId, "depth", frameSet.depthFrame)
-            if args.preview and frameSet.primaryFrame:
+            if args.preview and frameSet.primaryFrame.image:
                 cv2.imshow("Primary camera", cv2.cvtColor(frameSet.primaryFrame.image.toArray(), cv2.COLOR_RGB2BGR))
                 cv2.setWindowTitle("Primary camera", "Primary camera #{}".format(frameId))
                 cv2.waitKey(1)
@@ -56,4 +56,4 @@ def onMappingOutput(output):
 
 os.makedirs(args.outputFolder)
 replay = spectacularAI.Replay(args.dataFolder, onMappingOutput)
-replay.startReplay()
+replay.runReplay()
