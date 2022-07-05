@@ -76,7 +76,6 @@ class Open3DVisualization:
         self.shouldClose = False
         self.cameraFrame = CoordinateFrame()
         self.pointClouds = {}
-        self.vis = o3d.visualization.Visualizer()
         self.voxelSize = voxelSize
         self.cameraFollow = not cameraManual
         self.cameraSmooth = cameraSmooth
@@ -84,7 +83,7 @@ class Open3DVisualization:
         self.prevPos = None
         self.prevCamPos = None
 
-    def run(self):
+        self.vis = o3d.visualization.Visualizer()
         self.vis.create_window()
         self.vis.add_geometry(self.cameraFrame.frame, reset_bounding_box=False)
         self.viewControl = self.vis.get_view_control()
@@ -92,7 +91,9 @@ class Open3DVisualization:
         renderOption.point_size = 2
         renderOption.light_on = False
 
+    def run(self):
         print("Close the window to stop mapping")
+
         while not self.shouldClose:
             self.shouldClose = not self.vis.poll_events()
 
@@ -215,13 +216,15 @@ if __name__ == '__main__':
         if output.finalMap:
             print("Final map ready!")
 
-    def captureLoop():
-        if args.dataFolder:
-            print("Starting replay")
-            replay = spectacularAI.Replay(args.dataFolder, onMappingOutput)
-            replay.setOutputCallback(onVioOutput)
-            replay.startReplay()
-        else:
+    if args.dataFolder:
+        print("Starting replay")
+        replay = spectacularAI.Replay(args.dataFolder, onMappingOutput)
+        replay.setOutputCallback(onVioOutput)
+        replay.startReplay()
+        visu3D.run()
+        replay.close()
+    else:
+        def captureLoop():
             print("Starting OAK-D device")
             pipeline = depthai.Pipeline()
             config = spectacularAI.depthai.Configuration()
@@ -235,10 +238,10 @@ if __name__ == '__main__':
                 while not visu3D.shouldClose:
                     onVioOutput(vio_session.waitForOutput())
 
-    thread = threading.Thread(target = captureLoop)
-    thread.start()
-    visu3D.run()
-    thread.join()
+        thread = threading.Thread(target=captureLoop)
+        thread.start()
+        visu3D.run()
+        thread.join()
 
     if args.outputFolder:
         print("Saving point clouds to {0}".format(args.outputFolder))

@@ -17,4 +17,4 @@ replay = spectacularAI.Replay(args.dataFolder)
 # If frameSet isn't used, it's better to use setOutputCallback(...) which is lighter
 # replay.setOutputCallback(onOutput)
 replay.setExtendedOutputCallback(onOutput)
-replay.startReplay()
+replay.runReplay()
