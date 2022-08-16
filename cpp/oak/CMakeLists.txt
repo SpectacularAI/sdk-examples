@@ -24,6 +24,12 @@ set(EXAMPLE_LIBS
   depthai::core
   spectacularAI::depthaiPlugin)
 
+if(MSVC)
+  # Depthai-core needs this and cmake can't find it otherwise
+  find_package(usb-1.0 REQUIRED)
+  list(APPEND EXAMPLE_LIBS usb-1.0)
+endif()
+
 if (USE_OPENCV)
   find_package(OpenCV REQUIRED)
   add_definitions(-DEXAMPLE_USE_OPENCV)
@@ -46,7 +52,6 @@ if(MSVC)
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_jsonl> $<TARGET_FILE_DIR:vio_jsonl>
     COMMAND_EXPAND_LISTS
   )
-
   add_custom_command(TARGET vio_replay POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_replay> $<TARGET_FILE_DIR:vio_replay>
     COMMAND_EXPAND_LISTS
