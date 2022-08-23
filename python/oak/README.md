@@ -43,33 +43,36 @@ https://spectacularai.github.io/docs/sdk/python/latest
 
 The SDK uses the following coordinate conventions, which are also elaborated in the diagram below:
  * **World coordinate system**: Right-handed Z-is-up
- * **Camera coordinate system**: OpenCV convention (see [here](https://learnopencv.com/geometry-of-image-formation/) for a nice illustration) which is also right-handed
+ * **Camera coordinate system**: OpenCV convention (see [here](https://learnopencv.com/geometry-of-image-formation/) for a nice illustration), which is also right-handed
 
 These conventions are _different_ from, e.g., Intel RealSense SDK (cf. [here](https://github.com/IntelRealSense/librealsense/blob/master/doc/t265.md#sensor-origin-and-coordinate-system)), ARCore, Unity and most OpenGL tutorials, most of which use an "Y-is-up" coordinate system, often different camera coordinates systems, and sometimes different pixel (or "NDC") coordinate conventions.
 
-![SDK coordinate systems](https://spectacularai.github.io/docs/png/SpectacularAI-coordinate-systems-oak-d.png)
+The [pose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.VioOutput.pose) object returned by the Spectacular AI SDK uses the IMU coordinate system as the local reference frame. To get a camera pose, use either [getCameraPose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.VioOutput.getCameraPose) OR [getRgbCameraPose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.depthai.Session.getRgbCameraPose).
+
+![SDK coordinate systems](https://spectacularai.github.io/docs/png/SpectacularAI-coordinate-systems-oak-d.png?v=2)
 
 ## Troubleshooting
 
+### Camera calibration
+
 Rarely, the OAK-D device factory calibration may be inaccurate, which may cause the the VIO performance to be always very bad in all environments. If this is the case, the device can be recalibrated following [Luxonis' instructions](https://docs.luxonis.com/en/latest/pages/calibration/) (see also [our instructions for fisheye cameras](https://spectacularai.github.io/docs/pdf/oak_fisheye_calibration_instructions.pdf) for extra tips).
-
-### Fisheye cameras
-
-It is possible to fit certain OAK-D models with fisheye lenses. These are supported from Spectacular AI SDK version 0.16 onwards, but require the following `spectacularAI.Configuration` changes to be applied in `spectacularAI.Pipeline`:
-```
-meshRectification = True
-depthScaleCorrection = True
-```
-These settings are work-arounds that also (currently) work with normal OAK-D lenses, but may stop working with future DepthAI versions, and increase initialization time, and therefore they are not recommended for general use. The settings are enabled in all examples in the [`oak-fisheye` branch](https://github.com/SpectacularAI/sdk-examples/tree/oak-fisheye) of this repository.
 
 Also calibrate the camera according to [these instructions](https://spectacularai.github.io/docs/pdf/oak_fisheye_calibration_instructions.pdf), if you have changed the lenses or the device did not include a factory calibration.
 
-### OAK-D Gen 2 models
+### Unsupported OAK-D models
 
-Currently require setting certain parameters manually:
-
- * OAK-D S2: IMU-to-camera matrix needs to be changed, see this branch: https://github.com/SpectacularAI/sdk-examples/tree/oak-d-s2
- * OAK-D-Pro-W (dev): IMU-to-camera matrix needs to be changed and fisheye configuration enabled manually, see this branch: https://github.com/SpectacularAI/sdk-examples/tree/oak-d-pro-w-dev
+Some (less common) OAK models require setting certain parameters manually. Namely, the IMU-to-camera matrix may need to be changed if the device model was not recognized by the SDK. For example, For example:
+```python
+vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
+# manual IMU-to-camera matrix configuration
+vio_pipeline.imuToCameraLeft = [
+    [0, 1, 0, 0],
+    [1, 0, 0, 0],
+    [0, 0,-1, 0],
+    [0, 0, 0, 1]
+]
+``` 
+SDK versions prior to v1.3.0 required this for all OAK-D series 2 models (OAK-D S2, OAK-D Pro etc.), but this is no longer the case in recent versions.
 
 ## License
 
