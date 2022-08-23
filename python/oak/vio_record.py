@@ -40,6 +40,8 @@ config = spectacularAI.depthai.Configuration()
 
 p = argparse.ArgumentParser(__doc__)
 p.add_argument("--output", help="Recording output folder", default="data")
+p.add_argument("--use_rgb", help="Use RGB data for tracking (OAK-D S2)", action="store_true")
+p.add_argument("--mono", help="Use a single camera (not stereo)", action="store_true")
 p.add_argument("--no_rgb", help="Disable recording RGB video feed", action="store_true")
 p.add_argument("--no_inputs", help="Disable recording JSONL and depth", action="store_true")
 p.add_argument("--gray", help="Record (rectified) gray video data", action="store_true")
@@ -64,13 +66,18 @@ if args.slam:
     config.mapSavePath = os.path.join(args.output, 'slam_map._')
 if args.no_feature_tracker:
     config.useFeatureTracker = False
+if args.use_rgb:
+    config.useColor = True
+if args.mono:
+    config.useStereo = False
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
 
 # Optionally also record other video streams not used by the Spectacular AI SDK, these
 # can be used for example to render AR content or for debugging.
-if not args.no_rgb:
+rgb_as_video = not args.no_rgb and not args.use_rgb
+if rgb_as_video:
     camRgb = pipeline.create(depthai.node.ColorCamera)
     videoEnc = pipeline.create(depthai.node.VideoEncoder)
     xout = pipeline.create(depthai.node.XLinkOut)
@@ -113,7 +120,7 @@ def main_loop(plotter=None):
                 open_gray_video('right')
             ]
 
-        if not args.no_rgb:
+        if rgb_as_video:
             videoFile = open(args.output + "/rgb_video.h265", "wb")
             rgbQueue = device.getOutputQueue(name="h265-rgb", maxSize=30, blocking=False)
 
@@ -123,7 +130,7 @@ def main_loop(plotter=None):
             print("Close the visualization window to stop recording")
 
         while not should_quit:
-            if not args.no_rgb:
+            if rgb_as_video:
                 while rgbQueue.has():
                     frame = rgbQueue.get()
                     vio_session.addTrigger(frame.getTimestamp().total_seconds(), frame_number)
@@ -140,7 +147,7 @@ def main_loop(plotter=None):
 
     videoFileNames = []
 
-    if not args.no_rgb:
+    if rgb_as_video:
         videoFileNames.append(videoFile.name)
         videoFile.close()
 

@@ -179,6 +179,7 @@ def parseArgs():
     p.add_argument("--manual", help="Control Open3D camera manually", action="store_true")
     p.add_argument("--smooth", help="Apply some smoothing to 3rd person camera movement", action="store_true")
     p.add_argument("--color", help="Filter points without color", action="store_true")
+    p.add_argument("--use_rgb", help="Use OAK-D RGB camera", action="store_true")
     return p.parse_args()
 
 if __name__ == '__main__':
@@ -228,9 +229,11 @@ if __name__ == '__main__':
             print("Starting OAK-D device")
             pipeline = depthai.Pipeline()
             config = spectacularAI.depthai.Configuration()
+            config.useColor = args.use_rgb
             config.internalParameters = {
                 "computeStereoPointCloud": "true",
-                "pointCloudNormalsEnabled": "true"}
+                "pointCloudNormalsEnabled": "true"
+            }
             vioPipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
 
             with depthai.Device(pipeline) as device, \
