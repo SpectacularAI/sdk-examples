@@ -13,10 +13,10 @@ This is called Visual-Inertial Odometry (VIO) and it can be used in, among other
 
 The SDK supports a limited set of devices out-of-the-box. This means that the SDK can be used without any manual calibration, integration or parameter tuning, with these devices. If you want to test the SDK as easily as possible, we recommend buying one of these devices.
 
- * [OAK-D by Luxonis](https://store.opencv.ai/products/oak-d). Other stereo OAK variants with IMU sensors (e.g., OAK-D-PoE, OAK-D-CM3/4) are also supported, but _not_ monocular systems nor OAK-D-Lite. See the folder [`python/oak`](python/oak) for more information about the OAK-D wrapper.
- * [Intel RealSense D455](https://www.intelrealsense.com/depth-camera-d455/) and D435i (notice the "i", which is for IMU and is a must-have. D435 is _not_ supported). Currently only supported on x86-64. Available as a [C++ version](cpp/realsense)
+ * [OAK-D by Luxonis](https://store.opencv.ai/products/oak-d). Other stereo OAK variants with IMU sensors (e.g., OAK-D-PoE, OAK-D-CM3/4) are also supported, but _not_ monocular systems nor OAK-D-Lite. There is an easy-to-use [Python wrapper](python/oak) and a [C++ version](cpp/oak).
+ * [Intel RealSense D455](https://www.intelrealsense.com/depth-camera-d455/) and D435i (notice the "i", which is for IMU and is a must-have. D435 is _not_ supported). Currently only supported on x86-64. Available as a [C++ version](cpp/realsense).
 
-The SDK for these platforms is available [here](https://github.com/SpectacularAI/sdk).
+All the non-commerical SDKs are available [here](https://github.com/SpectacularAI/sdk).
 
 ### Other devices
 
