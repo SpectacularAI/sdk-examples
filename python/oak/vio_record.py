@@ -49,6 +49,7 @@ p.add_argument("--no_convert", help="Skip converting h265 video file", action="s
 p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
 p.add_argument('--slam', help='Record SLAM map', action="store_true")
 p.add_argument('--no_feature_tracker', help='Disable on-device feature tracking', action="store_true")
+p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
 p.add_argument("--resolution", help="Gray input resolution (gray)",
     default=config.inputResolution,
     choices=['400p', '800p'])
@@ -107,6 +108,9 @@ def main_loop(plotter=None):
 
     with depthai.Device(pipeline) as device, \
         vio_pipeline.startSession(device) as vio_session:
+
+        if args.ir_dot_brightness > 0:
+            device.setIrLaserDotProjectorBrightness(args.ir_dot_brightness)
 
         def open_gray_video(name):
             grayVideoFile = open(args.output + '/rectified_' + name + '.h264', 'wb')

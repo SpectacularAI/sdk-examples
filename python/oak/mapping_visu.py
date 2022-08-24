@@ -180,6 +180,7 @@ def parseArgs():
     p.add_argument("--smooth", help="Apply some smoothing to 3rd person camera movement", action="store_true")
     p.add_argument("--color", help="Filter points without color", action="store_true")
     p.add_argument("--use_rgb", help="Use OAK-D RGB camera", action="store_true")
+    p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
     return p.parse_args()
 
 if __name__ == '__main__':
@@ -238,6 +239,8 @@ if __name__ == '__main__':
 
             with depthai.Device(pipeline) as device, \
                 vioPipeline.startSession(device) as vio_session:
+                if args.ir_dot_brightness > 0:
+                    device.setIrLaserDotProjectorBrightness(args.ir_dot_brightness)
                 while not visu3D.shouldClose:
                     onVioOutput(vio_session.waitForOutput())
 
