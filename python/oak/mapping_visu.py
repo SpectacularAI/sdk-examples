@@ -174,6 +174,7 @@ def parseArgs():
     import argparse
     p = argparse.ArgumentParser(__doc__)
     p.add_argument("--dataFolder", help="Folder containing the recorded session for mapping")
+    p.add_argument("--recordingFolder", help="Folder for recording the input data for offline replay")
     p.add_argument("--outputFolder", help="Folder where to save the captured point clouds")
     p.add_argument("--voxel", help="Voxel size (m) for downsampling point clouds")
     p.add_argument("--manual", help="Control Open3D camera manually", action="store_true")
@@ -230,6 +231,8 @@ if __name__ == '__main__':
             print("Starting OAK-D device")
             pipeline = depthai.Pipeline()
             config = spectacularAI.depthai.Configuration()
+            if args.recordingFolder:
+                config.recordingFolder = args.recordingFolder
             config.useColor = args.use_rgb
             config.internalParameters = {
                 "computeStereoPointCloud": "true",
