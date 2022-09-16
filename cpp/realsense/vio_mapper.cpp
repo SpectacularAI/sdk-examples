@@ -139,7 +139,6 @@ int main(int argc, char** argv) {
         imageWriterThreads.emplace_back(buildImageWriter(imageQueue, queueMutex, shouldQuit));
     }
 
-    int frameCounter = 0;
     std::vector<char> fileNameBuf;
     fileNameBuf.resize(1000, 0);
     std::shared_ptr<spectacularAI::rsPlugin::Session> vioSession;
