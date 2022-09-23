@@ -176,7 +176,7 @@ def main():
     os.makedirs(args.output + "/tmp", exist_ok=True)
 
     print("Processing")
-    replay = spectacularAI.Replay(args.input, onMappingOutput, config = {
+    replay = spectacularAI.Replay(args.input, mapperCallback = onMappingOutput, configuration = {
         "globalBABeforeSave": True,              # Refine final map poses using bundle adjustment
         "maxMapSize": 0,                         # Unlimited map size
         "keyframeDecisionDistanceThreshold": 0.1 # Minimum distance between keyframes
