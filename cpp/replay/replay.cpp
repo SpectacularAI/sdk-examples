@@ -1,4 +1,5 @@
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -71,7 +72,13 @@ int main(int argc, char *argv[]) {
         if (print) std::cout << vioOutput->asJson().c_str() << std::endl;
     });
 
+    const auto t0 = std::chrono::steady_clock::now();
+
     replay->runReplay();
+
+    const auto time = std::chrono::duration<double, std::milli>(
+        std::chrono::steady_clock::now() - t0).count();
+    printf("Replay took %.2fs\n", 1e-3 * time);
 
     return 0;
 }
