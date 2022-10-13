@@ -1,8 +1,8 @@
-# SpectacularAI offline example
+# Spectacular AI main API example
 
-This example shows how to run basic stereo VIO using offline data.
+This example shows how to run basic stereo VIO using offline data to mimic real-time use case. Functions in the main header `spectacularAI/vio.hpp` are used primarily.
 
-* Supported platform: Linux
+* Tested platforms: Linux
 * Dependencies: CMake, FFmpeg (for video input)
 
 ## Setup
@@ -70,4 +70,5 @@ For the included libraries, see
 * [lodepng](https://lodev.org/lodepng/): `lodepng/LICENSE`
 
 For access to the C++ SDK, contact us at <https://www.spectacularai.com/#contact>.
+
 Available for multiple OSes and CPU architectures.
