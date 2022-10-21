@@ -20,13 +20,14 @@ def parse_args():
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
     return p.parse_args()
 
-def make_pipelines(args):
+def make_pipelines(mapLoadPath=None, vioInternalParameters={}, onMappingOutput=None):
     pipeline = depthai.Pipeline()
     config = spectacularAI.depthai.Configuration()
-    if args.mapLoadPath is not None:
-        config.mapLoadPath = args.mapLoadPath
+    if mapLoadPath is not None:
+        config.mapLoadPath = mapLoadPath
         config.useSlam = True
-    vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
+        config.internalParameters = vioInternalParameters
+    vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
 
     # NOTE: this simple method of reading RGB data from the device does not
     # scale to well to higher resolutions. Use YUV data with larger resolutions
@@ -172,7 +173,7 @@ def main_loop(args, device, vio_session):
 
 if __name__ == '__main__':
     args = parse_args()
-    pipeline, vio_pipeline = make_pipelines(args)
+    pipeline, vio_pipeline = make_pipelines(args.mapLoadPath)
     with depthai.Device(pipeline) as device, \
         vio_pipeline.startSession(device) as vio_session:
         main_loop(args, device, vio_session)
