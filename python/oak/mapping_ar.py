@@ -18,27 +18,10 @@ import spectacularAI
 import depthai
 
 from mixed_reality import init_display, make_pipelines
+from mapping_ar_renderers.mesh import MeshRenderer
 
 POINT_CLOUD_STRIDE = 2
 KEYFRAME_GROUP_SIZE = 2
-
-def drawMesh(currentCameraPose, mapperOutput):
-    if mapperOutput.mesh is None:
-        print("No mesh to draw.")
-        return
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-    # glEnable(GL_BLEND);
-    # glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    # TODO Draw
-
-    # glDisable(GL_BLEND);
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-    print("ok")
 
 def drawPointCloud(currentCameraPose, mapperOutput):
     glLoadIdentity()
@@ -85,16 +68,16 @@ def main(args):
     else:
         configInternal["alreadyRectified"] = "true"
 
-    shouldQuit = False
-    lastMappingOutput = None
-    displayInitialized = False
-    pointCloudMode = args.pointCloud
+    class State:
+        shouldQuit = False
+        lastMappingOutput = None
+        displayInitialized = False
+        pointCloudMode = args.pointCloud
+        meshRenderer = None # Must be initialized after pygame.
+    state = State()
 
     def onVioOutput(vioOutput, frameSet):
-        nonlocal lastMappingOutput
-        nonlocal displayInitialized
-        nonlocal pointCloudMode
-        nonlocal shouldQuit
+        nonlocal state
 
         cameraPose = vioOutput.getCameraPose(0)
         camToWorld = cameraPose.getCameraToWorldMatrix()
@@ -108,35 +91,38 @@ def main(args):
             width = img.shape[1]
             height = img.shape[0]
 
-            if not displayInitialized:
-                displayInitialized = True
+            if not state.displayInitialized:
+                state.displayInitialized = True
                 init_display(width, height)
+                state.meshRenderer = MeshRenderer()
 
-            shouldQuit = False
             for event in pygame.event.get():
-                if event.type == pygame.QUIT: shouldQuit = True
+                if event.type == pygame.QUIT: state.shouldQuit = True
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q: shouldQuit = True
-                    if event.key == pygame.K_x: pointCloudMode = not pointCloudMode
-                if shouldQuit: return
+                    if event.key == pygame.K_q: state.shouldQuit = True
+                    if event.key == pygame.K_x: state.pointCloudMode = not state.pointCloudMode
+                if state.shouldQuit: return
 
             glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
-            if lastMappingOutput:
-                if pointCloudMode:
-                    drawPointCloud(cameraPose, lastMappingOutput)
+            if state.lastMappingOutput:
+                if state.pointCloudMode:
+                    drawPointCloud(cameraPose, state.lastMappingOutput)
                 else:
-                    drawMesh(cameraPose, lastMappingOutput)
+                    # TODO Set mesh onMappingOutput, but take care of synchronization.
+                    state.meshRenderer.setMesh(state.lastMappingOutput.mesh)
+                    state.meshRenderer.setPose(cameraPose)
+                    state.meshRenderer.render()
             pygame.display.flip()
 
     def onMappingOutput(mapperOutput):
-        nonlocal lastMappingOutput
-        lastMappingOutput = mapperOutput
+        nonlocal state
+        state.lastMappingOutput = mapperOutput
 
     if args.dataFolder:
         replay = spectacularAI.Replay(args.dataFolder, onMappingOutput, configuration=configInternal)
         replay.setExtendedOutputCallback(onVioOutput)
         replay.startReplay()
-        while not shouldQuit:
+        while not state.shouldQuit:
             time.sleep(0.05)
         replay.close()
         pygame.quit()
