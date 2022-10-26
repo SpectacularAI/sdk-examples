@@ -34,6 +34,10 @@ class MeshRenderer:
         if self.modelViewProjection is None: return
         if self.vertexData.shape[0] == 0: return
 
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
+        glClear(GL_DEPTH_BUFFER_BIT);
+
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
@@ -62,6 +66,7 @@ class MeshRenderer:
         glUseProgram(0)
 
         glDisable(GL_BLEND)
+        glDisable(GL_DEPTH_TEST);
 
     def setMesh(self, mesh):
         if mesh is None: return
