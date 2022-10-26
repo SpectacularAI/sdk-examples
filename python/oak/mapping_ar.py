@@ -19,38 +19,7 @@ import depthai
 
 from mixed_reality import init_display, make_pipelines
 from mapping_ar_renderers.mesh import MeshRenderer
-
-POINT_CLOUD_STRIDE = 2
-KEYFRAME_GROUP_SIZE = 2
-
-def drawPointCloud(currentCameraPose, mapperOutput):
-    glLoadIdentity()
-    near, far = 0.01, 100.0 # clip
-    glMultMatrixd(currentCameraPose.camera.getProjectionMatrixOpenGL(near, far).transpose())
-    glMultMatrixd(currentCameraPose.getWorldToCameraMatrix().transpose())
-    glPointSize(3)
-    glColor3f(1, 0, 0)
-
-    keyFrameIds = []
-    for keyFrameId in mapperOutput.map.keyFrames:
-        keyFrameIds.append(keyFrameId)
-    keyFrameIds.sort(reverse=True)
-
-    for i, keyFrameId in enumerate(keyFrameIds):
-        if i >= KEYFRAME_GROUP_SIZE: return
-        keyFrame = mapperOutput.map.keyFrames[keyFrameId]
-        cameraPose = keyFrame.frameSet.primaryFrame.cameraPose
-
-        glPushMatrix();
-        glMultMatrixd(cameraPose.getCameraToWorldMatrix().transpose())
-        if keyFrame.pointCloud:
-            # TODO Use array-based geometry, per-vertex operations are very slow in PyOpenGL.
-            glBegin(GL_POINTS)
-            for i, p in enumerate(keyFrame.pointCloud.getPositionData()):
-                if i % POINT_CLOUD_STRIDE != 0: continue
-                glVertex3fv(p)
-            glEnd()
-        glPopMatrix();
+from mapping_ar_renderers.point_cloud import PointCloudRenderer
 
 def main(args):
     configInternal = {
@@ -73,7 +42,9 @@ def main(args):
         lastMappingOutput = None
         displayInitialized = False
         pointCloudMode = args.pointCloud
-        meshRenderer = None # Must be initialized after pygame.
+        # Must be initialized after pygame.
+        meshRenderer = None
+        pointCloudRenderer = None
     state = State()
 
     def onVioOutput(vioOutput, frameSet):
@@ -95,6 +66,7 @@ def main(args):
                 state.displayInitialized = True
                 init_display(width, height)
                 state.meshRenderer = MeshRenderer()
+                state.pointCloudRenderer = PointCloudRenderer()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: state.shouldQuit = True
@@ -106,12 +78,15 @@ def main(args):
             glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
             if state.lastMappingOutput:
                 if state.pointCloudMode:
-                    drawPointCloud(cameraPose, state.lastMappingOutput)
+                    if state.pointCloudRenderer:
+                        state.pointCloudRenderer.setPointCloud(state.lastMappingOutput)
+                        state.pointCloudRenderer.setPose(cameraPose)
+                        state.pointCloudRenderer.render()
                 else:
-                    # TODO Set mesh onMappingOutput, but take care of synchronization.
-                    state.meshRenderer.setMesh(state.lastMappingOutput.mesh)
-                    state.meshRenderer.setPose(cameraPose)
-                    state.meshRenderer.render()
+                    if state.meshRenderer:
+                        state.meshRenderer.setMesh(state.lastMappingOutput.mesh)
+                        state.meshRenderer.setPose(cameraPose)
+                        state.meshRenderer.render()
             pygame.display.flip()
 
     def onMappingOutput(mapperOutput):
