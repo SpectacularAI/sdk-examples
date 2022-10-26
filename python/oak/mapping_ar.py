@@ -39,7 +39,8 @@ def main(args):
 
     class State:
         shouldQuit = False
-        lastMappingOutput = None
+        currentMapperOutput = None
+        lastMapperOutput = None
         displayInitialized = False
         pointCloudMode = args.pointCloud
         targetResolution = [int(s) for s in args.resolution.split("x")]
@@ -84,22 +85,25 @@ def main(args):
             glPixelZoom(state.scale, state.scale);
             glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
 
-            if state.lastMappingOutput:
+            if state.currentMapperOutput:
                 if state.pointCloudMode:
                     if state.pointCloudRenderer:
-                        state.pointCloudRenderer.setPointCloud(state.lastMappingOutput)
+                        if state.currentMapperOutput is not state.lastMapperOutput:
+                            state.pointCloudRenderer.setPointCloud(state.currentMapperOutput)
                         state.pointCloudRenderer.setPose(cameraPose)
                         state.pointCloudRenderer.render()
                 else:
                     if state.meshRenderer:
-                        state.meshRenderer.setMesh(state.lastMappingOutput.mesh)
+                        if state.currentMapperOutput is not state.lastMapperOutput:
+                            state.meshRenderer.setMesh(state.currentMapperOutput.mesh)
                         state.meshRenderer.setPose(cameraPose)
                         state.meshRenderer.render()
+                state.lastMapperOutput = state.currentMapperOutput
             pygame.display.flip()
 
     def onMappingOutput(mapperOutput):
         nonlocal state
-        state.lastMappingOutput = mapperOutput
+        state.currentMapperOutput = mapperOutput
 
     if args.dataFolder:
         replay = spectacularAI.Replay(args.dataFolder, onMappingOutput, configuration=configInternal)
