@@ -82,7 +82,7 @@ class MeshRenderer:
 
         self.texCoordData = np.array([])
         n = len(vertexInds) // 3
-        c = 1.0 # Could be used for uncertainty.
+        c = 1.0 # Could be used for controlling alpha.
         self.texCoordData = np.zeros(3 * len(vertexInds))
         for i in range(n):
             self.texCoordData[9 * i + 3] = 1

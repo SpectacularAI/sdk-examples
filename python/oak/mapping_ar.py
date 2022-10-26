@@ -1,5 +1,14 @@
 """
 Draw Mapping API outputs on video to create an AR visualization.
+
+Requirements:
+    pip install pygame PyOpenGL
+And optionally to improve performance:
+    pip install PyOpenGL_accelerate
+
+* For OAK-D live use just plug in OAK-D and run `python3 mapping_ar.py`.
+* Press "x" to switch between the visualizations.
+* Press "q" to quit.
 """
 
 import os
@@ -8,8 +17,6 @@ import time
 import numpy as np
 
 from OpenGL.GL import * # all prefixed with gl so OK to import *
-# OpenGL.ERROR_CHECKING = False
-# OpenGL.ERROR_LOGGING = False
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
@@ -100,10 +107,6 @@ def oakdLoop(args, state, device, vioSession):
 
 def main(args):
     configInternal = {
-        # "delayFrames": 0,
-        # "noWaitingForResults": "true",
-        # "maxSlamResultQueueSize": "2",
-
         "computeStereoPointCloud": "true",
         "pointCloudNormalsEnabled": "true",
         "computeDenseStereoDepth": "true",
@@ -124,8 +127,7 @@ def main(args):
             if not frame.image: continue
             if not frame.index == CAMERA_IND: continue
             img = frame.image.toArray()
-            # Flip the image upside down for OpenGL
-            img = np.ascontiguousarray(np.flipud(img))
+            img = np.ascontiguousarray(np.flipud(img)) # Flip the image upside down for OpenGL.
             width = img.shape[1]
             height = img.shape[0]
             cameraPose = vioOutput.getCameraPose(CAMERA_IND)
@@ -157,7 +159,7 @@ def parseArgs():
     p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
-    p.add_argument("--pointCloud", help="Show point cloud instead of mesh.", action="store_true")
+    p.add_argument("--pointCloud", help="Start in the point cloud mode.", action="store_true")
     p.add_argument("--resolution", help="Window resolution.", default="1920x1080")
     return p.parse_args()
 
