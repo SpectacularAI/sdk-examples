@@ -42,6 +42,8 @@ def main(args):
         lastMappingOutput = None
         displayInitialized = False
         pointCloudMode = args.pointCloud
+        targetResolution = [int(s) for s in args.resolution.split("x")]
+        scale = None
         # Must be initialized after pygame.
         meshRenderer = None
         pointCloudRenderer = None
@@ -64,7 +66,11 @@ def main(args):
 
             if not state.displayInitialized:
                 state.displayInitialized = True
-                init_display(width, height)
+                targetWidth = state.targetResolution[0]
+                targetHeight = state.targetResolution[1]
+                state.scale = min(targetWidth / width, targetHeight / height)
+                adjustedResolution = [int(state.scale * width), int(state.scale * height)]
+                init_display(adjustedResolution[0], adjustedResolution[1])
                 state.meshRenderer = MeshRenderer()
                 state.pointCloudRenderer = PointCloudRenderer()
 
@@ -75,7 +81,9 @@ def main(args):
                     if event.key == pygame.K_x: state.pointCloudMode = not state.pointCloudMode
                 if state.shouldQuit: return
 
+            glPixelZoom(state.scale, state.scale);
             glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
+
             if state.lastMappingOutput:
                 if state.pointCloudMode:
                     if state.pointCloudRenderer:
@@ -118,6 +126,7 @@ def parseArgs():
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
     p.add_argument("--pointCloud", help="Show point cloud instead of mesh.", action="store_true")
+    p.add_argument("--resolution", help="Window resolution.", default="1920x1080")
     return p.parse_args()
 
 if __name__ == '__main__':
