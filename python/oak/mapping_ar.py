@@ -163,8 +163,7 @@ def main(args):
         state.currentMapperOutput = mapperOutput
 
     if args.mapLoadPath:
-        # Appending to existing map is not currently supported.
-        onMappingOutput = None
+        onMappingOutput = None # Appending to existing map is not currently supported.
     else:
         def onMappingOutput(mapperOutput):
             nonlocal state

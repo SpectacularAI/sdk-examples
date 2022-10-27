@@ -35,6 +35,7 @@ class PointCloudRenderer:
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_PROGRAM_POINT_SIZE)
+        glEnable(GL_POINT_SPRITE) # TODO Check what this is, seems necessary.
 
         glUseProgram(self.pcProgram.program)
         glUniformMatrix4fv(self.pcProgram.uniformModelViewProjection, 1, GL_FALSE, self.modelViewProjection.transpose())
@@ -54,12 +55,13 @@ class PointCloudRenderer:
         glDisable(GL_BLEND)
 
     def setPointCloud(self, mapperOutput):
+        # TODO Remove. Take just the current map points, maintain them with age.
         keyFrameIds = []
         for keyFrameId in mapperOutput.map.keyFrames:
             keyFrameIds.append(keyFrameId)
         keyFrameIds.sort(reverse=True)
 
-        def transform(M, p):
+        def affineTransform(M, p):
             return M[:3, :3] @ p + M[:3, 3]
 
         for i, keyFrameId in enumerate(keyFrameIds):
@@ -76,7 +78,7 @@ class PointCloudRenderer:
             n = points.shape[0]
             self.vertexData = np.zeros(3 * n)
             for i in range(n):
-                self.vertexData[(3 * i):(3 * i + 3)] = transform(cToW, points[i, :])
+                self.vertexData[(3 * i):(3 * i + 3)] = affineTransform(cToW, points[i, :])
 
     def setPose(self, cameraPose):
         near, far = 0.01, 100.0
