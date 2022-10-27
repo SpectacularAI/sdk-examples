@@ -27,6 +27,7 @@ import depthai
 from mixed_reality import init_display, make_pipelines
 from mapping_ar_renderers.mesh import MeshRenderer
 from mapping_ar_renderers.point_cloud import PointCloudRenderer
+from mapping_ar_renderers.util import loadObjToMesh
 
 CAMERA_IND = 0
 
@@ -41,6 +42,7 @@ class State:
     # Must be initialized after pygame.
     meshRenderer = None
     pointCloudRenderer = None
+    mesh = None
 
 def handleVioOutput(state, cameraPose, img, width, height):
     if not state.displayInitialized:
@@ -52,6 +54,8 @@ def handleVioOutput(state, cameraPose, img, width, height):
         init_display(adjustedResolution[0], adjustedResolution[1])
         state.meshRenderer = MeshRenderer()
         state.pointCloudRenderer = PointCloudRenderer()
+        if state.mesh:
+            state.meshRenderer.setMesh(state.mesh)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT: state.shouldQuit = True
@@ -63,19 +67,20 @@ def handleVioOutput(state, cameraPose, img, width, height):
     glPixelZoom(state.scale, state.scale);
     glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
 
+    if state.pointCloudMode:
+        if state.currentMapperOutput and state.pointCloudRenderer:
+            if state.currentMapperOutput is not state.lastMapperOutput:
+                state.pointCloudRenderer.setPointCloud(state.currentMapperOutput)
+            state.pointCloudRenderer.setPose(cameraPose)
+            state.pointCloudRenderer.render()
+    else:
+        if (state.currentMapperOutput or state.mesh) and state.meshRenderer:
+            if not state.mesh and state.currentMapperOutput is not state.lastMapperOutput:
+                state.meshRenderer.setMesh(state.currentMapperOutput.mesh)
+            state.meshRenderer.setPose(cameraPose)
+            state.meshRenderer.render()
+
     if state.currentMapperOutput:
-        if state.pointCloudMode:
-            if state.pointCloudRenderer:
-                if state.currentMapperOutput is not state.lastMapperOutput:
-                    state.pointCloudRenderer.setPointCloud(state.currentMapperOutput)
-                state.pointCloudRenderer.setPose(cameraPose)
-                state.pointCloudRenderer.render()
-        else:
-            if state.meshRenderer:
-                if state.currentMapperOutput is not state.lastMapperOutput:
-                    state.meshRenderer.setMesh(state.currentMapperOutput.mesh)
-                state.meshRenderer.setPose(cameraPose)
-                state.meshRenderer.render()
         state.lastMapperOutput = state.currentMapperOutput
     pygame.display.flip()
 
@@ -120,6 +125,8 @@ def main(args):
     state = State()
     state.pointCloudMode = args.pointCloud
     state.targetResolution = [int(s) for s in args.resolution.split("x")]
+    if args.objLoadPath:
+        state.mesh = loadObjToMesh(args.objLoadPath)
 
     def replayOnVioOutput(vioOutput, frameSet):
         nonlocal state
@@ -161,6 +168,7 @@ def parseArgs():
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
     p.add_argument("--pointCloud", help="Start in the point cloud mode.", action="store_true")
     p.add_argument("--resolution", help="Window resolution.", default="1920x1080")
+    p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
     return p.parse_args()
 
 if __name__ == '__main__':
