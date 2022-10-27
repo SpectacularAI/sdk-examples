@@ -62,6 +62,7 @@ def handleVioOutput(state, cameraPose, img, width, height):
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q: state.shouldQuit = True
             if event.key == pygame.K_x: state.pointCloudMode = not state.pointCloudMode
+            if event.key == pygame.K_m and state.meshRenderer: state.meshRenderer.nextMode()
         if state.shouldQuit: return
 
     glPixelZoom(state.scale, state.scale);
@@ -111,6 +112,12 @@ def oakdLoop(args, state, device, vioSession):
             return
 
 def main(args):
+    print("Control using the keyboard:")
+    print("* Q: Quit")
+    print("* X: Change between mesh and point cloud visualizations")
+    print("* M: Cycle mesh visualization options.")
+    print("------\n")
+
     configInternal = {
         "computeStereoPointCloud": "true",
         "pointCloudNormalsEnabled": "true",

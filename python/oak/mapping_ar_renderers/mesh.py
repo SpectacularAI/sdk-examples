@@ -14,8 +14,24 @@ class MeshProgram:
         self.attributeTexCoord = glGetAttribLocation(self.program, "a_TexCoord")
         self.attributeNormal = glGetAttribLocation(self.program, "a_Normal")
         self.uniformModelViewProjection = glGetUniformLocation(self.program, "u_ModelViewProjection")
+        self.uniformOptions = glGetUniformLocation(self.program, "u_Options")
 
 class MeshRenderer:
+    # Value greater than zero enables at index:
+    # 0) Show borders.
+    # 1) Enable "fake mesh". The number sets density of the lines.
+    # 2) Fake mesh z-levels only.
+    # 3) Alpha multiplier.
+    OPTIONS = [
+        [1., 0., 0., 1.],
+        [1., 0., 0., 0.5],
+        [0., 0., 0., 1.],
+        [0., 0., 0., 0.5],
+        [1., 10., 0., 1.],
+        [1., 10., 1., 1.],
+    ]
+    selectedOption = 0
+
     modelViewProjection = None
     meshProgram = None
 
@@ -42,6 +58,7 @@ class MeshRenderer:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
         glUseProgram(self.meshProgram.program)
+        glUniform4fv(self.meshProgram.uniformOptions, 1, np.array(MeshRenderer.OPTIONS[self.selectedOption]))
         glUniformMatrix4fv(self.meshProgram.uniformModelViewProjection, 1, GL_FALSE, self.modelViewProjection.transpose())
 
         coordsPerVertex = 3
@@ -96,3 +113,6 @@ class MeshRenderer:
         projection = cameraPose.camera.getProjectionMatrixOpenGL(near, far)
         modelView = cameraPose.getWorldToCameraMatrix()
         self.modelViewProjection = projection @ modelView
+
+    def nextMode(self):
+        self.selectedOption = (self.selectedOption + 1) % len(MeshRenderer.OPTIONS)
