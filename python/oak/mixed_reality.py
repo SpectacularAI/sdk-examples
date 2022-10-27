@@ -30,7 +30,7 @@ def make_pipelines(mapLoadPath=None, vioInternalParameters={}, onMappingOutput=N
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
 
     # NOTE: this simple method of reading RGB data from the device does not
-    # scale to well to higher resolutions. Use YUV data with larger resolutions
+    # scale so well to higher resolutions. Use YUV data with larger resolutions
     RGB_OUTPUT_WIDTH = 1024
     REF_ASPECT = 1920 / 1080.0
     w = RGB_OUTPUT_WIDTH

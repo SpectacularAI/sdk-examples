@@ -123,14 +123,20 @@ def main(args):
     print("* M: Cycle mesh visualization options.")
     print("------\n")
 
-    configInternal = {
-        "computeStereoPointCloud": "true",
-        "pointCloudNormalsEnabled": "true",
-        "computeDenseStereoDepth": "true",
-        "computeDenseStereoDepthKeyFramesOnly": "true",
-        "recEnabled": "true",
-    }
-    if args.dataFolder and args.useRectification:
+    if args.mapLoadPath:
+        configInternal = {
+            "mapLoadPath": args.mapLoadPath,
+            "useSlam": "true",
+        }
+    else:
+        configInternal = {
+            "computeStereoPointCloud": "true",
+            "pointCloudNormalsEnabled": "true",
+            "computeDenseStereoDepth": "true",
+            "computeDenseStereoDepthKeyFramesOnly": "true",
+            "recEnabled": "true",
+        }
+    if args.useRectification:
         configInternal["useRectification"] = "true"
     else:
         configInternal["alreadyRectified"] = "true"
@@ -156,6 +162,14 @@ def main(args):
         nonlocal state
         state.currentMapperOutput = mapperOutput
 
+    if args.mapLoadPath:
+        # Appending to existing map is not currently supported.
+        onMappingOutput = None
+    else:
+        def onMappingOutput(mapperOutput):
+            nonlocal state
+            state.currentMapperOutput = mapperOutput
+
     if args.dataFolder:
         replay = spectacularAI.Replay(args.dataFolder, onMappingOutput, configuration=configInternal)
         replay.setExtendedOutputCallback(replayOnVioOutput)
@@ -165,7 +179,7 @@ def main(args):
         replay.close()
         pygame.quit()
     else:
-        pipeline, vio_pipeline = make_pipelines(None, configInternal, onMappingOutput)
+        pipeline, vio_pipeline = make_pipelines(args.mapLoadPath, configInternal, onMappingOutput)
         with depthai.Device(pipeline) as device, \
             vio_pipeline.startSession(device) as vioSession:
             if args.ir_dot_brightness > 0:
@@ -185,6 +199,7 @@ def parseArgs():
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
     p.add_argument('--cameraInd', help="Which camera to use. Typically 0=left, 1=right, 2=auxiliary/RGB (OAK-D default)", type=int, default=2)
+    p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     return p.parse_args()
 
 if __name__ == '__main__':
