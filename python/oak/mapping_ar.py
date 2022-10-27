@@ -6,9 +6,16 @@ Requirements:
 And optionally to improve performance:
     pip install PyOpenGL_accelerate
 
-* For OAK-D live use just plug in OAK-D and run `python3 mapping_ar.py`.
-* Press "x" to switch between the visualizations.
-* Press "q" to quit.
+For OAK-D live use:
+    * Plug in OAK-D and run `python3 mapping_ar.py`.
+
+For OAK-D replays:
+    * Plug in OAK-D.
+    * `python vio_record.py --slam --output recording`
+    * `python mapping_ar.py --dataFolder recording`
+
+For non-OAK-D replays, you may need to set more options, for example:
+    * `python mapping_ar.py --dataFolder recording --useRectification --cameraInd 0`
 """
 
 import os
@@ -28,8 +35,6 @@ from mixed_reality import init_display, make_pipelines
 from mapping_ar_renderers.mesh import MeshRenderer
 from mapping_ar_renderers.point_cloud import PointCloudRenderer
 from mapping_ar_renderers.util import loadObjToMesh
-
-CAMERA_IND = 0
 
 class State:
     shouldQuit = False
@@ -122,6 +127,7 @@ def main(args):
         "computeStereoPointCloud": "true",
         "pointCloudNormalsEnabled": "true",
         "computeDenseStereoDepth": "true",
+        "computeDenseStereoDepthKeyFramesOnly": "true",
         "recEnabled": "true",
     }
     if args.dataFolder and args.useRectification:
@@ -139,13 +145,12 @@ def main(args):
         nonlocal state
         for frame in frameSet:
             if not frame.image: continue
-            if not frame.index == CAMERA_IND: continue
+            if not frame.index == args.cameraInd: continue
             img = frame.image.toArray()
             img = np.ascontiguousarray(np.flipud(img)) # Flip the image upside down for OpenGL.
             width = img.shape[1]
             height = img.shape[0]
-            cameraPose = vioOutput.getCameraPose(CAMERA_IND)
-            handleVioOutput(state, cameraPose, img, width, height)
+            handleVioOutput(state, frame.cameraPose, img, width, height)
 
     def onMappingOutput(mapperOutput):
         nonlocal state
@@ -170,12 +175,16 @@ def main(args):
 def parseArgs():
     import argparse
     p = argparse.ArgumentParser(__doc__)
-    p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
-    p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
-    p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
-    p.add_argument("--pointCloud", help="Start in the point cloud mode.", action="store_true")
+    # Generic parameters.
     p.add_argument("--resolution", help="Window resolution.", default="1920x1080")
+    p.add_argument("--pointCloud", help="Start in the point cloud mode.", action="store_true")
+    p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
+    # OAK-D parameters.
+    p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
+    # Parameters for non-OAK-D recordings.
+    p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
+    p.add_argument('--cameraInd', help="Which camera to use. Typically 0=left, 1=right, 2=auxiliary/RGB (OAK-D default)", type=int, default=2)
     return p.parse_args()
 
 if __name__ == '__main__':
