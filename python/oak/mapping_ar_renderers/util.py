@@ -57,14 +57,17 @@ def loadObjToMesh(objPath):
             elif cmd == 'vn':
                 mesh.normals = np.vstack((mesh.normals, [float(c) for c in data]))
             elif cmd == 'f':
-                vertexInds = []
-                normalInds = []
-                for token in data:
+                v = []
+                n = []
+                for i, token in enumerate(data):
                     indices = token.split('/')
-                    # Negative indices counting from the end are not handled.
-                    vertexInds.append(int(indices[0]) - 1)
+                    assert(int(indices[0]) >= 1) # Negative indices counting from the end are not handled.
+                    v.append(int(indices[0]) - 1)
                     # Textures not handled.
-                    if len(indices) >= 3: normalInds.append(int(indices[2]) - 1)
-                mesh.faceVertices = np.vstack((mesh.faceVertices, vertexInds))
-                if normalInds: mesh.faceNormals = np.vstack((mesh.faceNormals, normalInds))
+                    if len(indices) >= 3: n.append(int(indices[2]) - 1)
+
+                    if i < 2: continue
+                    # If i > 2, interpret the polygon as triangle fan and hope for the best.
+                    mesh.faceVertices = np.vstack((mesh.faceVertices, [v[0], v[-2], v[-1]]))
+                    if n: mesh.faceNormals = np.vstack((mesh.faceNormals, [n[0], n[-2], n[-1]]))
     return mesh

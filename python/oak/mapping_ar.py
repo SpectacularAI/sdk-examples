@@ -132,6 +132,7 @@ def main(args):
         configInternal = {
             "mapLoadPath": args.mapLoadPath,
             "useSlam": "true",
+            "fixedMap": "true",
         }
     else:
         configInternal = {
@@ -140,6 +141,8 @@ def main(args):
             "computeDenseStereoDepth": "true",
             "computeDenseStereoDepthKeyFramesOnly": "true",
             "recEnabled": "true",
+            "useSlam": "false",
+            # "keyframeCandidateInterval": "4",
         }
     if args.useRectification:
         configInternal["useRectification"] = "true"
@@ -184,7 +187,14 @@ def main(args):
         replay.close()
         pygame.quit()
     else:
-        pipeline, vio_pipeline = make_pipelines(args.mapLoadPath, configInternal, onMappingOutput)
+        config = spectacularAI.depthai.Configuration()
+        config.internalParameters = configInternal
+        if args.noFeatureTracker: config.useFeatureTracker = False
+        if args.mapLoadPath is not None:
+            config.mapLoadPath = args.mapLoadPath
+            config.useSlam = True
+
+        pipeline, vio_pipeline = make_pipelines(config, onMappingOutput)
         with depthai.Device(pipeline) as device, \
             vio_pipeline.startSession(device) as vioSession:
             if args.ir_dot_brightness > 0:
@@ -200,6 +210,7 @@ def parseArgs():
     p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
     # OAK-D parameters.
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
+    p.add_argument('--noFeatureTracker', help="On OAK-D, use stereo images rather than accelerated features + depth.", action="store_true")
     # Parameters for non-OAK-D recordings.
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
