@@ -49,7 +49,7 @@ class State:
     pointCloudRenderer = None
     mesh = None
 
-def handleVioOutput(state, cameraPose, img, width, height):
+def handleVioOutput(state, cameraPose, t, img, width, height):
     if not state.displayInitialized:
         state.displayInitialized = True
         targetWidth = state.targetResolution[0]
@@ -67,7 +67,11 @@ def handleVioOutput(state, cameraPose, img, width, height):
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q: state.shouldQuit = True
             if event.key == pygame.K_x: state.pointCloudMode = not state.pointCloudMode
-            if event.key == pygame.K_m and state.meshRenderer: state.meshRenderer.nextMode()
+            if event.key == pygame.K_m:
+                if state.meshRenderer: state.meshRenderer.nextMode()
+                if state.pointCloudRenderer: state.pointCloudRenderer.nextMode()
+            if event.key == pygame.K_s: time.sleep(10) # TODO Remove.
+
         if state.shouldQuit: return
 
     glPixelZoom(state.scale, state.scale);
@@ -76,8 +80,8 @@ def handleVioOutput(state, cameraPose, img, width, height):
     if state.pointCloudMode:
         if state.currentMapperOutput and state.pointCloudRenderer:
             if state.currentMapperOutput is not state.lastMapperOutput:
-                state.pointCloudRenderer.setPointCloud(state.currentMapperOutput)
-            state.pointCloudRenderer.setPose(cameraPose)
+                state.pointCloudRenderer.setPointCloud(state.currentMapperOutput, t)
+            state.pointCloudRenderer.setPose(cameraPose, t)
             state.pointCloudRenderer.render()
     else:
         if (state.currentMapperOutput or state.mesh) and state.meshRenderer:
@@ -108,7 +112,8 @@ def oakdLoop(args, state, device, vioSession):
             if vioOutput.tag > 0:
                 img = frames.get(vioOutput.tag)
                 cameraPose = vioSession.getRgbCameraPose(vioOutput)
-                handleVioOutput(state, cameraPose, img.getRaw().data, img.getWidth(), img.getHeight())
+                time = vioOutput.pose.time
+                handleVioOutput(state, cameraPose, time, img.getRaw().data, img.getWidth(), img.getHeight())
                 # Discard old tags.
                 frames = { tag: v for tag, v in frames.items() if tag > vioOutput.tag }
         else:
@@ -156,7 +161,8 @@ def main(args):
             img = np.ascontiguousarray(np.flipud(img)) # Flip the image upside down for OpenGL.
             width = img.shape[1]
             height = img.shape[0]
-            handleVioOutput(state, frame.cameraPose, img, width, height)
+            time = vioOutput.pose.time
+            handleVioOutput(state, frame.cameraPose, time, img, width, height)
 
     def onMappingOutput(mapperOutput):
         nonlocal state
