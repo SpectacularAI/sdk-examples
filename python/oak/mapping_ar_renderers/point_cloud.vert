@@ -10,6 +10,7 @@ varying vec3 v_Effect;
 void main() {
     v_Position = u_ModelView * vec4(a_Position.xyz, 1.0);
     v_Effect = a_Effect;
-    gl_Position = u_Projection * v_Position;
-    gl_PointSize = 12.0 / v_Position.z;
+    vec4 shift = vec4(a_Effect.xy, 0, 0);
+    gl_Position = u_Projection * v_Position + shift;
+    gl_PointSize = 9.0 / v_Position.z;
 }

@@ -129,6 +129,7 @@ class PointCloudRenderer:
         self.effectData = np.zeros(ne)
         iv = 0
         ie = 0
+        TIME_DISAPPEAR = 0.7
         for p in self.pointClouds:
             self.vertexData[iv:(iv + p.vertexData.shape[0])] = p.vertexData
             iv += p.vertexData.shape[0]
@@ -136,6 +137,9 @@ class PointCloudRenderer:
             timeRelative = (time - p.time) / MAX_AGE_SECONDS
             for j in range(p.effectData.shape[0] // COORDS_PER_EFFECT):
                 p.effectData[COORDS_PER_EFFECT * j + 2] = timeRelative
+                if timeRelative > TIME_DISAPPEAR:
+                    p.effectData[COORDS_PER_EFFECT * j + 0] += 0.002 * random.random()
+                    p.effectData[COORDS_PER_EFFECT * j + 1] += 0.006 * random.random()
             self.effectData[ie:(ie + p.effectData.shape[0])] = p.effectData
             ie += p.effectData.shape[0]
         assert(iv == nv)
