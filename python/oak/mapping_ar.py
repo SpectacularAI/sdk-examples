@@ -19,6 +19,7 @@ For non-OAK-D replays, you may need to set more options, for example:
 """
 
 import os
+import subprocess
 import time
 
 import numpy as np
@@ -38,11 +39,14 @@ from mapping_ar_renderers.util import loadObjToMesh
 
 class State:
     shouldQuit = False
+    record = ""
+    recordPipe = None
     currentMapperOutput = None
     lastMapperOutput = None
     displayInitialized = False
     pointCloudMode = None
     targetResolution = None
+    adjustedResolution = None
     scale = None
     # Must be initialized after pygame.
     meshRenderer = None
@@ -55,8 +59,8 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
         targetWidth = state.targetResolution[0]
         targetHeight = state.targetResolution[1]
         state.scale = min(targetWidth / width, targetHeight / height)
-        adjustedResolution = [int(state.scale * width), int(state.scale * height)]
-        init_display(adjustedResolution[0], adjustedResolution[1])
+        state.adjustedResolution = [int(state.scale * width), int(state.scale * height)]
+        init_display(state.adjustedResolution[0], state.adjustedResolution[1])
         state.meshRenderer = MeshRenderer()
         state.pointCloudRenderer = PointCloudRenderer()
         if state.mesh:
@@ -70,7 +74,6 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
             if event.key == pygame.K_m:
                 if state.meshRenderer: state.meshRenderer.nextMode()
                 if state.pointCloudRenderer: state.pointCloudRenderer.nextMode()
-            if event.key == pygame.K_s: time.sleep(10) # TODO Remove.
 
         if state.shouldQuit: return
 
@@ -92,6 +95,15 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
 
     if state.currentMapperOutput:
         state.lastMapperOutput = state.currentMapperOutput
+
+    if state.recordPath:
+        r = state.adjustedResolution
+        if state.recordPipe is None:
+            cmd = "ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s {}x{} -i - -an -pix_fmt yuv420p -c:v libx264 -vf vflip -crf 15 {}".format(r[0], r[1], state.recordPath)
+            state.recordPipe = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=True)
+        buffer = glReadPixels(0, 0, r[0], r[1], GL_RGB, GL_UNSIGNED_BYTE)
+        state.recordPipe.stdin.write(buffer)
+
     pygame.display.flip()
 
 def oakdLoop(args, state, device, vioSession):
@@ -142,7 +154,6 @@ def main(args):
             "computeDenseStereoDepthKeyFramesOnly": "true",
             "recEnabled": "true",
             "useSlam": "false",
-            # "keyframeCandidateInterval": "4",
         }
     if args.useRectification:
         configInternal["useRectification"] = "true"
@@ -150,6 +161,7 @@ def main(args):
         configInternal["alreadyRectified"] = "true"
 
     state = State()
+    state.recordPath = args.recordPath
     state.pointCloudMode = args.pointCloud
     state.targetResolution = [int(s) for s in args.resolution.split("x")]
     if args.objLoadPath:
@@ -208,6 +220,7 @@ def parseArgs():
     p.add_argument("--resolution", help="Window resolution.", default="1920x1080")
     p.add_argument("--pointCloud", help="Start in the point cloud mode.", action="store_true")
     p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
+    p.add_argument("--recordPath", help="Record the window to video file given by path.")
     # OAK-D parameters.
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
     p.add_argument('--noFeatureTracker', help="On OAK-D, use stereo images rather than accelerated features + depth.", action="store_true")

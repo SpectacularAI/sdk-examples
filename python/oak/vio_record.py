@@ -47,6 +47,7 @@ p.add_argument("--no_inputs", help="Disable recording JSONL and depth", action="
 p.add_argument("--gray", help="Record (rectified) gray video data", action="store_true")
 p.add_argument("--no_convert", help="Skip converting h265 video file", action="store_true")
 p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
+p.add_argument('--recording_only', help='Do not run VIO, may be faster', action="store_true")
 p.add_argument('--slam', help='Record SLAM map', action="store_true")
 p.add_argument('--no_feature_tracker', help='Disable on-device feature tracking', action="store_true")
 p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
@@ -71,6 +72,8 @@ if args.use_rgb:
     config.useColor = True
 if args.mono:
     config.useStereo = False
+if args.recording_only:
+    config.recordingOnly = True
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
