@@ -2,19 +2,21 @@
 
 You can find the non-commercial C++ SDK for RealSense from https://github.com/SpectacularAI/sdk/releases.
 
-For commercial licenses and version for other OS and CPU arthicectures, contact us at https://www.spectacularai.com/#contact.
+For commercial licenses and version for other OS and CPU architectures, contact us at https://www.spectacularai.com/#contact.
 
 ## Linux
 
 ### Quick start
 
- 1. Unpack the SDK archive
- 2. If you have not used the RealSense device before, run
+ 1. If you have not used the RealSense device before, run from the [librealsense GitHub repository](https://github.com/IntelRealSense/librealsense):
 
-        ./bin/3rdparty/librealsense/setup_udev_rules.sh
+        ./scripts/setup_udev_rules.sh
 
- 3. Attach your RealSense D4XX or D3XX device to a USB3 port, using a USB3 cable
- 4. Run the JSONL example:
+ 2. Attach your RealSense D4XX or D3XX device to a USB3 port, using a USB3 cable
+
+ 3. Unpack the Spectacular AI SDK archive
+
+ 4. In the extracted directory for your platform, run the pre-compiled example binary:
 
         cd bin
         ./vio_jsonl
@@ -61,7 +63,7 @@ For commercial licenses and version for other OS and CPU arthicectures, contact 
 
 ### Using as a library
 
-You must first install DepthAI. Todo this, you need to install following tools if you don't already have them:
+First install the following tools if you don't already have them:
 * Install Git for Windows https://git-scm.com
 * Install Visual Studio Community 2019 https://visualstudio.microsoft.com/vs/community/
   * When launching, install dependencies for "Desktop Development with C++"
