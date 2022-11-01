@@ -2,7 +2,7 @@
 
 You can find the non-commercial C++ SDK for OAK-D from https://github.com/SpectacularAI/sdk/releases.
 
-For commercial licenses and version for other OS and CPU arthicectures, contact us at https://www.spectacularai.com/#contact.
+For commercial licenses and version for other OS and CPU architectures, contact us at https://www.spectacularai.com/#contact.
 
 ## Linux
 
