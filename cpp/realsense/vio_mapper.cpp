@@ -15,6 +15,8 @@
 #include <cstdlib>
 #include <set>
 
+#include "helpers.hpp"
+
 namespace {
 struct ImageToSave {
     std::string fileName;
@@ -50,6 +52,7 @@ std::function<void()> buildImageWriter(
             auto img = queue.front();
             queue.pop_front();
             lock.unlock();
+            // If this line crashes, OpenCV probably has been built without PNG support.
             cv::imwrite(img.fileName.c_str(), img.mat);
         }
     };
@@ -98,6 +101,7 @@ int main(int argc, char** argv) {
     std::string recordingFolder;
     if (argc >= 2) {
         recordingFolder = argv[1];
+        createFolders(recordingFolder);
     } else {
         std::cerr
             << "Usage: " << argv[0] << " /path/to/recording/folder" << std::endl;

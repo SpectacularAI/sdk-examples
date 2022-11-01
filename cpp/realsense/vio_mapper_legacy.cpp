@@ -13,6 +13,8 @@
 #include <atomic>
 #include <cstdlib>
 
+#include "helpers.hpp"
+
 namespace {
 struct ImageToSave {
     std::string fileName;
@@ -38,7 +40,7 @@ std::function<void()> buildImageWriter(
             auto img = queue.front();
             queue.pop_front();
             lock.unlock();
-
+            // If this line crashes, OpenCV probably has been built without PNG support.
             cv::imwrite(img.fileName.c_str(), img.mat);
         }
     };
@@ -51,6 +53,7 @@ int main(int argc, char** argv) {
     int keyFrameInterval = 10;
     if (argc >= 2) {
         recordingFolder = argv[1];
+        createFolders(recordingFolder);
         if (argc >= 3) {
             keyFrameInterval = std::stoi(argv[2]);
         }
