@@ -9,7 +9,7 @@ from .util import *
 
 MAX_AGE_SECONDS = 3
 # In [0, 1], the fraction of points that are randomly selected from each keyframe.
-POINT_SELECTION_RATIO = 0.2
+POINT_SELECTION_RATIO = 0.1
 
 COORDS_PER_VERTEX = 3
 COORDS_PER_EFFECT = 3

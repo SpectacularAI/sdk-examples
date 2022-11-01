@@ -99,7 +99,7 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
     if state.recordPath:
         r = state.adjustedResolution
         if state.recordPipe is None:
-            cmd = "ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s {}x{} -i - -an -pix_fmt yuv420p -c:v libx264 -vf vflip -crf 15 {}".format(r[0], r[1], state.recordPath)
+            cmd = "ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s {}x{} -i - -an -pix_fmt yuv420p -c:v libx264 -vf vflip -crf 17 {}".format(r[0], r[1], state.recordPath)
             state.recordPipe = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=True)
         buffer = glReadPixels(0, 0, r[0], r[1], GL_RGB, GL_UNSIGNED_BYTE)
         state.recordPipe.stdin.write(buffer)
@@ -153,7 +153,14 @@ def main(args):
             "computeDenseStereoDepth": "true",
             "computeDenseStereoDepthKeyFramesOnly": "true",
             "recEnabled": "true",
-            "useSlam": "false",
+            "recCellSize": "0.02",
+            "applyLoopClosures": "false",
+            "slamMinUpdateDistanceMeters": "0",
+
+            # TODO Remove.
+            "cameraTrailLength": "20",
+            "cameraTrailHanoiLength": "0",
+            # "keyframeCandidateInterval": "4",
         }
     if args.useRectification:
         configInternal["useRectification"] = "true"

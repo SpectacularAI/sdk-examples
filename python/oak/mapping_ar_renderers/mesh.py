@@ -22,13 +22,18 @@ class MeshRenderer:
     # 1) Enable "fake mesh". The number sets density of the lines.
     # 2) Fake mesh z-levels only.
     # 3) Alpha multiplier.
+    # 4) Show camera view.
+    # 5) Show mesh.
     OPTIONS = [
-        [1., 0., 0., 1.],
-        [1., 0., 0., 0.5],
-        [0., 0., 0., 1.],
-        [0., 0., 0., 0.5],
-        [1., 10., 0., 1.],
-        [1., 10., 1., 1.],
+        # [0., 0., 0., 0.75, 1., 1.],
+        [1., 0., 0., 0.75, 1., 1.],
+        # [1., 10., 0., 1., 1., 1.],
+        # [1., 10., 1., 1., 1., 1.],
+        [1., 0., 0., 0.75, 0., 1.],
+
+        [1., 0., 0., 0.75, 1., 1.],
+        [0., 0., 0., 0., 0., 0.],
+
     ]
     selectedOption = 0
 
@@ -50,6 +55,9 @@ class MeshRenderer:
         if self.modelViewProjection is None: return
         if self.vertexData.shape[0] == 0: return
 
+        op = MeshRenderer.OPTIONS[self.selectedOption]
+        if op[5] == 0.0: return
+
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
         glClear(GL_DEPTH_BUFFER_BIT);
@@ -57,8 +65,10 @@ class MeshRenderer:
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
+        if op[4] == 0.0: glClear(GL_COLOR_BUFFER_BIT);
+
         glUseProgram(self.meshProgram.program)
-        glUniform4fv(self.meshProgram.uniformOptions, 1, np.array(MeshRenderer.OPTIONS[self.selectedOption]))
+        glUniform4fv(self.meshProgram.uniformOptions, 1, np.array(op[:4]))
         glUniformMatrix4fv(self.meshProgram.uniformModelViewProjection, 1, GL_FALSE, self.modelViewProjection.transpose())
 
         coordsPerVertex = 3
