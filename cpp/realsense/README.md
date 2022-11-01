@@ -10,7 +10,7 @@ For commercial licenses and version for other OS and CPU architectures, contact 
 
  1. If you have not used the RealSense device before, run from the [librealsense GitHub repository](https://github.com/IntelRealSense/librealsense):
 
-        .scripts/setup_udev_rules.sh
+        ./scripts/setup_udev_rules.sh
 
  2. Attach your RealSense D4XX or D3XX device to a USB3 port, using a USB3 cable
 
