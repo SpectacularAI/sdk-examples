@@ -173,8 +173,8 @@ class Open3DVisualization:
 def parseArgs():
     import argparse
     p = argparse.ArgumentParser(__doc__)
-    p.add_argument("--dataFolder", help="Folder containing the recorded session for mapping")
-    p.add_argument("--recordingFolder", help="Folder for recording the input data for offline replay")
+    p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
+    p.add_argument("--recordingFolder", help="Record live mapping session for replay")
     p.add_argument("--outputFolder", help="Folder where to save the captured point clouds")
     p.add_argument("--voxel", help="Voxel size (m) for downsampling point clouds")
     p.add_argument("--manual", help="Control Open3D camera manually", action="store_true")
@@ -182,12 +182,24 @@ def parseArgs():
     p.add_argument("--color", help="Filter points without color", action="store_true")
     p.add_argument("--use_rgb", help="Use OAK-D RGB camera", action="store_true")
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
+    p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
     return p.parse_args()
 
 if __name__ == '__main__':
     args = parseArgs()
     if args.outputFolder:
         os.makedirs(args.outputFolder)
+
+    configInternal = {
+        "computeStereoPointCloud": "true",
+        "pointCloudNormalsEnabled": "true",
+        "computeDenseStereoDepth": "true",
+    }
+    if args.dataFolder and args.useRectification:
+        configInternal["useRectification"] = "true"
+    else:
+        configInternal["alreadyRectified"] = "true"
+
     voxelSize = 0 if args.voxel is None else float(args.voxel)
     visu3D = Open3DVisualization(voxelSize, args.manual, args.smooth, args.color)
 
@@ -221,7 +233,7 @@ if __name__ == '__main__':
 
     if args.dataFolder:
         print("Starting replay")
-        replay = spectacularAI.Replay(args.dataFolder, onMappingOutput)
+        replay = spectacularAI.Replay(args.dataFolder, onMappingOutput, configuration=configInternal)
         replay.setOutputCallback(onVioOutput)
         replay.startReplay()
         visu3D.run()
@@ -234,10 +246,7 @@ if __name__ == '__main__':
             if args.recordingFolder:
                 config.recordingFolder = args.recordingFolder
             config.useColor = args.use_rgb
-            config.internalParameters = {
-                "computeStereoPointCloud": "true",
-                "pointCloudNormalsEnabled": "true"
-            }
+            config.internalParameters = configInternal
             vioPipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
 
             with depthai.Device(pipeline) as device, \
