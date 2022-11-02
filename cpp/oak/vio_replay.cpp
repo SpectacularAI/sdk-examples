@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
         #endif
     });
 
-    replayApi->startReplay();
+    replayApi->runReplay();
 
     return 0;
 }
