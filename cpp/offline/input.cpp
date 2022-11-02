@@ -203,8 +203,8 @@ public:
 
     std::string getCalibration() const final {
         return R"({ "cameras": [
-            { "focalLengthX": 1.0, "focalLengthY": 1.0, "model": "pinhole" },
-            { "focalLengthX": 1.0, "focalLengthY": 1.0, "model": "pinhole" }
+            { "focalLengthX": 1.0, "focalLengthY": 1.0, "model": "pinhole", "imuToCamera": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]] },
+            { "focalLengthX": 1.0, "focalLengthY": 1.0, "model": "pinhole", "imuToCamera": [[1,0,0,1],[0,1,0,0],[0,0,1,0],[0,0,0,1]] }
         ] })";
     }
 };
