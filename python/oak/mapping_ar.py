@@ -38,13 +38,12 @@ from mapping_ar_renderers.point_cloud import PointCloudRenderer
 from mapping_ar_renderers.util import loadObjToMesh
 
 class State:
+    args = None
     shouldQuit = False
-    record = ""
     recordPipe = None
     currentMapperOutput = None
     lastMapperOutput = None
     displayInitialized = False
-    pointCloudMode = None
     targetResolution = None
     adjustedResolution = None
     scale = None
@@ -62,7 +61,7 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
         state.adjustedResolution = [int(state.scale * width), int(state.scale * height)]
         init_display(state.adjustedResolution[0], state.adjustedResolution[1])
         state.meshRenderer = MeshRenderer()
-        state.pointCloudRenderer = PointCloudRenderer()
+        state.pointCloudRenderer = PointCloudRenderer(state.args.pointCloudDensity)
         if state.mesh:
             state.meshRenderer.setMesh(state.mesh)
 
@@ -70,7 +69,7 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
         if event.type == pygame.QUIT: state.shouldQuit = True
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q: state.shouldQuit = True
-            if event.key == pygame.K_x: state.pointCloudMode = not state.pointCloudMode
+            if event.key == pygame.K_x: state.args.pointCloud = not state.args.pointCloud
             if event.key == pygame.K_m:
                 if state.meshRenderer: state.meshRenderer.nextMode()
                 if state.pointCloudRenderer: state.pointCloudRenderer.nextMode()
@@ -80,7 +79,7 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
     glPixelZoom(state.scale, state.scale);
     glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
 
-    if state.pointCloudMode:
+    if state.args.pointCloud:
         if state.currentMapperOutput and state.pointCloudRenderer:
             if state.currentMapperOutput is not state.lastMapperOutput:
                 state.pointCloudRenderer.setPointCloud(state.currentMapperOutput, t)
@@ -96,10 +95,10 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
     if state.currentMapperOutput:
         state.lastMapperOutput = state.currentMapperOutput
 
-    if state.recordPath:
+    if state.args.recordPath:
         r = state.adjustedResolution
         if state.recordPipe is None:
-            cmd = "ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s {}x{} -i - -an -pix_fmt yuv420p -c:v libx264 -vf vflip -crf 17 {}".format(r[0], r[1], state.recordPath)
+            cmd = "ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s {}x{} -i - -an -pix_fmt yuv420p -c:v libx264 -vf vflip -crf 17 {}".format(r[0], r[1], state.args.recordPath)
             state.recordPipe = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=True)
         buffer = glReadPixels(0, 0, r[0], r[1], GL_RGB, GL_UNSIGNED_BYTE)
         state.recordPipe.stdin.write(buffer)
@@ -168,8 +167,7 @@ def main(args):
         configInternal["alreadyRectified"] = "true"
 
     state = State()
-    state.recordPath = args.recordPath
-    state.pointCloudMode = args.pointCloud
+    state.args = args
     state.targetResolution = [int(s) for s in args.resolution.split("x")]
     if args.objLoadPath:
         state.mesh = loadObjToMesh(args.objLoadPath)
@@ -226,6 +224,7 @@ def parseArgs():
     # Generic parameters.
     p.add_argument("--resolution", help="Window resolution.", default="1920x1080")
     p.add_argument("--pointCloud", help="Start in the point cloud mode.", action="store_true")
+    p.add_argument("--pointCloudDensity", help="Fraction of points to show.", default=0.2, type=float)
     p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
     p.add_argument("--recordPath", help="Record the window to video file given by path.")
     # OAK-D parameters.

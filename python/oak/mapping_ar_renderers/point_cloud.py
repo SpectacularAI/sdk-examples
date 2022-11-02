@@ -8,8 +8,6 @@ from OpenGL.GL import *
 from .util import *
 
 MAX_AGE_SECONDS = 3
-# In [0, 1], the fraction of points that are randomly selected from each keyframe.
-POINT_SELECTION_RATIO = 0.1
 
 COORDS_PER_VERTEX = 3
 COORDS_PER_EFFECT = 3
@@ -40,13 +38,16 @@ class PointCloudRenderer:
     modelView = None
     projection = None
     pcProgram = None
+    density = None
     pointClouds = []
 
     # 1d arrays of GLfloat.
     vertexData = np.array([])
     effectData = np.array([])
 
-    def __init__(self):
+    def __init__(self, density):
+        self.density = density
+
         assetDir = pathlib.Path(__file__).resolve().parent
         pcVert = (assetDir / "point_cloud.vert").read_text()
         pcFrag = (assetDir / "point_cloud.frag").read_text()
@@ -101,7 +102,7 @@ class PointCloudRenderer:
 
         selected = []
         for i in range(points.shape[0]):
-            if random.random() < POINT_SELECTION_RATIO: selected.append(i)
+            if random.random() < self.density: selected.append(i)
         n = len(selected)
 
         cv = COORDS_PER_VERTEX
