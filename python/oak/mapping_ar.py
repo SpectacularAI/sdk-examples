@@ -6,6 +6,9 @@ Requirements:
 And optionally to improve performance:
     pip install PyOpenGL_accelerate
 
+This demo has only been tested on Linux and may not work on other platforms
+due to requirements to use OpenGL from single and/or the main process thread.
+
 For OAK-D live use:
     * Plug in OAK-D and run `python3 mapping_ar.py`.
 
@@ -136,7 +139,7 @@ def main(args):
     print("Control using the keyboard:")
     print("* Q: Quit")
     print("* X: Change between mesh and point cloud visualizations")
-    print("* M: Cycle mesh visualization options.")
+    print("* M: Cycle through visualization options.")
     print("------\n")
 
     if args.mapLoadPath:
@@ -153,18 +156,14 @@ def main(args):
             "computeDenseStereoDepthKeyFramesOnly": "true",
             "recEnabled": "true",
             "recCellSize": "0.02",
-            "applyLoopClosures": "false",
-            "slamMinUpdateDistanceMeters": "0",
-
-            # TODO Remove.
-            "cameraTrailLength": "20",
-            "cameraTrailHanoiLength": "0",
-            # "keyframeCandidateInterval": "4",
+            "useSlam": "true",
         }
     if args.useRectification:
         configInternal["useRectification"] = "true"
     else:
         configInternal["alreadyRectified"] = "true"
+    configInternal["stereoPointCloudMaxDepth"] = str(args.depth)
+    configInternal["recMaxDistance"] = str(args.depth)
 
     state = State()
     state.args = args
@@ -227,6 +226,7 @@ def parseArgs():
     p.add_argument("--pointCloudDensity", help="Fraction of points to show.", default=0.2, type=float)
     p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
     p.add_argument("--recordPath", help="Record the window to video file given by path.")
+    p.add_argument("--depth", help="In meters, the max distance to detect points and construct mesh. Lower values may improve positioning accuracy.", default=4, type=float)
     # OAK-D parameters.
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
     p.add_argument('--noFeatureTracker', help="On OAK-D, use stereo images rather than accelerated features + depth.", action="store_true")
