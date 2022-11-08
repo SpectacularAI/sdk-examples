@@ -183,10 +183,6 @@ def main(args):
             time = vioOutput.pose.time
             handleVioOutput(state, frame.cameraPose, time, img, width, height)
 
-    def onMappingOutput(mapperOutput):
-        nonlocal state
-        state.currentMapperOutput = mapperOutput
-
     if args.mapLoadPath:
         onMappingOutput = None # Appending to existing map is not currently supported.
     else:
@@ -213,8 +209,8 @@ def main(args):
         pipeline, vio_pipeline = make_pipelines(config, onMappingOutput)
         with depthai.Device(pipeline) as device, \
             vio_pipeline.startSession(device) as vioSession:
-            if args.ir_dot_brightness > 0:
-                device.setIrLaserDotProjectorBrightness(args.ir_dot_brightness)
+            if args.irBrightness > 0:
+                device.setIrLaserDotProjectorBrightness(args.irBrightness)
             oakdLoop(args, state, device, vioSession)
 
 def parseArgs():
@@ -228,7 +224,7 @@ def parseArgs():
     p.add_argument("--recordPath", help="Record the window to video file given by path.")
     p.add_argument("--depth", help="In meters, the max distance to detect points and construct mesh. Lower values may improve positioning accuracy.", default=4, type=float)
     # OAK-D parameters.
-    p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
+    p.add_argument('--irBrightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200. Enabling may improve depth tracking.', type=float, default=0)
     p.add_argument('--noFeatureTracker', help="On OAK-D, use stereo images rather than accelerated features + depth.", action="store_true")
     # Parameters for non-OAK-D recordings.
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
