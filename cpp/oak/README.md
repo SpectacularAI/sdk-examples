@@ -42,11 +42,11 @@ For commercial licenses and version for other OS and CPU architectures, contact 
  4. Build and install the Depth AI as a shared library by running the following
     (or see https://github.com/luxonis/depthai-core#dynamic-library for other options)
 
-        make depthai
+        make PREFIX=$MY_INSTALL_PREFIX depthai
 
  5. Build the example using CMake
 
-        make examples
+        make PREFIX=$MY_INSTALL_PREFIX examples
 
 
 ### Running on specific hardware
