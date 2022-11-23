@@ -159,7 +159,6 @@ def main_loop(plotter=None):
         videoFileNames.append(grayVideoFile.name)
         grayVideoFile.close()
 
-
     if os.name == 'nt':
         ffmpegStdErrToNull = "2>NUL"
     else:
