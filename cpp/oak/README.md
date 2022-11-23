@@ -119,7 +119,7 @@ You must first install DepthAI. Todo this, you need to install following tools i
 
 Building Depth AI core, open PowerShell window (Shift + Right click in Explorer) in the folder where you extracted the VIO plugin files:
 
-    git clone --recursive https://github.com/luxonis/depthai-core.git --branch v2.17.3
+    git clone --recursive https://github.com/luxonis/depthai-core.git --branch v2.19.1
     cd depthai-core
     cmake -G "Visual Studio 16 2019" -A x64 -Bbuild -DBUILD_SHARED_LIBS=ON -DDEPTHAI_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=build
     cmake --build build --config Release -- -m
