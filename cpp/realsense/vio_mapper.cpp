@@ -5,6 +5,7 @@
 #include <spectacularAI/mapping.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 #include <cassert>
 #include <string>
 #include <cstdint>
@@ -52,8 +53,12 @@ std::function<void()> buildImageWriter(
             auto img = queue.front();
             queue.pop_front();
             lock.unlock();
+
+            // The SDK outputs RGB and OpenCV expects BGR.
+            cv::Mat bgrMat;
+            cv::cvtColor(img.mat, bgrMat, cv::COLOR_RGB2BGR);
             // If this line crashes, OpenCV probably has been built without PNG support.
-            cv::imwrite(img.fileName.c_str(), img.mat);
+            cv::imwrite(img.fileName.c_str(), bgrMat);
         }
     };
 }

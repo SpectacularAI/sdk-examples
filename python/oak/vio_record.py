@@ -47,8 +47,9 @@ p.add_argument("--no_inputs", help="Disable recording JSONL and depth", action="
 p.add_argument("--gray", help="Record (rectified) gray video data", action="store_true")
 p.add_argument("--no_convert", help="Skip converting h265 video file", action="store_true")
 p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
+p.add_argument('--no_slam', help='Record with SLAM module disabled', action="store_true")
 p.add_argument('--recording_only', help='Do not run VIO, may be faster', action="store_true")
-p.add_argument('--slam', help='Record SLAM map', action="store_true")
+p.add_argument('--map', help='Record SLAM map', action="store_true")
 p.add_argument('--no_feature_tracker', help='Disable on-device feature tracking', action="store_true")
 p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
 p.add_argument("--resolution", help="Gray input resolution (gray)",
@@ -58,14 +59,17 @@ args =  p.parse_args()
 
 pipeline = depthai.Pipeline()
 
+config.useSlam = True
 config.inputResolution = args.resolution
 if not args.no_inputs:
     config.recordingFolder = args.output
-if args.slam:
-    config.useSlam = True
+if args.map:
     try: os.makedirs(args.output) # SLAM only
     except: pass
     config.mapSavePath = os.path.join(args.output, 'slam_map._')
+if args.no_slam:
+    assert args.map == False
+    config.useSlam = False
 if args.no_feature_tracker:
     config.useFeatureTracker = False
 if args.use_rgb:
@@ -165,7 +169,7 @@ def main_loop(plotter=None):
     for fn in videoFileNames:
         if not args.no_convert:
             withoutExt = fn.rpartition('.')[0]
-            ffmpegCommand = "ffmpeg -framerate 30 -y -i {} -avoid_negative_ts make_zero -c copy {}.mp4".format(fn, withoutExt)
+            ffmpegCommand = "ffmpeg -framerate 30 -y -i  \"{}\" -avoid_negative_ts make_zero -c copy \"{}.mp4\"".format(fn, withoutExt)
 
             result = subprocess.run(ffmpegCommand, shell=True)
             if result.returncode == 0:
