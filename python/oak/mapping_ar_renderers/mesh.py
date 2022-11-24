@@ -54,14 +54,14 @@ class MeshRenderer:
         op = MeshRenderer.OPTIONS[self.selectedOption]
         if op[5] == 0.0: return
 
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-        glClear(GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST)
+        glDepthMask(GL_TRUE)
+        glClear(GL_DEPTH_BUFFER_BIT)
 
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        if op[4] == 0.0: glClear(GL_COLOR_BUFFER_BIT);
+        if op[4] == 0.0: glClear(GL_COLOR_BUFFER_BIT)
 
         glUseProgram(self.meshProgram.program)
         glUniform4fv(self.meshProgram.uniformOptions, 1, np.array(op[:4]))
@@ -89,7 +89,7 @@ class MeshRenderer:
         glUseProgram(0)
 
         glDisable(GL_BLEND)
-        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_DEPTH_TEST)
 
     def setMesh(self, mesh):
         if mesh is None: return

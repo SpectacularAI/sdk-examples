@@ -50,6 +50,7 @@ class State:
     targetResolution = None
     adjustedResolution = None
     scale = None
+    meshPrevVertexCount = 0
     # Must be initialized after pygame.
     meshRenderer = None
     pointCloudRenderer = None
@@ -69,15 +70,17 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
             state.meshRenderer.setMesh(state.mesh)
 
     for event in pygame.event.get():
-        if event.type == pygame.QUIT: state.shouldQuit = True
-        elif event.type == pygame.KEYDOWN:
+        if event.type == pygame.QUIT:
+            state.shouldQuit = True
+        if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q: state.shouldQuit = True
             if event.key == pygame.K_x: state.args.pointCloud = not state.args.pointCloud
             if event.key == pygame.K_m:
                 if state.meshRenderer: state.meshRenderer.nextMode()
                 if state.pointCloudRenderer: state.pointCloudRenderer.nextMode()
-
-        if state.shouldQuit: return
+        if state.shouldQuit:
+            pygame.quit()
+            return
 
     glPixelZoom(state.scale, state.scale)
     glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
@@ -91,7 +94,11 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
     else:
         if (state.currentMapperOutput or state.mesh) and state.meshRenderer:
             if not state.mesh and state.currentMapperOutput is not state.lastMapperOutput:
-                state.meshRenderer.setMesh(state.currentMapperOutput.mesh)
+                vertexCount = state.currentMapperOutput.mesh.vertexCount()
+                if vertexCount != state.meshPrevVertexCount:
+                    state.meshRenderer.setMesh(state.currentMapperOutput.mesh)
+                    state.meshPrevVertexCount = vertexCount
+                state.currentMapperOutput is not state.lastMapperOutput
             state.meshRenderer.setPose(cameraPose)
             state.meshRenderer.render()
 
@@ -118,7 +125,7 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
 
     pygame.display.flip()
 
-def oakdLoop(args, state, device, vioSession):
+def oakdLoop(state, device, vioSession):
     img_queue = device.getOutputQueue(name="cam_out", maxSize=4, blocking=False)
     # Buffer for frames: show together with the corresponding VIO output
     frames = {}
@@ -199,7 +206,9 @@ def main(args):
         def onMappingOutput(mapperOutput):
             nonlocal state
             state.currentMapperOutput = mapperOutput
-            if mapperOutput.finalMap: state.shouldQuit = True
+            if mapperOutput.finalMap:
+                # TODO: call pygame.quit() BUT it has to be called from same thread as init_display(...)
+                state.shouldQuit = True
 
     if args.dataFolder:
         replay = spectacularAI.Replay(args.dataFolder, onMappingOutput, configuration=configInternal)
@@ -207,8 +216,8 @@ def main(args):
         replay.startReplay()
         while not state.shouldQuit:
             time.sleep(0.05)
+        print("Quitting...")
         replay.close()
-        pygame.quit()
     else:
         config = spectacularAI.depthai.Configuration()
         config.internalParameters = configInternal
@@ -222,7 +231,8 @@ def main(args):
             vio_pipeline.startSession(device) as vioSession:
             if args.irBrightness > 0:
                 device.setIrLaserDotProjectorBrightness(args.irBrightness)
-            oakdLoop(args, state, device, vioSession)
+            oakdLoop(state, device, vioSession)
+            print("Quitting...")
 
 def parseArgs():
     import argparse

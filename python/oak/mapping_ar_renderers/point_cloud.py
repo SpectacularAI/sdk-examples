@@ -63,7 +63,7 @@ class PointCloudRenderer:
         glEnable(GL_POINT_SPRITE)
 
         op = PointCloudRenderer.OPTIONS[self.selectedOption]
-        if op[0] == 0.0: glClear(GL_COLOR_BUFFER_BIT);
+        if op[0] == 0.0: glClear(GL_COLOR_BUFFER_BIT)
 
         glUseProgram(self.pcProgram.program)
         glUniformMatrix4fv(self.pcProgram.uniformModelView, 1, GL_FALSE, self.modelView.transpose())
