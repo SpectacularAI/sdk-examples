@@ -162,7 +162,7 @@ def main_loop(plotter=None):
     for fn in videoFileNames:
         if not args.no_convert:
             withoutExt = fn.rpartition('.')[0]
-            ffmpegCommand = "ffmpeg -framerate 30 -y -i {} -avoid_negative_ts make_zero -c copy {}.mp4".format(fn, withoutExt)
+            ffmpegCommand = "ffmpeg -framerate 30 -y -i  \"{}\" -avoid_negative_ts make_zero -c copy \"{}.mp4\"".format(fn, withoutExt)
 
             result = subprocess.run(ffmpegCommand, shell=True)
             if result.returncode == 0:
