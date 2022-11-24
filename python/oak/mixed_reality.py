@@ -170,9 +170,8 @@ if __name__ == '__main__':
     args = parse_args()
 
     config = spectacularAI.depthai.Configuration()
-    config.internalParameters = vioInternalParameters
-    if mapLoadPath is not None:
-        config.mapLoadPath = mapLoadPath
+    if args.mapLoadPath is not None:
+        config.mapLoadPath = args.mapLoadPath
         config.useSlam = True
 
     pipeline, vio_pipeline = make_pipelines(config)
