@@ -79,7 +79,7 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
 
         if state.shouldQuit: return
 
-    glPixelZoom(state.scale, state.scale);
+    glPixelZoom(state.scale, state.scale)
     glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
 
     if state.args.pointCloud:
@@ -99,10 +99,20 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
         state.lastMapperOutput = state.currentMapperOutput
 
     if state.args.recordPath:
+        try: os.makedirs(os.path.dirname(state.args.recordPath))
+        except: pass
+
+        if os.name == 'nt':
+            ffmpegStdErrToNull = "2>NUL"
+        else:
+            ffmpegStdErrToNull = "2>/dev/null"
+
         r = state.adjustedResolution
         if state.recordPipe is None:
-            cmd = "ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s {}x{} -i - -an -pix_fmt yuv420p -c:v libx264 -vf vflip -crf 17 {}".format(r[0], r[1], state.args.recordPath)
-            state.recordPipe = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=True)
+            cmd = "ffmpeg -y -f rawvideo -vcodec rawvideo -pix_fmt rgb24 -s {}x{} -i - -an -pix_fmt yuv420p -c:v libx264 -vf vflip -crf 17 \"{}\" {}".format(
+                r[0], r[1], state.args.recordPath, ffmpegStdErrToNull)
+            state.recordPipe = subprocess.Popen(
+                cmd, stdin=subprocess.PIPE, shell=True)
         buffer = glReadPixels(0, 0, r[0], r[1], GL_RGB, GL_UNSIGNED_BYTE)
         state.recordPipe.stdin.write(buffer)
 
@@ -189,6 +199,7 @@ def main(args):
         def onMappingOutput(mapperOutput):
             nonlocal state
             state.currentMapperOutput = mapperOutput
+            if mapperOutput.finalMap: state.shouldQuit = True
 
     if args.dataFolder:
         replay = spectacularAI.Replay(args.dataFolder, onMappingOutput, configuration=configInternal)
