@@ -49,7 +49,7 @@ class MeshRenderer:
 
     def __init_tex_coord_data(self, nFaces):
         c = 1.0 # Could be used for controlling alpha.
-        faceTexCoords = np.array([0, 0, c, 1, 0, c, 1, 0, c])
+        faceTexCoords = np.array([0, 0, c, 1, 0, c, 0, 1, c])
         self.texCoordData = np.tile(faceTexCoords, nFaces)
 
     def render(self):
