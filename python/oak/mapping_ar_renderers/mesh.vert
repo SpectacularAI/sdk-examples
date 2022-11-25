@@ -1,4 +1,5 @@
 #version 150
+precision mediump float;
 
 uniform mat4 u_ModelViewProjection;
 attribute vec3 a_Position;

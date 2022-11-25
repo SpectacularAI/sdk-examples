@@ -2,8 +2,21 @@
 
 precision mediump float;
 varying vec4 v_Position;
+varying vec3 v_Effect;
 
 void main() {
-    float a = 1.0 / max(1.5 * v_Position.z, 1.0);
-    gl_FragColor = vec4(1 - a, a, 0.2, 1.0);
+    float d = length(2 * (gl_PointCoord - 0.5));
+    float alpha = 1 - d * d;
+    float c = 0;
+
+    const float TIME_APPEAR = 0.1;
+    const float TIME_DISAPPEAR = 0.3;
+    if (v_Effect.z < TIME_APPEAR) {
+        alpha *= v_Effect.z / TIME_APPEAR;
+    }
+    else if (v_Effect.z > TIME_DISAPPEAR) {
+        c = (v_Effect.z - TIME_DISAPPEAR) / (1 - TIME_DISAPPEAR);
+        alpha *= (1 - c * c);
+    }
+    gl_FragColor = vec4(c, 1, c, alpha);
 }

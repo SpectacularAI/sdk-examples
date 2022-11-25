@@ -14,8 +14,25 @@ class MeshProgram:
         self.attributeTexCoord = glGetAttribLocation(self.program, "a_TexCoord")
         self.attributeNormal = glGetAttribLocation(self.program, "a_Normal")
         self.uniformModelViewProjection = glGetUniformLocation(self.program, "u_ModelViewProjection")
+        self.uniformOptions = glGetUniformLocation(self.program, "u_Options")
 
 class MeshRenderer:
+    # Value greater than zero enables at index:
+    # 0) Show borders.
+    # 1) Enable "fake mesh". The number sets density of the lines.
+    # 2) Fake mesh z-levels only.
+    # 3) Alpha multiplier.
+    # 4) Show camera view.
+    # 5) Show mesh.
+    OPTIONS = [
+        [0., 0., 0., 0.75, 1., 1.],
+        [1., 0., 0., 0.75, 1., 1.],
+        [1., 10., 0., 1., 1., 1.],
+        [1., 10., 1., 1., 1., 1.],
+        [1., 0., 0., 0.75, 0., 1.],
+    ]
+    selectedOption = 0
+
     modelViewProjection = None
     meshProgram = None
 
@@ -30,18 +47,29 @@ class MeshRenderer:
         meshFrag = (assetDir / "mesh.frag").read_text()
         self.meshProgram = MeshProgram(createProgram(meshVert, meshFrag))
 
+    def __init_tex_coord_data(self, nFaces):
+        c = 1.0 # Could be used for controlling alpha.
+        faceTexCoords = np.array([0, 0, c, 1, 0, c, 0, 1, c])
+        self.texCoordData = np.tile(faceTexCoords, nFaces)
+
     def render(self):
         if self.modelViewProjection is None: return
         if self.vertexData.shape[0] == 0: return
 
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-        glClear(GL_DEPTH_BUFFER_BIT);
+        op = MeshRenderer.OPTIONS[self.selectedOption]
+        if op[5] == 0.0: return
+
+        glEnable(GL_DEPTH_TEST)
+        glDepthMask(GL_TRUE)
+        glClear(GL_DEPTH_BUFFER_BIT)
 
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
+        if op[4] == 0.0: glClear(GL_COLOR_BUFFER_BIT)
+
         glUseProgram(self.meshProgram.program)
+        glUniform4fv(self.meshProgram.uniformOptions, 1, np.array(op[:4]))
         glUniformMatrix4fv(self.meshProgram.uniformModelViewProjection, 1, GL_FALSE, self.modelViewProjection.transpose())
 
         coordsPerVertex = 3
@@ -51,7 +79,8 @@ class MeshRenderer:
 
         glEnableVertexAttribArray(self.meshProgram.attributeTexCoord)
         coordsPerTex = 3
-        glVertexAttribPointer(self.meshProgram.attributeTexCoord, coordsPerTex, GL_FLOAT, GL_FALSE, 0, self.texCoordData)
+        n = len(self.vertexData)
+        glVertexAttribPointer(self.meshProgram.attributeTexCoord, coordsPerTex, GL_FLOAT, GL_FALSE, 0, self.texCoordData[:n])
 
         glEnableVertexAttribArray(self.meshProgram.attributeNormal)
         glVertexAttribPointer(self.meshProgram.attributeNormal, coordsPerVertex, GL_FLOAT, GL_FALSE, 0,
@@ -66,7 +95,7 @@ class MeshRenderer:
         glUseProgram(0)
 
         glDisable(GL_BLEND)
-        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_DEPTH_TEST)
 
     def setMesh(self, mesh):
         if mesh is None: return
@@ -80,19 +109,16 @@ class MeshRenderer:
         normalInds = mesh.getFaceNormals().flatten()
         self.normalData = normals[normalInds, :].flatten()
 
-        self.texCoordData = np.array([])
-        n = len(vertexInds) // 3
-        c = 1.0 # Could be used for controlling alpha.
-        self.texCoordData = np.zeros(3 * len(vertexInds))
-        for i in range(n):
-            self.texCoordData[9 * i + 3] = 1
-            self.texCoordData[9 * i + 7] = 1
-            self.texCoordData[9 * i + 2] = c
-            self.texCoordData[9 * i + 5] = c
-            self.texCoordData[9 * i + 8] = c
+        if len(self.texCoordData) < len(self.vertexData):
+            # Optimization: (in this demo texture coordinates are a constant repeating array)
+            # Double the tex coordinate array size when the old one is too small.
+            self.__init_tex_coord_data(2 * len(self.vertexData))
 
     def setPose(self, cameraPose):
         near, far = 0.01, 100.0
         projection = cameraPose.camera.getProjectionMatrixOpenGL(near, far)
         modelView = cameraPose.getWorldToCameraMatrix()
         self.modelViewProjection = projection @ modelView
+
+    def nextMode(self):
+        self.selectedOption = (self.selectedOption + 1) % len(MeshRenderer.OPTIONS)
