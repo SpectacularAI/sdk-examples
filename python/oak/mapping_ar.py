@@ -6,9 +6,6 @@ Requirements:
 And optionally to improve performance:
     pip install PyOpenGL_accelerate
 
-This demo has only been tested on Linux and may not work on other platforms
-due to requirements to use OpenGL from single and/or the main process thread.
-
 For OAK-D live use:
     * Plug in OAK-D and run `python3 mapping_ar.py`.
 
@@ -57,6 +54,9 @@ class State:
     mesh = None
 
 def handleVioOutput(state, cameraPose, t, img, width, height):
+    if state.shouldQuit:
+        return
+
     if not state.displayInitialized:
         state.displayInitialized = True
         targetWidth = state.targetResolution[0]

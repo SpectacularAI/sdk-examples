@@ -110,6 +110,8 @@ class MeshRenderer:
         self.normalData = normals[normalInds, :].flatten()
 
         if len(self.texCoordData) < len(self.vertexData):
+            # Optimization: (in this demo texture coordinates are a constant repeating array)
+            # Double the tex coordinate array size when the old one is too small.
             self.__init_tex_coord_data(2 * len(self.vertexData))
 
     def setPose(self, cameraPose):
