@@ -47,6 +47,11 @@ class MeshRenderer:
         meshFrag = (assetDir / "mesh.frag").read_text()
         self.meshProgram = MeshProgram(createProgram(meshVert, meshFrag))
 
+    def __init_tex_coord_data(self, nFaces):
+        c = 1.0 # Could be used for controlling alpha.
+        faceTexCoords = np.array([0, 0, c, 1, 0, c, 1, 0, c])
+        self.texCoordData = np.tile(faceTexCoords, nFaces)
+
     def render(self):
         if self.modelViewProjection is None: return
         if self.vertexData.shape[0] == 0: return
@@ -74,7 +79,8 @@ class MeshRenderer:
 
         glEnableVertexAttribArray(self.meshProgram.attributeTexCoord)
         coordsPerTex = 3
-        glVertexAttribPointer(self.meshProgram.attributeTexCoord, coordsPerTex, GL_FLOAT, GL_FALSE, 0, self.texCoordData)
+        n = len(self.vertexData)
+        glVertexAttribPointer(self.meshProgram.attributeTexCoord, coordsPerTex, GL_FLOAT, GL_FALSE, 0, self.texCoordData[:n])
 
         glEnableVertexAttribArray(self.meshProgram.attributeNormal)
         glVertexAttribPointer(self.meshProgram.attributeNormal, coordsPerVertex, GL_FLOAT, GL_FALSE, 0,
@@ -103,16 +109,8 @@ class MeshRenderer:
         normalInds = mesh.getFaceNormals().flatten()
         self.normalData = normals[normalInds, :].flatten()
 
-        self.texCoordData = np.array([])
-        n = len(vertexInds) // 3
-        c = 1.0 # Could be used for controlling alpha.
-        self.texCoordData = np.zeros(3 * len(vertexInds))
-        for i in range(n):
-            self.texCoordData[9 * i + 3] = 1
-            self.texCoordData[9 * i + 7] = 1
-            self.texCoordData[9 * i + 2] = c
-            self.texCoordData[9 * i + 5] = c
-            self.texCoordData[9 * i + 8] = c
+        if len(self.texCoordData) < len(self.vertexData):
+            self.__init_tex_coord_data(2 * len(self.vertexData))
 
     def setPose(self, cameraPose):
         near, far = 0.01, 100.0
