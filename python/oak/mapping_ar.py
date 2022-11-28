@@ -47,7 +47,6 @@ class State:
     targetResolution = None
     adjustedResolution = None
     scale = None
-    meshPrevVertexCount = 0
     # Must be initialized after pygame.
     meshRenderer = None
     pointCloudRenderer = None
@@ -92,13 +91,10 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
             state.pointCloudRenderer.setPose(cameraPose, t)
             state.pointCloudRenderer.render()
     else:
-        if (state.currentMapperOutput or state.mesh) and state.meshRenderer:
-            if not state.mesh and state.currentMapperOutput is not state.lastMapperOutput:
-                vertexCount = state.currentMapperOutput.mesh.vertexCount()
-                if vertexCount != state.meshPrevVertexCount:
+        if (state.mesh or state.currentMapperOutput) and state.meshRenderer:
+            if not state.mesh:
+                if not state.lastMapperOutput or state.currentMapperOutput.mesh is not state.lastMapperOutput.mesh:
                     state.meshRenderer.setMesh(state.currentMapperOutput.mesh)
-                    state.meshPrevVertexCount = vertexCount
-                state.currentMapperOutput is not state.lastMapperOutput
             state.meshRenderer.setPose(cameraPose)
             state.meshRenderer.render()
 
