@@ -49,6 +49,11 @@ p.add_argument("--no_convert", help="Skip converting h265 video file", action="s
 p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
 p.add_argument('--no_slam', help='Record with SLAM module disabled', action="store_true")
 p.add_argument('--recording_only', help='Do not run VIO, may be faster', action="store_true")
+# This can reduce CPU load while recording with the --no_feature_tracker option
+# and the 800p resolution. See "ffmpeg -codecs" (and see "encoders" under h264)
+# for options that might be available. On Raspberry Pi or Jetson, try "h264_v4l2m2m",
+# and on Linux machines with Nvidia GPUs, try "h264_nvenc".
+p.add_argument('--ffmpeg_codec', help="FFMpeg codec for host", default=None)
 p.add_argument('--map', help='Record SLAM map', action="store_true")
 p.add_argument('--no_feature_tracker', help='Disable on-device feature tracking', action="store_true")
 p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
@@ -78,6 +83,9 @@ if args.mono:
     config.useStereo = False
 if args.recording_only:
     config.recordingOnly = True
+if args.ffmpeg_codec is not None:
+    config.internalParameters = { 'ffmpegVideoCodec': args.ffmpeg_codec + ' -b:v 8M' }
+    print(config.internalParameters)
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
