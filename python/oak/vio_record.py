@@ -40,6 +40,8 @@ config = spectacularAI.depthai.Configuration()
 
 p = argparse.ArgumentParser(__doc__)
 p.add_argument("--output", help="Recording output folder", default="data")
+p.add_argument('--auto_subfolders', action='store_true',
+    help='Create timestamp-named subfolders for each recording')
 p.add_argument("--use_rgb", help="Use RGB data for tracking (OAK-D S2)", action="store_true")
 p.add_argument("--mono", help="Use a single camera (not stereo)", action="store_true")
 p.add_argument("--no_rgb", help="Disable recording RGB video feed", action="store_true")
@@ -61,12 +63,18 @@ pipeline = depthai.Pipeline()
 
 config.useSlam = True
 config.inputResolution = args.resolution
+outputFolder = args.output
+if args.auto_subfolders:
+    import datetime
+    autoFolderName = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+    outputFolder = os.path.join(outputFolder, autoFolderName)
+
 if not args.no_inputs:
-    config.recordingFolder = args.output
+    config.recordingFolder = outputFolder
 if args.map:
-    try: os.makedirs(args.output) # SLAM only
+    try: os.makedirs(outputFolder) # SLAM only
     except: pass
-    config.mapSavePath = os.path.join(args.output, 'slam_map._')
+    config.mapSavePath = os.path.join(outputFolder, 'slam_map._')
 if args.no_slam:
     assert args.map == False
     config.useSlam = False
@@ -120,7 +128,7 @@ def main_loop(plotter=None):
             device.setIrLaserDotProjectorBrightness(args.ir_dot_brightness)
 
         def open_gray_video(name):
-            grayVideoFile = open(args.output + '/rectified_' + name + '.h264', 'wb')
+            grayVideoFile = open(outputFolder + '/rectified_' + name + '.h264', 'wb')
             queue = device.getOutputQueue(name='h264-' + name, maxSize=10, blocking=False)
             return (queue, grayVideoFile)
 
@@ -132,7 +140,7 @@ def main_loop(plotter=None):
             ]
 
         if rgb_as_video:
-            videoFile = open(args.output + "/rgb_video.h265", "wb")
+            videoFile = open(outputFolder + "/rgb_video.h265", "wb")
             rgbQueue = device.getOutputQueue(name="h265-rgb", maxSize=30, blocking=False)
 
         print("Recording!")
