@@ -52,6 +52,30 @@ class State:
     pointCloudRenderer = None
     mesh = None
 
+def updateRenderer(state, cameraPose, t):
+    if state.args.pointCloud:
+        if not state.pointCloudRenderer: return
+        if not state.currentMapperOutput: return
+        if state.currentMapperOutput is not state.lastMapperOutput:
+            state.pointCloudRenderer.setPointCloud(state.currentMapperOutput, t)
+        state.pointCloudRenderer.setPose(cameraPose, t)
+        state.pointCloudRenderer.render()
+    else:
+        def renderMesh():
+            state.meshRenderer.setPose(cameraPose)
+            state.meshRenderer.render()
+
+        def updateMesh():
+            state.meshRenderer.setMesh(state.currentMapperOutput.mesh)
+
+        if not state.meshRenderer: return
+        if not state.currentMapperOutput: return
+        if state.mesh: return renderMesh()
+
+        if not state.lastMapperOutput: updateMesh()
+        elif state.currentMapperOutput.mesh is not state.lastMapperOutput.mesh: updateMesh()
+        return renderMesh()
+
 def handleVioOutput(state, cameraPose, t, img, width, height):
     if state.shouldQuit:
         return
@@ -84,19 +108,7 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
     glPixelZoom(state.scale, state.scale)
     glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
 
-    if state.args.pointCloud:
-        if state.currentMapperOutput and state.pointCloudRenderer:
-            if state.currentMapperOutput is not state.lastMapperOutput:
-                state.pointCloudRenderer.setPointCloud(state.currentMapperOutput, t)
-            state.pointCloudRenderer.setPose(cameraPose, t)
-            state.pointCloudRenderer.render()
-    else:
-        if (state.mesh or state.currentMapperOutput) and state.meshRenderer:
-            if not state.mesh:
-                if not state.lastMapperOutput or state.currentMapperOutput.mesh is not state.lastMapperOutput.mesh:
-                    state.meshRenderer.setMesh(state.currentMapperOutput.mesh)
-            state.meshRenderer.setPose(cameraPose)
-            state.meshRenderer.render()
+    updateRenderer(state, cameraPose, t)
 
     if state.currentMapperOutput:
         state.lastMapperOutput = state.currentMapperOutput
