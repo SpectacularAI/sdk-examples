@@ -35,6 +35,7 @@ import subprocess
 import os
 import json
 import threading
+import time
 
 config = spectacularAI.depthai.Configuration()
 
@@ -141,20 +142,29 @@ def main_loop(plotter=None):
             print("Close the visualization window to stop recording")
 
         while not should_quit:
+            progress = False
             if rgb_as_video:
-                while rgbQueue.has():
+                if rgbQueue.has():
                     frame = rgbQueue.get()
                     vio_session.addTrigger(frame.getTimestamp().total_seconds(), frame_number)
                     frame.getData().tofile(videoFile)
                     frame_number += 1
+                    progress = True
 
             for (grayQueue, grayVideoFile) in grayVideos:
                 if grayQueue.has():
                     grayQueue.get().getData().tofile(grayVideoFile)
+                    progress = True
 
-            out = vio_session.waitForOutput()
-            if plotter is not None:
-                if not plotter(json.loads(out.asJson())): break
+            if vio_session.hasOutput():
+                out = vio_session.getOutput()
+                progress = True
+
+                if plotter is not None:
+                    if not plotter(json.loads(out.asJson())): break
+
+            if not progress:
+                time.sleep(0.01)
 
     videoFileNames = []
 
