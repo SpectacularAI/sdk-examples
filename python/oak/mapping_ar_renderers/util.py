@@ -45,7 +45,7 @@ class Mesh:
     def getFaceNormals(self):
         return self.faceNormals
 
-def loadObjToMesh(objPath):
+def loadObjToMesh(objPath, objPosition):
     mesh = Mesh()
     with open(objPath, 'r') as objFile:
         for line in objFile:
@@ -70,4 +70,7 @@ def loadObjToMesh(objPath):
                     # If i > 2, interpret the polygon as triangle fan and hope for the best.
                     mesh.faceVertices = np.vstack((mesh.faceVertices, [v[0], v[-2], v[-1]]))
                     if n: mesh.faceNormals = np.vstack((mesh.faceNormals, [n[0], n[-2], n[-1]]))
+
+    mesh.vertexPositions += objPosition
+
     return mesh
