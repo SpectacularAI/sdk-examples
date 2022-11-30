@@ -186,7 +186,8 @@ def main(args):
     state.args = args
     state.targetResolution = [int(s) for s in args.resolution.split("x")]
     if args.objLoadPath:
-        state.mesh = loadObjToMesh(args.objLoadPath)
+        position = [float(s) for s in args.objPosition.split(",")]
+        state.mesh = loadObjToMesh(args.objLoadPath, position)
 
     def replayOnVioOutput(vioOutput, frameSet):
         nonlocal state
@@ -250,6 +251,7 @@ def parseArgs():
     # Parameters for non-OAK-D recordings.
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
+    p.add_argument('--objPosition', help="Set position of .obj mesh", default="0,0,0")
     p.add_argument('--cameraInd', help="Which camera to use. Typically 0=left, 1=right, 2=auxiliary/RGB (OAK-D default)", type=int, default=2)
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     return p.parse_args()
