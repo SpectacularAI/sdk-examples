@@ -48,7 +48,7 @@ The SDK uses the following coordinate conventions, which are also elaborated in 
 
 These conventions are _different_ from, e.g., Intel RealSense SDK (cf. [here](https://github.com/IntelRealSense/librealsense/blob/master/doc/t265.md#sensor-origin-and-coordinate-system)), ARCore, Unity and most OpenGL tutorials, most of which use an "Y-is-up" coordinate system, often different camera coordinates systems, and sometimes different pixel (or "NDC") coordinate conventions.
 
-The [pose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.VioOutput.pose) object returned by the Spectacular AI SDK uses the IMU coordinate system as the local reference frame. To get a camera pose, use either [getCameraPose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.VioOutput.getCameraPose) OR [getRgbCameraPose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.depthai.Session.getRgbCameraPose).
+By default, the [pose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.VioOutput.pose) object returned by the Spectacular AI SDK uses the left camera as the local reference frame. To get the pose for another camera, use either [getCameraPose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.VioOutput.getCameraPose) OR [getRgbCameraPose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.depthai.Session.getRgbCameraPose).
 
 ![SDK coordinate systems](https://spectacularai.github.io/docs/png/SpectacularAI-coordinate-systems-oak-d.png?v=2)
 
