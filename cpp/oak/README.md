@@ -39,12 +39,7 @@ For commercial licenses and version for other OS and CPU architectures, contact 
 
  2. Run `make PREFIX=$MY_INSTALL_PREFIX install` (or `sudo make install`)
  3. Make sure you have CMake and Git (`sudo apt install cmake git`)
- 4. Build and install the Depth AI as a shared library by running the following
-    (or see https://github.com/luxonis/depthai-core#dynamic-library for other options)
-
-        make PREFIX=$MY_INSTALL_PREFIX depthai
-
- 5. Build the example using CMake
+ 4. Build the example using CMake
 
         make PREFIX=$MY_INSTALL_PREFIX examples
 
@@ -110,21 +105,12 @@ Change the size of your SWAP. These instructions come from the Getting Started w
 
 ### Using as a library
 
-You must first install DepthAI. Todo this, you need to install following tools if you don't already have them:
+You need to install following tools if you don't already have them:
 * Install Git for Windows https://git-scm.com
 * Install Visual Studio Community 2019 https://visualstudio.microsoft.com/vs/community/
   * When launching, install dependencies for "Desktop Development with C++"
 * Install CMake https://cmake.org/
 * Install Python https://www.python.org/downloads/
-
-Building Depth AI core, open PowerShell window (Shift + Right click in Explorer) in the folder where you extracted the VIO plugin files:
-
-    git clone --recursive https://github.com/luxonis/depthai-core.git --branch v2.19.1
-    cd depthai-core
-    cmake -G "Visual Studio 16 2019" -A x64 -Bbuild -DBUILD_SHARED_LIBS=ON -DDEPTHAI_BUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=build
-    cmake --build build --config Release -- -m
-    cmake --build build --config Release --target install -- -m
-    cd ..
 
 Now you are all set to use the VIO plugin. Let's compile the example to see it works:
 
@@ -134,10 +120,10 @@ Now you are all set to use the VIO plugin. Let's compile the example to see it w
 
 To properly pass arguments to cmake in PowerShell we need a bit more elaborate command, depending on the shell you are using pick A) or B).
 A) In PowerShell:
-    Start-Process cmake -ArgumentList "-G ""Visual Studio 16 2019"" -A x64 -DspectacularAI_depthaiPlugin_DIR=..\lib\cmake\spectacularAI -Ddepthai_DIR=..\depthai-core\build\lib\cmake\depthai .." -NoNewWindow
+    Start-Process cmake -ArgumentList "-G ""Visual Studio 16 2019"" -A x64 -DspectacularAI_depthaiPlugin_DIR=..\lib\cmake\spectacularAI -Ddepthai_DIR=..\lib\cmake\depthai .." -NoNewWindow
 
 B) In Git Bash or similar:
-    cmake -G "Visual Studio 16 2019" -A x64 -DspectacularAI_depthaiPlugin_DIR=../lib/cmake/spectacularAI -Ddepthai_DIR=../depthai-core/build/lib/cmake/depthai ..
+    cmake -G "Visual Studio 16 2019" -A x64 -DspectacularAI_depthaiPlugin_DIR=../lib/cmake/spectacularAI -Ddepthai_DIR=../lib/cmake/depthai ..
 
 Then execute the build:
 
