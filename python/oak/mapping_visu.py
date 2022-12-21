@@ -90,6 +90,7 @@ class Open3DVisualization:
         renderOption = self.vis.get_render_option()
         renderOption.point_size = 2
         renderOption.light_on = False
+        self.viewControl.set_zoom(0.3)
 
     def run(self):
         print("Close the window to stop mapping")
@@ -149,7 +150,6 @@ class Open3DVisualization:
             self.viewControl.set_lookat(pos)
             self.viewControl.set_front(-viewDir)
             self.viewControl.set_up(upDir)
-            self.viewControl.set_zoom(0.3)
 
     def containsKeyFrame(self, keyFrameId):
         return keyFrameId in self.pointClouds
