@@ -28,12 +28,13 @@ def file_vio_reader(in_stream):
     while True:
         line = in_stream.readline()
         if not line: break
-        # hacky, ignore any possible warnings from depthai in stdout
-        # (which should not be there in the first place)
-        if 'warning' in line: continue
-        d = json.loads(line)
-        if 'position' not in d and 'pose' not in d: continue
-        yield(d)
+        try:
+            d = json.loads(line)
+            if 'position' not in d and 'pose' not in d: continue
+            yield(d)
+        except:
+            # Ignore all lines that aren't valid json
+            pass
 
 def make_plotter():
     import numpy as np
