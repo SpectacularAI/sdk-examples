@@ -23,6 +23,7 @@ To install dependecies for all examples you can use: `pip install -r requirement
  * **3D mapping**. Build and visualize 3D point cloud of the environment in real-time.
     Also requires `open3d` to be installed, see [`mapping_visu.py`](mapping_visu.py) for details.
  * **3D mapping with Augmented Reality**. Show 3D mesh or point cloud on top of camera view, using OpenGL. [`mapping_ar.py`](mapping_ar.py)
+ * **3D Mapping with ROS Integration**. Runs Spectacular AI VIO and publishes pose information and keyframes over ROS topics. [`mapping_ros.py`](mapping_ros.py)
  * **Advanced Spatial AI example**. Spectacular AI VIO + Tiny YOLO object detection.
     See [`depthai_combination.py`](depthai_combination.py) for additional dependencies that also need to be installed.
  * **Mixed reality**. In less than 130 lines of Python, with the good old OpenGL functions like `glTranslatef` used for rendering.

@@ -1,11 +1,14 @@
 """
 Runs spectacularAI mapping and publishes poses and frames in ROS.
+
+Make sure to have your ROS environment sourced before running this script. Tested with ROS noetic.
+
+The SpectacularAI SDK and other dependencies can for example be installed in a virtual environment.
 """
 import spectacularAI
 import depthai
 import rospy
 import numpy as np
-import threading
 import time
 import os
 import tf
