@@ -13,7 +13,7 @@ from geometry_msgs.msg import PoseStamped, TransformStamped
 from scipy.spatial.transform import Rotation
 from tf2_msgs.msg import TFMessage
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField
 
 def to_pose_message(camToWorld):
     msg = PoseStamped()
@@ -49,6 +49,19 @@ def to_tf_message(camToWorld, ts, frame_id):
     msg.transforms.append(transform)
     return msg
 
+def to_camera_info_message(camera, frame, ts):
+    intrinsic = camera.getIntrinsicMatrix()
+    msg = CameraInfo()
+    msg.header.stamp = ts
+    msg.header.frame_id = "rgb_optical"
+    msg.height = frame.shape[0]
+    msg.width = frame.shape[1]
+    msg.distortion_model = "none"
+    msg.D = []
+    msg.K = intrinsic.ravel().tolist()
+    return msg
+
+
 
 class SLAMNode:
     def __init__(self):
@@ -57,7 +70,9 @@ class SLAMNode:
         self.keyframe_publisher = rospy.Publisher("/slam/keyframe", PoseStamped, queue_size=10)
         self.rgb_publisher = rospy.Publisher("/slam/rgb", Image, queue_size=10)
         self.tf_publisher = rospy.Publisher("/tf", TFMessage, queue_size=10)
+        self.point_publisher = rospy.Publisher("/slam/pointcloud", PointCloud2, queue_size=10)
         self.depth_publisher = rospy.Publisher("/slam/depth", Image, queue_size=10)
+        self.camera_info_publisher = rospy.Publisher("/slam/camera_info", CameraInfo, queue_size=10)
         self.bridge = CvBridge()
         self.keyframes = {}
 
@@ -65,38 +80,67 @@ class SLAMNode:
         return frame_id in self.keyframes
 
     def newKeyFrame(self, frame_id, keyframe):
+        now = rospy.Time.now()
         self.keyframes[frame_id] = True
         camToWorld = keyframe.frameSet.rgbFrame.cameraPose.getCameraToWorldMatrix()
+        sequence_number = int(frame_id)
         msg = to_pose_message(camToWorld)
+        msg.header.seq = sequence_number
+        msg.header.stamp = now
         self.keyframe_publisher.publish(msg)
-        rgb_frame = keyframe.frameSet.rgbFrame.image
-        now = rospy.Time.now()
-        if rgb_frame is not None:
-            rgb_frame = rgb_frame.toArray()
-            rgb_message = self.bridge.cv2_to_imgmsg(rgb_frame, encoding="rgb8")
-            rgb_message.header.stamp = rospy.Time.now()
-            rgb_message.header.frame_id = "rgb_optical"
-            rgb_message.header.seq = int(frame_id)
-            self.rgb_publisher.publish(rgb_message)
-            tf_message = to_tf_message(camToWorld, now, "rgb_optical")
-            self.tf_publisher.publish(tf_message)
+
+        rgb_frame = keyframe.frameSet.getUndistortedFrame(keyframe.frameSet.rgbFrame).image
+        rgb_frame = rgb_frame.toArray()
+        rgb_message = self.bridge.cv2_to_imgmsg(rgb_frame, encoding="rgb8")
+        rgb_message.header.stamp = now
+        rgb_message.header.frame_id = "rgb_optical"
+        rgb_message.header.seq = sequence_number
+        self.rgb_publisher.publish(rgb_message)
+        tf_message = to_tf_message(camToWorld, now, "rgb_optical")
+        self.tf_publisher.publish(tf_message)
+
+        camera = keyframe.frameSet.rgbFrame.cameraPose.camera
+        info_msg = to_camera_info_message(camera, rgb_frame, now)
+        self.camera_info_publisher.publish(info_msg)
+
+        self.newPointCloud(keyframe)
 
         depth_frame = keyframe.frameSet.getAlignedDepthFrame(keyframe.frameSet.rgbFrame)
         depth = depth_frame.image.toArray()
         depth_msg = self.bridge.cv2_to_imgmsg(depth, encoding="mono16")
         depth_msg.header.stamp = now
         depth_msg.header.frame_id = "rgb_optical"
-        depth_msg.header.seq = int(frame_id)
+        depth_msg.header.seq = sequence_number
         self.depth_publisher.publish(depth_msg)
 
-    def updateKeyFrame(self, frame_id, keyframe):
-        print(f"Updated key frame {frame_id}")
-        #TODO publish updates
-        pass
 
     def newOdometryFrame(self, camToWorld):
         msg = to_pose_message(camToWorld)
         self.odometry_publisher.publish(msg)
+
+    def newPointCloud(self, keyframe):
+        camToWorld = keyframe.frameSet.rgbFrame.cameraPose.getCameraToWorldMatrix()
+        positions = keyframe.pointCloud.getPositionData()
+        pc = np.zeros((positions.shape[0], 6), dtype=np.float32)
+        p_C = np.vstack((positions.T, np.ones((1, positions.shape[0])))).T
+        pc[:, :3] = (camToWorld @ p_C[:, :, None])[:, :3, 0]
+
+        msg = PointCloud2()
+        msg.header.stamp = rospy.Time.now()
+        msg.header.frame_id = "world"
+        if keyframe.pointCloud.hasColors():
+            pc[:, 3:] = keyframe.pointCloud.getRGB24Data() * (1. / 255.)
+        msg.point_step = 4 * 6
+        msg.height = 1
+        msg.width = pc.shape[0]
+        msg.row_step = msg.point_step * pc.shape[0]
+        msg.data = pc.tobytes()
+        msg.is_bigendian = False
+        msg.is_dense = False
+        ros_dtype = PointField.FLOAT32
+        itemsize = np.dtype(np.float32).itemsize
+        msg.fields = [PointField(name=n, offset=i*itemsize, datatype=ros_dtype, count=1) for i, n in enumerate('xyzrgb')]
+        self.point_publisher.publish(msg)
 
 
 def parseArgs():
@@ -105,6 +149,8 @@ def parseArgs():
     p.add_argument("--smooth", help="Apply some smoothing to 3rd person camera movement", action="store_true")
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
+    p.add_argument('--map', help='Map file to load', default=None)
+    p.add_argument('--save-map', help='Map file to save', default=None)
     return p.parse_args()
 
 if __name__ == '__main__':
@@ -138,9 +184,7 @@ if __name__ == '__main__':
             # Check that point cloud exists
             if not keyFrame.pointCloud: continue
 
-            if slam_node.has_keyframe(frame_id):
-                slam_node.updateKeyFrame(frame_id, keyFrame)
-            else:
+            if not slam_node.has_keyframe(frame_id):
                 slam_node.newKeyFrame(frame_id, keyFrame)
 
         if output.finalMap:
@@ -150,10 +194,17 @@ if __name__ == '__main__':
     pipeline = depthai.Pipeline()
     config = spectacularAI.depthai.Configuration()
     config.useColor = True
+    config.useStereo = True
     config.internalParameters = configInternal
     config.useSlam = True
+    config.fastVio = False
+    config.fastImu = False
     config.useFeatureTracker = True
-    config.keyframeCandidateEveryNthFrame = 6
+    config.keyframeCandidateEveryNthFrame = 12
+    if args.map is not None:
+        config.mapLoadPath = args.map
+    if args.save_map is not None:
+        config.mapSavePath = args.save_map
     vioPipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
 
     with depthai.Device(pipeline) as device, \
