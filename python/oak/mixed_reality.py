@@ -3,7 +3,9 @@ Mixed reality example using PyOpenGL. Requirements:
 
     pip install pygame PyOpenGL PyOpenGL_accelerate
 
+For AprilTag mode, see: https://github.com/SpectacularAI/docs/blob/main/pdf/april_tag_instructions.pdf
 """
+
 import depthai
 import spectacularAI
 import pygame
@@ -18,6 +20,10 @@ def parse_args():
     p = argparse.ArgumentParser(__doc__)
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
+    p.add_argument('--useAprilTag', help="Use april tags", action="store_true")
+    p.add_argument('--aprilTagSize', help="With single AprilTag: tag size in meters", default=None)
+    p.add_argument('--aprilTagPath', help="With multiple AprilTags: tag ids, sizes and poses in .json file", default=None)
+    p.add_argument('--aprilTagFamily', help="AprilTag family", default="tagStandard41h12")
     return p.parse_args()
 
 def make_pipelines(config, onMappingOutput=None):
@@ -173,6 +179,23 @@ if __name__ == '__main__':
     if args.mapLoadPath is not None:
         config.mapLoadPath = args.mapLoadPath
         config.useSlam = True
+    elif args.useAprilTag:
+        config.useSlam = True
+        configInternal = {
+            "useLandmarks": "true",
+            "aprilTagEnabled": "true",
+            "aprilTagFamily": args.aprilTagFamily,
+            "useMapPoints": "false"
+        }
+
+        if args.aprilTagPath:
+            configInternal["aprilTagPath"] = args.aprilTagPath
+        elif args.aprilTagSize:
+            configInternal["aprilTagSize"] = args.aprilTagSize
+        else:
+            raise RuntimeError("Either --aprilTagPath or --aprilTagSize must be set with --useAprilTag!")
+
+        config.internalParameters = configInternal
 
     pipeline, vio_pipeline = make_pipelines(config)
     with depthai.Device(pipeline) as device, \
