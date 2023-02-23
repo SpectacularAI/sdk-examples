@@ -58,7 +58,7 @@ def init_display(w, h):
     pygame.init()
     pygame.display.set_mode((w, h), DOUBLEBUF | OPENGL)
 
-def draw_cube():
+def draw_cube(origin):
     CUBE_VERTICES = (
         (1, -1, -1), (1, 1, -1), (-1, 1, -1), (-1, -1, -1),
         (1, -1, 1), (1, 1, 1), (-1, -1, 1), (-1, 1, 1)
@@ -70,7 +70,7 @@ def draw_cube():
     )
     glPushMatrix()
     # cube world position
-    glTranslatef(0.5, 0, 0)
+    glTranslatef(origin[0], origin[1], origin[2])
     glScalef(*([0.1] * 3))
 
     glBegin(GL_LINES)
@@ -97,11 +97,11 @@ def load_and_draw_obj_as_wireframe(in_stream):
         # skip everything else
     glEnd()
 
-def load_obj(objLoadPath):
+def load_obj(objLoadPath, origin):
     gl_list = glGenLists(1)
     glNewList(gl_list, GL_COMPILE)
     if objLoadPath is None:
-        draw_cube()
+        draw_cube(origin)
     else:
         with open(objLoadPath, 'r') as f:
             load_and_draw_obj_as_wireframe(f)
@@ -151,7 +151,8 @@ def main_loop(args, device, vio_session):
                     display_initialized = True
                     clock = pygame.time.Clock()
                     init_display(img.getWidth(), img.getHeight())
-                    obj = load_obj(args.objLoadPath)
+                    origin = (0, 0, 0) if args.useAprilTag else (0.5, 0, 0)
+                    obj = load_obj(args.objLoadPath, origin)
 
                 cam = vio_session.getRgbCameraPose(out)
 
