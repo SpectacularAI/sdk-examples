@@ -97,7 +97,7 @@ def load_and_draw_obj_as_wireframe(in_stream):
         # skip everything else
     glEnd()
 
-def load_obj(objLoadPath, origin):
+def load_obj(objLoadPath, origin=(0.5, 0, 0)):
     gl_list = glGenLists(1)
     glNewList(gl_list, GL_COMPILE)
     if objLoadPath is None:
