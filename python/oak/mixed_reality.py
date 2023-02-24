@@ -21,7 +21,6 @@ def parse_args():
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
     p.add_argument('--aprilTagPath', help="Path to .json file with AprilTag ids, sizes and poses", default=None)
-    p.add_argument('--aprilTagFamily', help="AprilTag family", default="tagStandard41h12")
     return p.parse_args()
 
 def make_pipelines(config, onMappingOutput=None):
@@ -180,9 +179,6 @@ if __name__ == '__main__':
         config.useSlam = True
     elif args.aprilTagPath is not None:
         config.aprilTagPath = args.aprilTagPath
-        config.internalParameters = {
-            "aprilTagFamily": args.aprilTagFamily,
-        }
 
     pipeline, vio_pipeline = make_pipelines(config)
     with depthai.Device(pipeline) as device, \
