@@ -149,11 +149,11 @@ class SLAMNode:
 def parseArgs():
     import argparse
     p = argparse.ArgumentParser(__doc__)
-    p.add_argument("--smooth", help="Apply some smoothing to 3rd person camera movement", action="store_true")
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
     p.add_argument('--map', help='Map file to load', default=None)
     p.add_argument('--save-map', help='Map file to save', default=None)
+    p.add_argument('--color', help="Use RGB camera for tracking", action="store_true")
     return p.parse_args()
 
 if __name__ == '__main__':
@@ -196,14 +196,10 @@ if __name__ == '__main__':
     print("Starting OAK-D device")
     pipeline = depthai.Pipeline()
     config = spectacularAI.depthai.Configuration()
-    config.useColor = True
-    config.useStereo = True
     config.internalParameters = configInternal
     config.useSlam = True
-    config.fastVio = False
-    config.fastImu = False
-    config.useFeatureTracker = True
-    config.keyframeCandidateEveryNthFrame = 12
+    if args.color:
+        config.useColor = True
     if args.map is not None:
         config.mapLoadPath = args.map
     if args.save_map is not None:
