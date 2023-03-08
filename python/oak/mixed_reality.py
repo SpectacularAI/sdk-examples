@@ -20,10 +20,7 @@ def parse_args():
     p = argparse.ArgumentParser(__doc__)
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
-    p.add_argument('--useAprilTag', help="Use april tags", action="store_true")
-    p.add_argument('--aprilTagSize', help="With single AprilTag: tag size in meters", default=None)
-    p.add_argument('--aprilTagPath', help="With multiple AprilTags: tag ids, sizes and poses in .json file", default=None)
-    p.add_argument('--aprilTagFamily', help="AprilTag family", default="tagStandard41h12")
+    p.add_argument('--aprilTagPath', help="Path to .json file with AprilTag ids, sizes and poses", default=None)
     return p.parse_args()
 
 def make_pipelines(config, onMappingOutput=None):
@@ -151,7 +148,7 @@ def main_loop(args, device, vio_session):
                     display_initialized = True
                     clock = pygame.time.Clock()
                     init_display(img.getWidth(), img.getHeight())
-                    origin = (0, 0, 0) if args.useAprilTag else (0.5, 0, 0)
+                    origin = (0, 0, 0) if args.aprilTagPath is not None else (0.5, 0, 0)
                     obj = load_obj(args.objLoadPath, origin)
 
                 cam = vio_session.getRgbCameraPose(out)
@@ -180,23 +177,8 @@ if __name__ == '__main__':
     if args.mapLoadPath is not None:
         config.mapLoadPath = args.mapLoadPath
         config.useSlam = True
-    elif args.useAprilTag:
-        config.useSlam = True
-        configInternal = {
-            "useLandmarks": "true",
-            "aprilTagEnabled": "true",
-            "aprilTagFamily": args.aprilTagFamily,
-            "useMapPoints": "false"
-        }
-
-        if args.aprilTagPath:
-            configInternal["aprilTagPath"] = args.aprilTagPath
-        elif args.aprilTagSize:
-            configInternal["aprilTagSize"] = args.aprilTagSize
-        else:
-            raise RuntimeError("Either --aprilTagPath or --aprilTagSize must be set with --useAprilTag!")
-
-        config.internalParameters = configInternal
+    elif args.aprilTagPath is not None:
+        config.aprilTagPath = args.aprilTagPath
 
     pipeline, vio_pipeline = make_pipelines(config)
     with depthai.Device(pipeline) as device, \
