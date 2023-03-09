@@ -182,6 +182,7 @@ def parseArgs():
     p.add_argument("--color", help="Filter points without color", action="store_true")
     p.add_argument("--use_rgb", help="Use OAK-D RGB camera", action="store_true")
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
+    p.add_argument('--no_feature_tracker', help='Disable on-device feature tracking and depth map', action="store_true")
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
     return p.parse_args()
 
@@ -243,6 +244,7 @@ if __name__ == '__main__':
             print("Starting OAK-D device")
             pipeline = depthai.Pipeline()
             config = spectacularAI.depthai.Configuration()
+            config.useFeatureTracker = not args.no_feature_tracker
             if args.recordingFolder:
                 config.recordingFolder = args.recordingFolder
             config.useColor = args.use_rgb
