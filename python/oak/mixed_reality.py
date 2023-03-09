@@ -148,7 +148,7 @@ def main_loop(args, device, vio_session):
                     display_initialized = True
                     clock = pygame.time.Clock()
                     init_display(img.getWidth(), img.getHeight())
-                    origin = (0, 0, 0) if args.aprilTagPath is not None else (0.5, 0, 0)
+                    origin = (0, 0, 0) if args.aprilTagPath is not None else (-0.5, 0, 0)
                     obj = load_obj(args.objLoadPath, origin)
 
                 cam = vio_session.getRgbCameraPose(out)

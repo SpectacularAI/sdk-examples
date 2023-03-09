@@ -78,7 +78,7 @@ def make_plotter():
 
     def update_graph(frames):
         x, y, z = [np.array(data[c]) for c in 'xyz']
-        vio_plot[0].set_data(x, y)
+        vio_plot[0].set_data(-x, -y)
         vio_plot[0].set_3d_properties(z)
         return (vio_plot[0],)
 
