@@ -103,6 +103,7 @@ vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
 # can be used for example to render AR content or for debugging.
 rgb_as_video = not args.no_rgb and not args.use_rgb
 if rgb_as_video:
+    import numpy # Required by frame.getData(), otherwise it hangs indefinitely
     camRgb = pipeline.create(depthai.node.ColorCamera)
     videoEnc = pipeline.create(depthai.node.VideoEncoder)
     xout = pipeline.create(depthai.node.XLinkOut)
@@ -126,7 +127,7 @@ if args.gray:
     create_gray_encoder(vio_pipeline.stereo.rectifiedLeft, 'left')
     create_gray_encoder(vio_pipeline.stereo.rectifiedRight, 'right')
 
-should_quit = False
+should_quit = threading.Event()
 def main_loop(plotter=None):
     frame_number = 1
 
@@ -157,7 +158,7 @@ def main_loop(plotter=None):
         if plotter is not None:
             print("Close the visualization window to stop recording")
 
-        while not should_quit:
+        while not should_quit.is_set():
             progress = False
             if rgb_as_video:
                 if rgbQueue.has():
@@ -175,7 +176,6 @@ def main_loop(plotter=None):
             if vio_session.hasOutput():
                 out = vio_session.getOutput()
                 progress = True
-
                 if plotter is not None:
                     if not plotter(json.loads(out.asJson())): break
 
@@ -216,8 +216,8 @@ reader_thread = threading.Thread(target = lambda: main_loop(plotter))
 reader_thread.start()
 if plotter is None:
     input("---- Press ENTER to stop recording ----")
-    should_quit = True
 else:
     plt.show()
+should_quit.set()
 
 reader_thread.join()
