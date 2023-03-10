@@ -12,6 +12,7 @@ import numpy as np
 import threading
 import time
 import os
+from mapping_ar_renderers.invert4x4 import invert4x4
 from enum import Enum
 
 # Status for point clouds (for updating Open3D renderer).
@@ -54,7 +55,7 @@ class PointCloud:
         return cloud
 
     def updateWorldPose(self, camToWorld):
-        prevWorldToCam = np.linalg.inv(self.camToWorld)
+        prevWorldToCam = invert4x4(self.camToWorld)
         prevToCurrent = np.matmul(camToWorld, prevWorldToCam)
         self.cloud.transform(prevToCurrent)
         self.camToWorld = camToWorld
@@ -66,7 +67,7 @@ class CoordinateFrame:
         self.camToWorld = np.identity(4)
 
     def updateWorldPose(self, camToWorld):
-        prevWorldToCam = np.linalg.inv(self.camToWorld)
+        prevWorldToCam = invert4x4(self.camToWorld)
         prevToCurrent = np.matmul(camToWorld, prevWorldToCam)
         self.frame.transform(prevToCurrent)
         self.camToWorld = camToWorld
