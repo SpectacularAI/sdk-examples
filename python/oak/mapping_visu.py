@@ -21,6 +21,12 @@ class Status(Enum):
     UPDATED = 2
     REMOVED = 3
 
+def invert_se3(a):
+    b = np.eye(4)
+    b[:3, :3] = a[:3, :3].transpose()
+    b[:3, 3] = -np.dot(b[:3, :3], a[:3, 3])
+    return b
+
 # Wrapper around Open3D point cloud, which helps updating its world pose.
 class PointCloud:
     def __init__(self, keyFrame, voxelSize, colorOnly):
@@ -54,7 +60,7 @@ class PointCloud:
         return cloud
 
     def updateWorldPose(self, camToWorld):
-        prevWorldToCam = np.linalg.inv(self.camToWorld)
+        prevWorldToCam = invert_se3(self.camToWorld)
         prevToCurrent = np.matmul(camToWorld, prevWorldToCam)
         self.cloud.transform(prevToCurrent)
         self.camToWorld = camToWorld
@@ -66,7 +72,7 @@ class CoordinateFrame:
         self.camToWorld = np.identity(4)
 
     def updateWorldPose(self, camToWorld):
-        prevWorldToCam = np.linalg.inv(self.camToWorld)
+        prevWorldToCam = invert_se3(self.camToWorld)
         prevToCurrent = np.matmul(camToWorld, prevWorldToCam)
         self.frame.transform(prevToCurrent)
         self.camToWorld = camToWorld
