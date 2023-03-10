@@ -12,7 +12,6 @@ import numpy as np
 import threading
 import time
 import os
-from mapping_ar_renderers.invert4x4 import invert4x4
 from enum import Enum
 
 # Status for point clouds (for updating Open3D renderer).
@@ -21,6 +20,12 @@ class Status(Enum):
     NEW = 1
     UPDATED = 2
     REMOVED = 3
+
+def invert_se3(a):
+    b = np.eye(4)
+    b[:3, :3] = a[:3, :3].transpose()
+    b[:3, 3] = -np.dot(b[:3, :3], a[:3, 3])
+    return b
 
 # Wrapper around Open3D point cloud, which helps updating its world pose.
 class PointCloud:
@@ -55,7 +60,7 @@ class PointCloud:
         return cloud
 
     def updateWorldPose(self, camToWorld):
-        prevWorldToCam = invert4x4(self.camToWorld)
+        prevWorldToCam = invert_se3(self.camToWorld)
         prevToCurrent = np.matmul(camToWorld, prevWorldToCam)
         self.cloud.transform(prevToCurrent)
         self.camToWorld = camToWorld
@@ -67,7 +72,7 @@ class CoordinateFrame:
         self.camToWorld = np.identity(4)
 
     def updateWorldPose(self, camToWorld):
-        prevWorldToCam = invert4x4(self.camToWorld)
+        prevWorldToCam = invert_se3(self.camToWorld)
         prevToCurrent = np.matmul(camToWorld, prevWorldToCam)
         self.frame.transform(prevToCurrent)
         self.camToWorld = camToWorld
