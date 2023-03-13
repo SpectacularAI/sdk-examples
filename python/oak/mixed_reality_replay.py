@@ -48,6 +48,7 @@ def onOutput(output, frameSet):
         objPos = output.globalPose.coordinates
 
     for frame in frameSet:
+        if frame.image is None: continue
         if frame.image.getColorFormat() == spectacularAI.ColorFormat.RGB:
             img = frame.image.toArray()
             # Flip the image upside down for OpenGL
