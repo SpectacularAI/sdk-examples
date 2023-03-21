@@ -2,7 +2,10 @@
 Visualize 3D point cloud of the environment in real-time, or playback your recordings and view their 3D point cloud.
 Press 'H' to view Open3D point cloud viewer options.
 
-Requirements: pip install open3d
+Requirements: pip install -v open3d==0.16.0
+
+Note: Most recent open3d version (0.17.0) has a bug with Visualizer::get_view_control() so version 0.16.0 is recommended.
+
 """
 
 import spectacularAI
