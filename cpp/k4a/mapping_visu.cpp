@@ -45,8 +45,13 @@ int main(int argc, char *argv[]) {
 
     config.k4aConfig.camera_fps = K4A_FRAMES_PER_SECOND_15;
 
+    config.internalParameters = {
+        {"computeStereoPointCloud", "true"}
+    };
+
     // Create vio pipeline using the config, and then start k4a device and vio.
     spectacularAI::k4aPlugin::Pipeline vioPipeline(config);
+
 
     // Serialize mapping output for point cloud
     vioPipeline.setMapperCallback([&](spectacularAI::mapping::MapperOutputPtr mappingOutput) {
