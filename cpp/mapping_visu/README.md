@@ -21,7 +21,6 @@ The `-DspectacularAI_DIR` option is not needed is you have used `sudo make insta
 
 ## Usage
 
-
 Create a new pipe with:
 ```
 mkfifo ~/my_pipe

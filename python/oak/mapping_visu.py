@@ -15,7 +15,7 @@ import numpy as np
 import threading
 import time
 import os
-from helpers.deserialize_output import input_stream_reader, MockVioOutput, MockMapperOutput
+from common.deserialize_output import input_stream_reader, MockVioOutput, MockMapperOutput
 from enum import Enum
 
 # Status for point clouds (for updating Open3D renderer).

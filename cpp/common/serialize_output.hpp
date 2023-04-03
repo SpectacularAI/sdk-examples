@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <array>
-#include <spectacularAI/vio.hpp>
+#include <spectacularAI/output.hpp>
+#include <spectacularAI/mapping.hpp>
 
 // Random number indicating start of a MessageHeader
 #define MAGIC_BYTES 2727221974
