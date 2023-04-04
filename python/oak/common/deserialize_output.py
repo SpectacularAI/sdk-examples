@@ -22,16 +22,17 @@ def input_stream_reader(in_stream):
             for keyFrameId in json_output["updatedKeyFrames"]:
                 keyFrame = json_output["map"]["keyFrames"].get(str(keyFrameId))
                 if not keyFrame: continue # Deleted key frame
-                pointCloud = keyFrame["pointCloud"]
-                points = pointCloud["size"]
-                pointCloud["positionData"] = np.frombuffer(in_stream.read(points * 4 * 3), dtype=np.float32)
-                pointCloud["positionData"].shape = (points, 3)
-                if pointCloud["hasNormals"]:
-                    pointCloud["normalData"] = np.frombuffer(in_stream.read(points * 4 * 3), dtype=np.float32)
-                    pointCloud["normalData"].shape = (points, 3)
-                if pointCloud["hasColors"]:
-                    pointCloud["rgb24Data"] = np.frombuffer(in_stream.read(points * 3), dtype=np.ubyte)
-                    pointCloud["rgb24Data"].shape = (points, 3)
+                if "pointCloud" in keyFrame:
+                    pointCloud = keyFrame["pointCloud"]
+                    points = pointCloud["size"]
+                    pointCloud["positionData"] = np.frombuffer(in_stream.read(points * 4 * 3), dtype=np.float32)
+                    pointCloud["positionData"].shape = (points, 3)
+                    if pointCloud["hasNormals"]:
+                        pointCloud["normalData"] = np.frombuffer(in_stream.read(points * 4 * 3), dtype=np.float32)
+                        pointCloud["normalData"].shape = (points, 3)
+                    if pointCloud["hasColors"]:
+                        pointCloud["rgb24Data"] = np.frombuffer(in_stream.read(points * 3), dtype=np.ubyte)
+                        pointCloud["rgb24Data"].shape = (points, 3)
 
         yield json_output
 
@@ -72,7 +73,10 @@ class MockPointCloud:
 class MockKeyFrame:
     def __init__(self, data):
         self.frameSet = MockFrameSet(data["frameSet"])
-        self.pointCloud = MockPointCloud(data["pointCloud"])
+        if "pointCloud" in data:
+            self.pointCloud = MockPointCloud(data["pointCloud"])
+        else:
+            self.pointCloud = None
 
 class MockMap:
     def __init__(self, data):
