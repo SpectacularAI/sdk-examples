@@ -6,3 +6,5 @@ data/
 python/oak/models/
 .vscode
 python/oak/output/
+cpp/mapping_visu/build/
+cpp/mapping_visu/cmake-build-debug/
