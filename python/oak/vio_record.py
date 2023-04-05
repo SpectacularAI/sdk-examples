@@ -51,6 +51,8 @@ p.add_argument("--gray", help="Record (rectified) gray video data", action="stor
 p.add_argument("--no_convert", help="Skip converting h265 video file", action="store_true")
 p.add_argument('--no_preview', help='Do not show a live preview', action="store_true")
 p.add_argument('--no_slam', help='Record with SLAM module disabled', action="store_true")
+p.add_argument('--exposure', help='Set manual exposure in microseconds', type=int)
+p.add_argument('--iso', help='Set manual exposure ISO sensitivity 100...1600', type=int, default=800)
 p.add_argument('--recording_only', help='Do not run VIO, may be faster', action="store_true")
 p.add_argument('--disable_cameras', help='Prevents SDK from using cameras, for example to only record RGB camera and IMU', action="store_true")
 # This can reduce CPU load while recording with the --no_feature_tracker option
@@ -96,7 +98,7 @@ if args.recording_only:
 if args.disable_cameras:
     config.disableCameras = True
 if args.ffmpeg_codec is not None:
-    config.internalParameters = { 'ffmpegVideoCodec': args.ffmpeg_codec + ' -b:v 8M' }
+    config.internalParameters = { 'ffmpegVideoCodec': args.ffmpeg_codec + ' -b:v 16M' }
     print(config.internalParameters)
 
 # Enable recoding by setting recordingFolder option
@@ -130,12 +132,24 @@ if args.gray:
     create_gray_encoder(vio_pipeline.stereo.rectifiedLeft, 'left')
     create_gray_encoder(vio_pipeline.stereo.rectifiedRight, 'right')
 
+if args.exposure and args.exposure > 0:
+    controlIn = pipeline.create(depthai.node.XLinkIn)
+    controlIn.setStreamName('control')
+    for cam in [vio_pipeline.monoLeft, vio_pipeline.monoRight]:
+        controlIn.out.link(cam.inputControl)
+
 should_quit = threading.Event()
 def main_loop(plotter=None):
     frame_number = 1
 
     with depthai.Device(pipeline) as device, \
         vio_pipeline.startSession(device) as vio_session:
+
+        if args.exposure and args.exposure > 0:
+            controlQueue = device.getInputQueue(controlIn.getStreamName())
+            ctrl = depthai.CameraControl()
+            ctrl.setManualExposure(args.exposure, args.iso)
+            controlQueue.send(ctrl)
 
         if args.ir_dot_brightness > 0:
             device.setIrLaserDotProjectorBrightness(args.ir_dot_brightness)
@@ -218,7 +232,7 @@ else:
 reader_thread = threading.Thread(target = lambda: main_loop(plotter))
 reader_thread.start()
 if plotter is None:
-    input("---- Press ENTER to stop recording ----")
+    input("---- Press ENTER to stop recording ----\n")
 else:
     plt.show()
 should_quit.set()
