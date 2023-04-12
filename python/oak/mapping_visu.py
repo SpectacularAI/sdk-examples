@@ -98,7 +98,7 @@ class Open3DVisualization:
         self.vis.add_geometry(self.cameraFrame.frame, reset_bounding_box=False)
         self.viewControl = self.vis.get_view_control()
         renderOption = self.vis.get_render_option()
-        renderOption.point_size = 2
+        renderOption.point_size = 3
         renderOption.light_on = False
         self.viewControl.set_zoom(0.3)
 
