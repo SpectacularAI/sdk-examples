@@ -3,7 +3,7 @@ Simple VIO result visualizer Python. Reads outputs from the
 Spectacular AI OAK-D plugin and plots them in real time.
 Plug in the OAK-D to an USB3 port using an USB3 cable before running.
 
-Can also visualize pre-recorded results from a JSONL file or from a pipe.
+Can also visualize pre-recorded results using Replay API, or from a JSONL file or from a pipe.
 The device does not have to be attached in this case. (See vio_record.py)
 """
 import time
@@ -23,6 +23,20 @@ def live_vio_reader():
         while True:
             out = vio_session.waitForOutput()
             yield(json.loads(out.asJson()))
+
+def replay_vio_reader(replay):
+    outputs = []
+    def onOutput(out):
+        outputs.append(out.asJson())
+
+    replay.setOutputCallback(onOutput)
+    replay.startReplay()
+
+    while True:
+        if outputs:
+            out = outputs.pop(0)
+            yield(json.loads(out))
+        time.sleep(0.01)
 
 def file_vio_reader(in_stream):
     while True:
@@ -90,21 +104,29 @@ if __name__ == '__main__':
     plotter, anim = make_plotter()
     import argparse
     parser = argparse.ArgumentParser(__doc__)
+    parser.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
     parser.add_argument('--file', type=argparse.FileType('r'),
         help='Read data from a JSONL file or pipe instead of displaying it live',
         default=None)
+
     args = parser.parse_args()
 
     def reader_loop():
-        if args.file is None:
-            vio_source = live_vio_reader()
-        else:
+        if args.dataFolder:
+            import spectacularAI
+            replay = spectacularAI.Replay(args.dataFolder)
+            vio_source = replay_vio_reader(replay)
+        elif args.file:
             vio_source = file_vio_reader(args.file)
+        else:
+            vio_source = live_vio_reader()
 
         for vio_out in vio_source:
             if not plotter(vio_out): break
+        if replay: replay.close()
 
     reader_thread = threading.Thread(target = reader_loop)
     reader_thread.start()
     plt.show()
     reader_thread.join()
+
