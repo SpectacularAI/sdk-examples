@@ -112,6 +112,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     def reader_loop():
+        replay = None
         if args.dataFolder:
             import spectacularAI
             replay = spectacularAI.Replay(args.dataFolder)
