@@ -15,7 +15,7 @@ This example use Azure Kinect device with Mapping API and serializes the output 
 ```
 mkdir target
 cd target
-cmake  -DspectacularAI_k4aPlugin_DIR=<path/to/spectacularai-sdk/lib/cmake/spectacularAI/>
+cmake -DspectacularAI_k4aPlugin_DIR=<path/to/spectacularAI_k4aPlugin/install/lib/cmake/spectacularAI/> ..
 make
 ```
 
@@ -28,7 +28,7 @@ Create a new pipe with:
 mkfifo ~/my_pipe
 ```
 
-Launch python visualization and leave it running with:
+Open another command prompt, go to `./sdk-examples/python/oak/` and launch Python visualization and leave it running with:
 ```
 python mapping_visu.py --file ~/my_pipe
 ```
