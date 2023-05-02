@@ -10,6 +10,7 @@ This example use Azure Kinect device with Mapping API and serializes the output 
 ## Setup
 
 * Install the Spectacular AI SDK
+* Clone the submodules: `git submodule update --init --recursive`
 * Build this example using CMake:
 
 ```
