@@ -60,6 +60,7 @@ p.add_argument('--disable_cameras', help='Prevents SDK from using cameras, for e
 p.add_argument('--ffmpeg_codec', help="FFMpeg codec for host", default=None)
 p.add_argument('--map', help='Record SLAM map', action="store_true")
 p.add_argument('--no_feature_tracker', help='Disable on-device feature tracking', action="store_true")
+p.add_argument('--vio_auto_exposure', help='Enable SpectacularAI auto exposure which optimizes exposure parameters for VIO performance (BETA)', action="store_true")
 p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
 p.add_argument("--resolution", help="Gray input resolution (gray)",
     default=config.inputResolution,
@@ -87,6 +88,8 @@ if args.no_slam:
     config.useSlam = False
 if args.no_feature_tracker:
     config.useFeatureTracker = False
+if args.vio_auto_exposure:
+    config.useVioAutoExposure = True
 if args.use_rgb:
     config.useColor = True
 if args.mono:
