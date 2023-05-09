@@ -12,7 +12,6 @@
 ## Installation
 
 Install the Python pacakge: `pip install spectacularAI`
-Note: There is an image distortion bug in the most recent depthai version (v2.21.2.0). For best performance, run `pip install depthai==2.19.1.0 --force`
 
 ## Examples
 
