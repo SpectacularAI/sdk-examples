@@ -62,6 +62,7 @@ p.add_argument('--map', help='Record SLAM map', action="store_true")
 p.add_argument('--no_feature_tracker', help='Disable on-device feature tracking', action="store_true")
 p.add_argument('--vio_auto_exposure', help='Enable SpectacularAI auto exposure which optimizes exposure parameters for VIO performance (BETA)', action="store_true")
 p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
+p.add_argument('--device_id', help='If you have multiple devices connected, index of the device you wish to use (sorted by mxid)', type=int, default=0)
 p.add_argument("--resolution", help="Gray input resolution (gray)",
     default=config.inputResolution,
     choices=['400p', '800p'])
@@ -136,8 +137,8 @@ if args.gray:
 should_quit = threading.Event()
 def main_loop(plotter=None):
     frame_number = 1
-
-    with depthai.Device(pipeline) as device, \
+    device_infos = sorted(depthai.Device.getAllAvailableDevices(), key=lambda device: device.mxid)
+    with depthai.Device(pipeline, device_infos[args.device_id]) as device, \
         vio_pipeline.startSession(device) as vio_session:
 
         if args.ir_dot_brightness > 0:
