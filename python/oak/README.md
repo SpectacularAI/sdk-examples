@@ -13,6 +13,13 @@
 
 Install the Python pacakge: `pip install spectacularAI`
 
+## Known issues
+
+**June 2023**. With Depth AI version 2.21.2 and Spectacular AI SDK versions 1.18+, OAK-D (Pro) Wide, and possibly other OAK-D S2 generation devices, have a camera rectification issue that needs to be worked around by either
+
+ 1. Checking out the [`2023-06-oakd-s2-distortion`](https://github.com/SpectacularAI/sdk-examples/compare/2023-06-oakd-s2-distortion) branch of this SDK example repository (This work-around manually calls `enableDistortionCorrection(true)` for the stereo depth node).
+ 2. OR: downgrading the SDK: `pip install spectacularAI==1.16.1`
+
 ## Examples
 
 To install dependecies for all examples you can use: `pip install -r requirements.txt`. On Linux, you may also need to `sudo apt install python3-tk` to run the Matplotlib-based visualizations.
