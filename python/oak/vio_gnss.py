@@ -61,6 +61,7 @@ if len(sys.argv) >= 2: config.recordingFolder = sys.argv[1]
 #config.imuToGnss = spectacularAI.Vector3d(0.0, 0.0, 0.0)
 
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
+vio_pipeline.stereo.enableDistortionCorrection(True)
 
 with depthai.Device(pipeline) as device, \
     vio_pipeline.startSession(device) as vio_session:

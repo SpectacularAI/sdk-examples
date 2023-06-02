@@ -311,6 +311,7 @@ if __name__ == '__main__':
             config.useColor = args.use_rgb
             config.internalParameters = configInternal
             vioPipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
+            vioPipeline.stereo.enableDistortionCorrection(True)
 
             with depthai.Device(pipeline) as device, \
                 vioPipeline.startSession(device) as vio_session:

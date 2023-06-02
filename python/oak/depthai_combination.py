@@ -31,6 +31,7 @@ def make_pipelines(nnBlobPath, showRgb):
     # Create pipeline
     pipeline = dai.Pipeline()
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
+    vio_pipeline.stereo.enableDistortionCorrection(True)
 
     # Define sources and outputs
     camRgb = pipeline.createColorCamera()

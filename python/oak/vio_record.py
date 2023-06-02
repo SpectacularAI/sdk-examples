@@ -104,6 +104,7 @@ if args.ffmpeg_codec is not None:
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
+vio_pipeline.stereo.enableDistortionCorrection(True)
 
 # Optionally also record other video streams not used by the Spectacular AI SDK, these
 # can be used for example to render AR content or for debugging.

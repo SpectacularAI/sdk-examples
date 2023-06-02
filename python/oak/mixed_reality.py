@@ -26,6 +26,7 @@ def parse_args():
 def make_pipelines(config, onMappingOutput=None):
     pipeline = depthai.Pipeline()
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
+    vio_pipeline.stereo.enableDistortionCorrection(True)
 
     # NOTE: this simple method of reading RGB data from the device does not
     # scale so well to higher resolutions. Use YUV data with larger resolutions

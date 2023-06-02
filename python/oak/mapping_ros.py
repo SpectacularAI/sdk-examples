@@ -205,6 +205,7 @@ if __name__ == '__main__':
     if args.save_map is not None:
         config.mapSavePath = args.save_map
     vioPipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
+    vioPipeline.stereo.enableDistortionCorrection(True)
 
     with depthai.Device(pipeline) as device, \
         vioPipeline.startSession(device) as vio_session:

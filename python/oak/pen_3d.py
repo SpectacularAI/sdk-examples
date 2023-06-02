@@ -16,6 +16,7 @@ if SHOW_CAM:
 def make_pipelines():
     pipeline = depthai.Pipeline()
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
+    vio_pipeline.stereo.enableDistortionCorrection(True)
 
     RGB_OUTPUT_WIDTH = 200 # very small on purpose
     REF_ASPECT = 1920 / 1080.0
