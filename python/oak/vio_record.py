@@ -53,6 +53,7 @@ p.add_argument('--no_preview', help='Do not show a live preview', action="store_
 p.add_argument('--no_slam', help='Record with SLAM module disabled', action="store_true")
 p.add_argument('--recording_only', help='Do not run VIO, may be faster', action="store_true")
 p.add_argument('--disable_cameras', help='Prevents SDK from using cameras, for example to only record RGB camera and IMU', action="store_true")
+p.add_argument('--no_usb_speed_check', help='Disable USB speed check', action="store_true")
 # This can reduce CPU load while recording with the --no_feature_tracker option
 # and the 800p resolution. See "ffmpeg -codecs" (and see "encoders" under h264)
 # for options that might be available. On Raspberry Pi or Jetson, try "h264_v4l2m2m",
@@ -101,6 +102,8 @@ if args.disable_cameras:
 if args.ffmpeg_codec is not None:
     config.internalParameters = { 'ffmpegVideoCodec': args.ffmpeg_codec + ' -b:v 8M' }
     print(config.internalParameters)
+if args.no_usb_speed_check:
+    config.ensureSufficientUsbSpeed = False
 
 # Enable recoding by setting recordingFolder option
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
