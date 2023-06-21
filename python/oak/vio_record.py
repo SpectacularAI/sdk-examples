@@ -117,7 +117,7 @@ if rgb_as_video:
     videoEnc = pipeline.create(depthai.node.VideoEncoder)
     xout = pipeline.create(depthai.node.XLinkOut)
     xout.setStreamName("h265-rgb")
-    camRgb.setBoardSocket(depthai.CameraBoardSocket.RGB)
+    camRgb.setBoardSocket(depthai.CameraBoardSocket.CAM_A)
     camRgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
     # no need to set input resolution anymore (update your depthai package if this does not work)
     videoEnc.setDefaultProfilePreset(30, depthai.VideoEncoderProperties.Profile.H265_MAIN)
