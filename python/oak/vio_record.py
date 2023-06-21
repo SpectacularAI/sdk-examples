@@ -172,7 +172,7 @@ def main_loop(plotter=None):
             if rgb_as_video:
                 if rgbQueue.has():
                     frame = rgbQueue.get()
-                    vio_session.addTrigger(frame.getTimestamp().total_seconds(), frame_number)
+                    vio_session.addTrigger(frame.getTimestampDevice().total_seconds(), frame_number)
                     frame.getData().tofile(videoFile)
                     frame_number += 1
                     progress = True
