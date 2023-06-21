@@ -49,15 +49,14 @@ int main(int argc, char *argv[]) {
         {"computeStereoPointCloud", "true"}
     };
 
-    // Create vio pipeline using the config, and then start k4a device and vio.
-    spectacularAI::k4aPlugin::Pipeline vioPipeline(config);
-
-
-    // Serialize mapping output for point cloud
-    vioPipeline.setMapperCallback([&](spectacularAI::mapping::MapperOutputPtr mappingOutput) {
-       std::lock_guard<std::mutex> lock(m);
-       serializer.serializeMappingOutput(outputStream, mappingOutput);
-   });
+    // Create vio pipeline using the config, and then start k4a device and vio with a mapper callback.
+    spectacularAI::k4aPlugin::Pipeline vioPipeline(config,
+        [&](spectacularAI::mapping::MapperOutputPtr mappingOutput) {
+            // Serialize mapping output for point cloud
+            std::lock_guard<std::mutex> lock(m);
+            serializer.serializeMappingOutput(outputStream, mappingOutput);
+        }
+    );
 
     auto session = vioPipeline.startSession();
 
