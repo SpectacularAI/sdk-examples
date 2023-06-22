@@ -31,9 +31,9 @@ import sys
 # sends it to vio_session
 def gnssInput(vio_session):
     def computeSystemToDeviceTimeOffset(device):
-        imuQueue = device.getOutputQueue(name="spectacularAI_imu", maxSize=1, blocking=True)
-        imuData = imuQueue.get()
-        acc = imuData.packets[0].acceleroMeter
+        imu_queue = device.getOutputQueue(name="spectacularAI_imu", maxSize=1, blocking=True)
+        imu_data = imu_queue.get()
+        acc = imu_data.packets[0].acceleroMeter
         ts_device = acc.getTimestampDevice().total_seconds()
         ts_system = acc.getTimestamp().total_seconds()
         return ts_device - ts_system
