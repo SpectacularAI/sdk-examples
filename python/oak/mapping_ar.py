@@ -142,7 +142,7 @@ def oakdLoop(state, device, vioSession):
     while True:
         if img_queue.has():
             img = img_queue.get()
-            img_time = img.getTimestamp().total_seconds()
+            img_time = img.getTimestampDevice().total_seconds()
             frames[frame_number] = img
             vioSession.addTrigger(img_time, frame_number)
             frame_number += 1
