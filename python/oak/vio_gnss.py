@@ -30,6 +30,16 @@ import sys
 # A separate thread that reads gnss position as JSON from stdin and
 # sends it to vio_session
 def gnssInput(vio_session):
+    def computeSystemToDeviceTimeOffset(device):
+        imu_queue = device.getOutputQueue(name="spectacularAI_imu", maxSize=1, blocking=True)
+        imu_data = imu_queue.get()
+        acc = imu_data.packets[0].acceleroMeter
+        ts_device = acc.getTimestampDevice().total_seconds()
+        ts_system = acc.getTimestamp().total_seconds()
+        return ts_device - ts_system
+
+    system_to_device_time_offset = computeSystemToDeviceTimeOffset(device)
+
     for line in sys.stdin:
         gnss = json.loads(line)
         coordinates = spectacularAI.WgsCoordinates()
@@ -46,8 +56,10 @@ def gnssInput(vio_session):
                 [0, horizontalStddev * horizontalStddev, 0],
                 [0, 0, verticalStddev * verticalStddev]
             ]
+
+        # device_time = system_time + system_to_device_time_offset
         vio_session.addGnss(
-            gnss["monotonicTime"],
+            gnss["monotonicTime"] + system_to_device_time_offset,
             coordinates,
             enuPositionCovariance
         )
@@ -64,6 +76,7 @@ vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
 
 with depthai.Device(pipeline) as device, \
     vio_pipeline.startSession(device) as vio_session:
+
     threading.Thread(target = gnssInput, args=(vio_session,)).start()
 
     while True:
