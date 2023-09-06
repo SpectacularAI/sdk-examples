@@ -27,6 +27,7 @@ def parse_args():
 args = parse_args()
 
 display_initialized = False
+shouldQuit = False
 obj = None
 objPos = None # Position in WGS84 coordinates when GPS fusion is enabled
 if args.latitude and args.longitude and args.altitude:
@@ -37,9 +38,12 @@ if args.latitude and args.longitude and args.altitude:
 
 def onOutput(output, frameSet):
     global display_initialized
+    global shouldQuit
     global objPos
     global obj
     global args
+
+    if shouldQuit: return
 
     if output.globalPose and objPos == None:
         # If we receive global pose i.e. recording contains GPS coordinates, then
@@ -63,6 +67,7 @@ def onOutput(output, frameSet):
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    shouldQuit = True
                     pygame.quit()
                     return
 
@@ -81,4 +86,8 @@ def onOutput(output, frameSet):
 
 replay = spectacularAI.Replay(args.dataFolder)
 replay.setExtendedOutputCallback(onOutput)
-replay.runReplay()
+replay.startReplay()
+while not shouldQuit:
+    time.sleep(0.05)
+print("Quitting...")
+replay.close()
