@@ -1,4 +1,6 @@
 """
+!!! For ROS2 see ros2/ folder for a more complete example !!!
+
 Runs spectacularAI mapping and publishes poses and frames in ROS.
 
 Make sure to have your ROS environment sourced before running this script. Tested with ROS noetic.
