@@ -53,9 +53,6 @@ int main(int argc, char *argv[]) {
         // performance, so we concatenate our changes to it.
         configurationYaml << readFileToString(dataConfigurationYamlPath) << std::endl;
     }
-    // The `processingQueueSize` option makes the data input wait for VIO to finish to
-    // avoid dropping frames. It should not be used in real-time scenarios.
-    configurationYaml << "processingQueueSize: 0\n";
     configurationYaml << userConfigurationYaml;
 
     // The Replay API builder takes as input the main API builder as a way to share

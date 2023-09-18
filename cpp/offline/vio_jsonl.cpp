@@ -29,7 +29,8 @@ int main(int argc, char *argv[]) {
     std::ostringstream config;
     // This option makes the data input wait for VIO to finish to avoid dropping frames.
     // It should not be used in real-time scenarios.
-    config << "processingQueueSize: 0\n";
+    config << "blockingReplay: True\n";
+
     config << input->getConfig();
     auto builder = spectacularAI::Vio::builder()
         .setConfigurationYAML(config.str())
