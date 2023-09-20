@@ -1,7 +1,7 @@
 """
-Example of accessing the raw data feeds from DepthAI that the SDK uses through
+An example of accessing the raw data feeds from DepthAI that the SDK uses through
 the Spectacualar AI hooks API. It's important to note that these are only called
-if the particular mode the Spetacular AI SDK is running uses that data feed
+if the particular mode the Spetacular AI SDK is running in uses that data feed
 """
 
 import depthai
@@ -17,9 +17,6 @@ config.useSlam = True
 vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
 
 featureBuffer = None
-
-def timeDeltaToMilliS(delta) -> float:
-    return delta.total_seconds()*1000
 
 def onImageFactor(name):
     def onImage(img):
@@ -63,7 +60,7 @@ vio_pipeline.hooks.monoSecondary = onImageFactor("Secondary")
 vio_pipeline.hooks.depth = onImageFactor("Depth")
 vio_pipeline.hooks.trackedFeatures = onFeatures
 # In default mode the color is not used by the SDK, so this will never get called.
-# see mixed_reality.py example how to read the color data in efficient manner.
+# see mixed_reality.py example how to read the color data in an efficient manner.
 vio_pipeline.hooks.color = onImageFactor("Color")
 
 with depthai.Device(pipeline) as device, \
