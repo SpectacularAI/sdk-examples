@@ -20,6 +20,7 @@ parser.add_argument("input", help="Path to folder with session to process")
 parser.add_argument("output", help="Output folder, this should be 'data/' folder under taichi_3d_gaussian_splatting")
 parser.add_argument("name", help="Session name", default="splatting_test")
 parser.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
+parser.add_argument("--cell_size", help="Point cloud decimation cell size", type=float, default=0.025)
 args = parser.parse_args()
 
 
@@ -31,7 +32,15 @@ frameHeight = -1
 intrinsics = None
 
 
-def blurscore(path):
+def voxelDecimate(df, cell_size):
+    def grouping_function(row):
+        return tuple([round(row[c] / cell_size) for c in 'xyz'])
+    df['voxel_index'] = df.apply(grouping_function, axis=1)
+    grouped = df.groupby('voxel_index')
+    return grouped.first().reset_index()
+
+
+def blurScore(path):
     image = cv2.imread(path)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     f_transform = np.fft.fft2(gray)
@@ -81,8 +90,7 @@ def onMappingOutput(output):
         blurryImages = {}
         imageSharpness = []
         for frameId in output.map.keyFrames:
-            # imageSharpness.append((frameId, sharpness(f"{args.output}/{args.name}/tmp/frame_{frameId:05}.png")))
-            imageSharpness.append((frameId, blurscore(f"{args.output}/{args.name}/tmp/frame_{frameId:05}.png")))
+            imageSharpness.append((frameId, blurScore(f"{args.output}/{args.name}/tmp/frame_{frameId:05}.png")))
 
         # Look two images forward and two backwards, if current frame is blurriest, don't use it
         for i in range(len(imageSharpness)):
@@ -130,7 +138,8 @@ def onMappingOutput(output):
 
         # Save files
         point_cloud_df = pd.DataFrame(np.array(globalPointCloud), columns=["x", "y", "z"])
-        point_cloud_df.to_parquet(f"{args.output}//{args.name}/point_cloud.parquet")
+        point_cloud_df = voxelDecimate(point_cloud_df, cell_size=args.cell_size)
+        point_cloud_df.to_parquet(f"{args.output}/{args.name}/point_cloud.parquet")
 
         # print(trainingFrames)
 
@@ -148,7 +157,8 @@ def main():
     print("Processing")
     replay = spectacularAI.Replay(args.input, mapperCallback = onMappingOutput, configuration = {
         "maxMapSize": 0,
-        "keyframeDecisionDistanceThreshold": 0.01
+        "keyframeDecisionDistanceThreshold": 0.02,
+        "keyframeCandidateInterval": 2
     })
 
     replay.runReplay()
