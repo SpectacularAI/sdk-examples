@@ -31,10 +31,13 @@ frameHeight = -1
 intrinsics = None
 
 
-def sharpness(path):
-	img = cv2.imread(path)
-	img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-	return cv2.Laplacian(img, cv2.CV_64F).var()
+def blurscore(path):
+    image = cv2.imread(path)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    f_transform = np.fft.fft2(gray)
+    f_transform_shifted = np.fft.fftshift(f_transform)
+    magnitude_spectrum = np.abs(f_transform_shifted)
+    return np.percentile(magnitude_spectrum, 95)
 
 
 def onMappingOutput(output):
@@ -74,12 +77,29 @@ def onMappingOutput(output):
 
     else:
         # Final optimized poses
+
+        blurryImages = {}
+        imageSharpness = []
+        for frameId in output.map.keyFrames:
+            # imageSharpness.append((frameId, sharpness(f"{args.output}/{args.name}/tmp/frame_{frameId:05}.png")))
+            imageSharpness.append((frameId, blurscore(f"{args.output}/{args.name}/tmp/frame_{frameId:05}.png")))
+
+        # Look two images forward and two backwards, if current frame is blurriest, don't use it
+        for i in range(len(imageSharpness)):
+            if i + 2 > len(imageSharpness): break
+            group = [imageSharpness[j+i] for j in range(-2,2)]
+            group.sort(key=lambda x : x[1])
+            cur = imageSharpness[i][0]
+            if group[0][0] == cur:
+                blurryImages[cur] = True
+
         trainingFrames = []
         validationFrames = []
         globalPointCloud = []
         index = 0
-
         for frameId in output.map.keyFrames:
+            if blurryImages.get(frameId): continue # Skip blurry images
+
             # Image data
             keyFrame = output.map.keyFrames.get(frameId)
             oldImgName = f"{args.output}/{args.name}/tmp/frame_{frameId:05}.png"
@@ -127,12 +147,13 @@ def main():
 
     print("Processing")
     replay = spectacularAI.Replay(args.input, mapperCallback = onMappingOutput, configuration = {
+        "maxMapSize": 0,
         "keyframeDecisionDistanceThreshold": 0.01
     })
 
     replay.runReplay()
 
-    shutil.rmtree(f"{args.output}/{args.name}/tmp")
+    # shutil.rmtree(f"{args.output}/{args.name}/tmp")
 
     print("Done!")
     print("")
