@@ -10,19 +10,44 @@ import cv2
 import json
 import os
 import shutil
-import math
 import numpy as np
 import pandas as pd
-
+from scipy.spatial import KDTree
 
 parser = argparse.ArgumentParser()
 parser.add_argument("input", help="Path to folder with session to process")
 parser.add_argument("output", help="Output folder, this should be 'data/' folder under taichi_3d_gaussian_splatting")
-parser.add_argument("name", help="Session name", default="splatting_test")
-parser.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
+parser.add_argument("--name", help="Session name", default="splatting_test")
 parser.add_argument("--cell_size", help="Point cloud decimation cell size", type=float, default=0.025)
+parser.add_argument("--key_frame_distance", help="Minimum distance between keyframes (meters)", type=float, default=0.05)
+parser.add_argument('--device_preset', choices=['none', 'k4a', 'realsense'], default='none')
+parser.add_argument('--slow', action='store_true')
+parser.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
 args = parser.parse_args()
 
+def interpolate_missing_properties(df_source, df_query, k_nearest=3):
+    xyz = list('xyz')
+
+    tree = KDTree(df_source[xyz].values)
+    _, ii = tree.query(df_query[xyz], k=k_nearest)
+    n = df_query.shape[0]
+
+    df_result = pd.DataFrame(0, index=range(n), columns=df_source.columns)
+    df_result[xyz] = df_query[xyz]
+    other_cols = [c for c in df_source.columns if c not in xyz]
+
+    for i in range(n):
+        m = df_source.loc[ii[i].tolist(), other_cols].mean(axis=0)
+        df_result.loc[i, other_cols] = m
+
+    return df_result
+
+def voxel_decimate(df, cell_size):
+    def grouping_function(row):
+        return tuple([round(row[c] / cell_size) for c in 'xyz'])
+    df['voxel_index'] = df.apply(grouping_function, axis=1)
+    grouped = df.groupby('voxel_index')
+    return grouped.first().reset_index()
 
 # Globals
 savedKeyFrames = {}
@@ -30,15 +55,6 @@ pointClouds = {}
 frameWidth = -1
 frameHeight = -1
 intrinsics = None
-
-
-def voxelDecimate(df, cell_size):
-    def grouping_function(row):
-        return tuple([round(row[c] / cell_size) for c in 'xyz'])
-    df['voxel_index'] = df.apply(grouping_function, axis=1)
-    grouped = df.groupby('voxel_index')
-    return grouped.first().reset_index()
-
 
 def blurScore(path):
     image = cv2.imread(path)
@@ -67,7 +83,7 @@ def onMappingOutput(output):
             if not frameSet.rgbFrame or not frameSet.rgbFrame.image:
                 continue
 
-            pointClouds[frameId] = np.copy(keyFrame.pointCloud.getPositionData())
+            pointClouds[frameId] = (np.copy(keyFrame.pointCloud.getPositionData()), np.copy(keyFrame.pointCloud.getRGB24Data()))
 
             if frameWidth < 0:
                 frameWidth = frameSet.rgbFrame.image.getWidth()
@@ -130,18 +146,27 @@ def onMappingOutput(output):
                 trainingFrames.append(frame)
 
             # Pointcloud data
-            pc = np.vstack((pointClouds[frameId].T, np.ones((1, pointClouds[frameId].shape[0]))))
+            posData, colorData = pointClouds[frameId]
+            pc = np.vstack((posData.T, np.ones((1, posData.shape[0]))))
             pc = (cameraPose.getCameraToWorldMatrix() @ pc)[:3, :].T
+            pc = np.hstack((pc, colorData))
             globalPointCloud.extend(pc)
 
             index += 1
 
         # Save files
-        point_cloud_df = pd.DataFrame(np.array(globalPointCloud), columns=["x", "y", "z"])
-        point_cloud_df = voxelDecimate(point_cloud_df, cell_size=args.cell_size)
-        point_cloud_df.to_parquet(f"{args.output}/{args.name}/point_cloud.parquet")
+        point_cloud_df = pd.DataFrame(np.array(globalPointCloud), columns=list('xyzrgb'))
+        # point_cloud_df.to_csv(f"{args.output}/{args.name}/points.dense.csv", index=False)
 
-        # print(trainingFrames)
+        # drop uncolored points
+        colored_point_cloud_df = point_cloud_df.loc[point_cloud_df[list('rgb')].max(axis=1) > 0].reset_index()
+        sparse_point_cloud_df = pd.read_csv(f"{args.output}/{args.name}/points.sparse.csv", usecols=list('xyz'))
+
+        sparse_colored_point_cloud_df = interpolate_missing_properties(colored_point_cloud_df, sparse_point_cloud_df)
+        decimated_df = voxel_decimate(colored_point_cloud_df, args.cell_size)
+        merged_df = pd.concat([sparse_colored_point_cloud_df, decimated_df])
+        # merged_df.to_csv(f"{args.output}/{args.name}/points.merged-decimated.csv", index=False)
+        merged_df.to_parquet(f"{args.output}/{args.name}/point_cloud.parquet")
 
         with open(f"{args.output}/{args.name}/train.json", "w") as outFile:
             json.dump(trainingFrames, outFile, indent=2)
@@ -152,18 +177,46 @@ def onMappingOutput(output):
 
 def main():
     os.makedirs(f"{args.output}/{args.name}/images", exist_ok=True)
-    os.makedirs(f"{args.output}/{args.name}/tmp", exist_ok=True)
+    tmp_dir = f"{args.output}/{args.name}/tmp"
+    tmp_input = f"{tmp_dir}/input"
+    os.makedirs(tmp_input, exist_ok=True)
+    shutil.rmtree(tmp_input)
+    from distutils.dir_util import copy_tree
+    copy_tree(args.input, tmp_input)
 
-    print("Processing")
-    replay = spectacularAI.Replay(args.input, mapperCallback = onMappingOutput, configuration = {
+    parameter_sets = ['wrapper-base', args.device_preset, 'offline-base']
+    if args.device_preset == 'k4a':
+        parameter_sets.extend(['icp', 'offline-icp'])
+    elif args.device_preset == 'realsense':
+        parameter_sets.extend(['icp', 'realsense-icp', 'offline-icp'])
+
+    with open(tmp_input + "/vio_config.yaml", 'wt') as f:
+        base_params = 'parameterSets: %s' % json.dumps(parameter_sets)
+        f.write(base_params + '\n')
+        print(base_params)
+
+    config = {
         "maxMapSize": 0,
-        "keyframeDecisionDistanceThreshold": 0.02,
-        "keyframeCandidateInterval": 2
-    })
+        "keyframeDecisionDistanceThreshold": args.key_frame_distance,
+        "maxKeypoints": 2000,
+        "mergeMultiLevelPointsThresholdPixels": 1,
+        "orbRelativeMaskRadius": 0.01,
+        "mapSavePath": f"{args.output}/{args.name}/points.sparse.csv"
+    }
+
+    if args.slow:
+        ext = {
+            "keyframeCandidateInterval": 2,
+            "globalBABeforeSave": True,
+            "globalBAAfterLoopClosure": True,
+            "mapPointCullingMinObservationCount": 1 # most dense SfM point cloud
+        }
+        for k, v in ext.items(): config[k] = v
+
+    print(config)
+    replay = spectacularAI.Replay(tmp_input, mapperCallback = onMappingOutput, configuration = config)
 
     replay.runReplay()
-
-    # shutil.rmtree(f"{args.output}/{args.name}/tmp")
 
     print("Done!")
     print("")
