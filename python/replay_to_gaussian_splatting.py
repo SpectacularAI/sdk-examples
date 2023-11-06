@@ -19,7 +19,9 @@ parser.add_argument("input", help="Path to folder with session to process")
 parser.add_argument("output", help="Output folder")
 parser.add_argument('--format', choices=['taichi', 'nerfstudio'], default='taichi', help='Output format')
 parser.add_argument("--cell_size", help="Point cloud decimation cell size", type=float, default=0.025)
+parser.add_argument("--distance_quantile", help="Max point distance filter quantile (0 = disabled)", type=float, default=0.99)
 parser.add_argument("--key_frame_distance", help="Minimum distance between keyframes (meters)", type=float, default=0.05)
+parser.add_argument('--no_icp', action='store_true')
 parser.add_argument('--device_preset', choices=['none', 'k4a', 'realsense'], default='none')
 parser.add_argument('--slow', action='store_true')
 parser.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
@@ -40,6 +42,14 @@ def interpolate_missing_properties(df_source, df_query, k_nearest=3):
         m = df_source.loc[ii[i].tolist(), other_cols].mean(axis=0)
         df_result.loc[i, other_cols] = m
 
+    return df_result
+
+def exclude_points(df_source, df_exclude, radius):
+    xyz = list('xyz')
+    tree = KDTree(df_exclude[xyz].values)
+    ii = tree.query_ball_point(df_source[xyz], r=radius, return_length=True)
+    mask = [l == 0 for l in ii]
+    df_result = df_source.iloc[mask]
     return df_result
 
 def voxel_decimate(df, cell_size):
@@ -206,8 +216,17 @@ def onMappingOutput(output):
         sparse_point_cloud_df = pd.read_csv(f"{args.output}/points.sparse.csv", usecols=list('xyz'))
 
         sparse_colored_point_cloud_df = interpolate_missing_properties(colored_point_cloud_df, sparse_point_cloud_df)
-        decimated_df = voxel_decimate(colored_point_cloud_df, args.cell_size)
+
+        filtered_point_cloud_df = exclude_points(colored_point_cloud_df, sparse_point_cloud_df, radius=args.cell_size)
+        decimated_df = voxel_decimate(filtered_point_cloud_df, args.cell_size)
         merged_df = pd.concat([sparse_colored_point_cloud_df, decimated_df])
+
+        if args.distance_quantile > 0:
+            dist2 = (merged_df[list('xyz')]**2).sum(axis=1).values
+            MARGIN = 1.5
+            max_dist2 = np.quantile(dist2, args.distance_quantile) * MARGIN**2
+            print(f'filtering out points further than {np.sqrt(max_dist2)}m')
+            merged_df = merged_df.iloc[dist2 < max_dist2]
 
         if args.format == 'taichi':
             # merged_df.to_csv(f"{args.output}/points.merged-decimated.csv", index=False)
@@ -237,24 +256,13 @@ def main():
     from distutils.dir_util import copy_tree
     copy_tree(args.input, tmp_input)
 
-    parameter_sets = ['wrapper-base', args.device_preset, 'offline-base']
-    if args.device_preset == 'k4a':
-        parameter_sets.extend(['icp', 'offline-icp'])
-    elif args.device_preset == 'realsense':
-        parameter_sets.extend(['icp', 'realsense-icp', 'offline-icp'])
-
-    with open(tmp_input + "/vio_config.yaml", 'wt') as f:
-        base_params = 'parameterSets: %s' % json.dumps(parameter_sets)
-        f.write(base_params + '\n')
-        print(base_params)
-
     config = {
         "maxMapSize": 0,
         "keyframeDecisionDistanceThreshold": args.key_frame_distance,
         "maxKeypoints": 2000,
         "mergeMultiLevelPointsThresholdPixels": 1,
         "orbRelativeMaskRadius": 0.01,
-        "discardOutputsWhenFull": False,
+        "discardOutputsWhenFull": False, # TODO: remove
         "mapSavePath": f"{args.output}/points.sparse.csv"
     }
 
@@ -263,9 +271,26 @@ def main():
             "keyframeCandidateInterval": 2,
             "globalBABeforeSave": True,
             "globalBAAfterLoopClosure": True,
-            "mapPointCullingMinObservationCount": 1 # most dense SfM point cloud
+            "localBAEnabled": True,
+            "localBAProblemSize": 20,
+            "pixelNoiseNormalizedSigma": 0.002
         }
         for k, v in ext.items(): config[k] = v
+
+    prefer_icp = not args.no_icp
+    parameter_sets = ['wrapper-base', args.device_preset, 'offline-base']
+    if args.device_preset == 'k4a':
+        config["optimizerDepthErrorScale"] = 0.05
+        if prefer_icp:
+            parameter_sets.extend(['icp', 'offline-icp'])
+    elif args.device_preset == 'realsense':
+        if prefer_icp:
+            parameter_sets.extend(['icp', 'realsense-icp', 'offline-icp'])
+
+    with open(tmp_input + "/vio_config.yaml", 'wt') as f:
+        base_params = 'parameterSets: %s' % json.dumps(parameter_sets)
+        f.write(base_params + '\n')
+        print(base_params)
 
     print(config)
     replay = spectacularAI.Replay(tmp_input, mapperCallback = onMappingOutput, configuration = config)
