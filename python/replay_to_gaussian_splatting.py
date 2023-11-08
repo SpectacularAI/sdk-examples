@@ -259,28 +259,20 @@ def main():
     config = {
         "maxMapSize": 0,
         "keyframeDecisionDistanceThreshold": args.key_frame_distance,
-        "maxKeypoints": 2000,
-        "mergeMultiLevelPointsThresholdPixels": 1,
-        "orbRelativeMaskRadius": 0.01,
-        "discardOutputsWhenFull": False, # TODO: remove
         "mapSavePath": f"{args.output}/points.sparse.csv"
     }
 
     if args.slow:
         ext = {
-            "keyframeCandidateInterval": 2,
-            "globalBABeforeSave": True,
             "globalBAAfterLoopClosure": True,
-            "localBAEnabled": True,
-            "localBAProblemSize": 20,
-            "pixelNoiseNormalizedSigma": 0.002
+            "keyframeCandidateInterval": 2,
+            "icpVoxelSize": min(args.key_frame_distance, 0.1)
         }
         for k, v in ext.items(): config[k] = v
 
     prefer_icp = not args.no_icp
     parameter_sets = ['wrapper-base', args.device_preset, 'offline-base']
     if args.device_preset == 'k4a':
-        config["optimizerDepthErrorScale"] = 0.05
         if prefer_icp:
             parameter_sets.extend(['icp', 'offline-icp'])
     elif args.device_preset == 'realsense':
