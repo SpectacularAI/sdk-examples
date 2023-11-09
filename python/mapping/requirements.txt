@@ -1,0 +1,6 @@
+spectacularAI
+numpy
+scipy
+pandas
+pyarrow
+
