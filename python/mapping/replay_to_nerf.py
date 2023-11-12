@@ -22,8 +22,7 @@ parser.add_argument("--cell_size", help="Point cloud decimation cell size", type
 parser.add_argument("--distance_quantile", help="Max point distance filter quantile (0 = disabled)", type=float, default=0.99)
 parser.add_argument("--key_frame_distance", help="Minimum distance between keyframes (meters)", type=float, default=0.05)
 parser.add_argument('--no_icp', action='store_true')
-parser.add_argument('--device_preset', choices=['none', 'k4a', 'realsense'], default='none')
-parser.add_argument('--slow', action='store_true')
+parser.add_argument('--device_preset', choices=['none', 'k4a', 'realsense', 'android-tof'], default='none')
 parser.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
 args = parser.parse_args()
 
@@ -259,19 +258,18 @@ def main():
     config = {
         "maxMapSize": 0,
         "keyframeDecisionDistanceThreshold": args.key_frame_distance,
+        "icpVoxelSize": min(args.key_frame_distance, 0.1),
         "mapSavePath": f"{args.output}/points.sparse.csv"
     }
 
-    if args.slow:
-        ext = {
-            "globalBAAfterLoopClosure": True,
-            "keyframeCandidateInterval": 2,
-            "icpVoxelSize": min(args.key_frame_distance, 0.1)
-        }
-        for k, v in ext.items(): config[k] = v
-
     prefer_icp = not args.no_icp
-    parameter_sets = ['wrapper-base', args.device_preset, 'offline-base']
+    parameter_sets = ['wrapper-base']
+
+    if args.device_preset != 'none':
+        parameter_sets.append(args.device_preset)
+
+    parameter_sets.append('offline-base')
+
     if args.device_preset == 'k4a':
         if prefer_icp:
             parameter_sets.extend(['icp', 'offline-icp'])

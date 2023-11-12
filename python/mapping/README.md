@@ -15,7 +15,7 @@ then run:
     python replay_to_nerf.py INPUT_PATH \
         /example/output/path/my-nerf \
         --preview --key_frame_distance=0.05
-    # run in the
+    # run in the Nerfstudio folder, if necessary
     ns-train nerfacto --data /example/output/path/my-nerf
 
 Where
@@ -23,7 +23,7 @@ Where
  * `--key_frame_distance` should be set based on the recorded scene size: `0.05` (5cm) is good for small scans and `0.15` for room-sized scans.
  * `INPUT_PATH` is the dataset recorded using the SDK (i.e., the value of `recordingFolder`)
  * `/example/output/path/my-nerf` (placeholder) is the output folder of this script and the input to Nerfstudio
- 
+
 ## Gaussian Splatting
 
 Currently only supports https://github.com/wanmeihuali/taichi_3d_gaussian_splatting.
