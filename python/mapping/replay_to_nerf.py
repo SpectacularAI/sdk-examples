@@ -54,9 +54,8 @@ def exclude_points(df_source, df_exclude, radius):
 def voxel_decimate(df, cell_size):
     def grouping_function(row):
         return tuple([round(row[c] / cell_size) for c in 'xyz'])
-    df['voxel_index'] = df.apply(grouping_function, axis=1)
-    grouped = df.groupby('voxel_index')
-    return grouped.first().reset_index()
+    grouped = df.assign(voxel_index=df.apply(grouping_function, axis=1)).groupby('voxel_index')
+    return grouped.first().reset_index()[[c for c in df.columns if c != 'voxel_index']]
 
 def convert_json_taichi_to_nerfstudio(d):
     def transform_camera(c):
