@@ -17,7 +17,7 @@ from scipy.spatial import KDTree
 parser = argparse.ArgumentParser()
 parser.add_argument("input", help="Path to folder with session to process")
 parser.add_argument("output", help="Output folder")
-parser.add_argument('--format', choices=['taichi', 'nerfstudio'], default='taichi', help='Output format')
+parser.add_argument('--format', choices=['taichi', 'nerfstudio'], default='nerfstudio', help='Output format')
 parser.add_argument("--cell_size", help="Point cloud decimation cell size", type=float, default=0.025)
 parser.add_argument("--distance_quantile", help="Max point distance filter quantile (0 = disabled)", type=float, default=0.99)
 parser.add_argument("--key_frame_distance", help="Minimum distance between keyframes (meters)", type=float, default=0.05)
@@ -99,6 +99,61 @@ def convert_json_taichi_to_nerfstudio(d):
 
     key, value = list(by_camera.items())[0]
     return value
+
+# TODO: don't use "Taichi" as the intermediate format
+def convert_json_taichi_to_colmap(pose_data, points_df, nerfstudio_fake_obs=True):
+    from scipy.spatial.transform import Rotation as R
+
+    images = []
+    cameras = []
+    camera_id = 0
+    for image_id, c in enumerate(pose_data):
+        k = c['camera_intrinsics']
+        mat = np.linalg.inv(np.array(c['T_pointcloud_camera']))
+        qx,qy,qz,qw = R.from_matrix(mat[:3,:3]).as_quat()
+        q = [qw, qx, qy, qz]
+        p = list(mat[:3, 3])
+        images.append([image_id] + list(q) + list(p) + [camera_id, os.path.split(c['image_path'])[-1]])
+
+        points = []
+        if nerfstudio_fake_obs:
+            points = [100,100,0,200,200,1] # NeRFstudio loader will crash without this
+
+        images.append(points)
+
+        # TODO: variable intrinsics
+        if len(cameras) == 0:
+            cameras = [[
+                camera_id,
+                'PINHOLE',
+                c['camera_width'],
+                c['camera_height'],
+                k[0][0],
+                k[1][1],
+                k[0][2],
+                k[1][2]
+            ]]
+
+    points = []
+    for point_id, row in points_df.iterrows():
+        point = [
+            point_id,
+            row['x'],
+            row['y'],
+            row['z'],
+            round(row['r']),
+            round(row['g']),
+            round(row['b'])
+        ]
+
+        if nerfstudio_fake_obs:
+            fake_err = 1
+            img_id, point_id = 0, 0
+            point.extend([fake_err, img_id, point_id])
+
+        points.append(point)
+
+    return points, images, cameras
 
 # Globals
 savedKeyFrames = {}
@@ -244,7 +299,17 @@ def onMappingOutput(output):
             # colmap text point format
             fake_colmap = f"{args.output}/colmap/sparse/0"
             os.makedirs(fake_colmap, exist_ok=True)
-            merged_df.to_csv(f"{fake_colmap}/points3D.txt", index=False, sep=' ', header=False)
+
+            c_points, c_images, c_cameras = convert_json_taichi_to_colmap(allFrames, merged_df, nerfstudio_fake_obs=True)
+
+            def write_colmap_csv(data, fn):
+                with open(fn, 'wt') as f:
+                    for row in data:
+                        f.write(' '.join([str(c) for c in row])+'\n')
+
+            write_colmap_csv(c_points, f"{fake_colmap}/points3D.txt")
+            write_colmap_csv(c_images, f"{fake_colmap}/images.txt")
+            write_colmap_csv(c_cameras, f"{fake_colmap}/cameras.txt")
 
 def main():
     os.makedirs(f"{args.output}/images", exist_ok=True)
