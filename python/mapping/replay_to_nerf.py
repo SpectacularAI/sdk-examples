@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-#
-# Replay existing session and convert output to format used by gaussian splatting method
-#
-# Use output with: https://github.com/wanmeihuali/taichi_3d_gaussian_splatting
+"""
+Post-process data in Spectacular AI format and convert it to input
+for NeRF or Gaussian Splatting methods.
+"""
 
 import argparse
 import spectacularAI
@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import KDTree
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(__doc__)
 parser.add_argument("input", help="Path to folder with session to process")
 parser.add_argument("output", help="Output folder")
 parser.add_argument('--format', choices=['taichi', 'nerfstudio'], default='nerfstudio', help='Output format')
@@ -23,6 +23,7 @@ parser.add_argument("--distance_quantile", help="Max point distance filter quant
 parser.add_argument("--key_frame_distance", help="Minimum distance between keyframes (meters)", type=float, default=0.05)
 parser.add_argument('--no_icp', action='store_true')
 parser.add_argument('--device_preset', choices=['none', 'k4a', 'realsense', 'android-tof'], default='none')
+parser.add_argument('--fast', action='store_true', help='Fast but lower quality settings')
 parser.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
 args = parser.parse_args()
 
@@ -200,6 +201,20 @@ def onMappingOutput(output):
             bgrImage = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             fileName = f"{args.output}/tmp/frame_{frameId:05}.png"
             cv2.imwrite(fileName, bgrImage)
+
+            if frameSet.depthFrame is not None:
+                alignedDepth = frameSet.getAlignedDepthFrame(undistortedFrame)
+                depthData = alignedDepth.image.toArray()
+                depthFrameName = f"{args.output}/tmp/depth_{frameId:05}.png"
+                cv2.imwrite(depthFrameName, depthData)
+
+                DEPTH_PREVIEW = False
+                if args.preview and DEPTH_PREVIEW:
+                    DEPTH_COLOR_MAP_MIDPOINT_M = 2.0
+                    visuDepth = np.log1p(depthData * alignedDepth.depthScale) / np.log1p(DEPTH_COLOR_MAP_MIDPOINT_M) * 0.5 * 256
+                    cv2.imshow("Depth frame", cv2.applyColorMap(np.clip(visuDepth, 0, 255).astype(np.uint8), cv2.COLORMAP_JET))
+
+            # TODO: move these visualizations to the main thread
             if args.preview:
                 cv2.imshow("Frame", bgrImage)
                 cv2.setWindowTitle("Frame", "Frame #{}".format(frameId))
@@ -235,6 +250,12 @@ def onMappingOutput(output):
             oldImgName = f"{args.output}/tmp/frame_{frameId:05}.png"
             newImgName = f"{args.output}/images/frame_{index:05}.png"
             os.rename(oldImgName, newImgName)
+
+            oldDepth = f"{args.output}/tmp/depth_{frameId:05}.png"
+            newDepth = f"{args.output}/images/depth_{index:05}.png"
+            if os.path.exists(oldDepth):
+                os.rename(oldDepth, newDepth)
+
             cameraPose = keyFrame.frameSet.rgbFrame.cameraPose
 
             # Camera data
@@ -321,6 +342,7 @@ def main():
 
     config = {
         "maxMapSize": 0,
+        "useSlam": True,
         "keyframeDecisionDistanceThreshold": args.key_frame_distance,
         "icpVoxelSize": min(args.key_frame_distance, 0.1),
         "mapSavePath": f"{args.output}/points.sparse.csv"
@@ -332,14 +354,17 @@ def main():
     if args.device_preset != 'none':
         parameter_sets.append(args.device_preset)
 
-    parameter_sets.append('offline-base')
+    if not args.fast:
+        parameter_sets.append('offline-base')
 
     if args.device_preset == 'k4a':
         if prefer_icp:
-            parameter_sets.extend(['icp', 'offline-icp'])
+            parameter_sets.extend(['icp'])
+            if not args.fast: parameter_sets.append('offline-icp')
     elif args.device_preset == 'realsense':
         if prefer_icp:
-            parameter_sets.extend(['icp', 'realsense-icp', 'offline-icp'])
+            parameter_sets.extend(['icp', 'realsense-icp'])
+            if not args.fast: parameter_sets.append('offline-icp')
 
     with open(tmp_input + "/vio_config.yaml", 'wt') as f:
         base_params = 'parameterSets: %s' % json.dumps(parameter_sets)
@@ -351,8 +376,9 @@ def main():
 
     replay.runReplay()
 
-    print("Done!")
-    print("")
+    shutil.rmtree(tmp_dir)
+    print("Done!\n")
+
     if args.format == 'taichi':
         name = os.path.split(args.output)[-1]
         print("You should use following paths in taichi_3d_gaussian_splatting config file:")
