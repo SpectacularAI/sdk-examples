@@ -5,7 +5,19 @@ These scripts post-process data recorded through the Spectacular AI SDK on suppo
 
 ## Installation
 
+**Requirements** (current): Linux + CUDA-enabled Nvidia GPU that can run Nerfstudio
+
     pip install -r requirements.txt
+
+## Quick start
+
+Plug in an OAK-D device and run
+
+    ./record_and_process_oak_d.sh
+    # Then follow the instructions printed to the terminal
+
+With OAK-D or RealSense devices, you can currently expect to be able to map "table-sized" scenes
+quite fast and accurately. Move slow while mapping and shoot from different angles to increase quality.
 
 ## Nerfstudio export
 
@@ -24,6 +36,9 @@ Where
  * `--key_frame_distance` should be set based on the recorded scene size: `0.05` (5cm) is good for small scans and `0.15` for room-sized scans.
  * `INPUT_PATH` is the dataset recorded using the SDK (i.e., the value of `recordingFolder`)
  * `/example/output/path/my-nerf` (placeholder) is the output folder of this script and the input to Nerfstudio
+
+If the processing gets slow, you can also tyr adding a `--fast` flat to `replay_to_nerf.py` to trade off quality for speed.
+Without the `--fast` flag, the processing should take around 10 minutes.
 
 ## Gaussian Splatting
 

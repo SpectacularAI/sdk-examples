@@ -362,6 +362,7 @@ def main():
     config = {
         "maxMapSize": 0,
         "useSlam": True,
+        "rotateMapOnFirstNCandidates": 200,
         "keyframeDecisionDistanceThreshold": args.key_frame_distance,
         "icpVoxelSize": min(args.key_frame_distance, 0.1),
         "mapSavePath": f"{args.output}/points.sparse.csv"
@@ -375,6 +376,12 @@ def main():
 
     if not args.fast:
         parameter_sets.append('offline-base')
+        # remove these to further trade off speed for quality
+        mid_q = {
+            'maxKeypoints': 1000,
+            'optimizerMaxIterations': 10
+        }
+        for k, v in mid_q.items(): config[k] = v
 
     if args.device_preset == 'k4a':
         if prefer_icp:
@@ -384,6 +391,7 @@ def main():
         if prefer_icp:
             parameter_sets.extend(['icp', 'realsense-icp'])
             if not args.fast: parameter_sets.append('offline-icp')
+        config['stereoPointCloudStride'] = 15
     elif args.device_preset == 'oak-d':
         config['stereoPointCloudStride'] = 30
 
