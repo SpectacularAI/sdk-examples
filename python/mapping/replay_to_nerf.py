@@ -22,7 +22,7 @@ parser.add_argument("--cell_size", help="Point cloud decimation cell size", type
 parser.add_argument("--distance_quantile", help="Max point distance filter quantile (0 = disabled)", type=float, default=0.99)
 parser.add_argument("--key_frame_distance", help="Minimum distance between keyframes (meters)", type=float, default=0.05)
 parser.add_argument('--no_icp', action='store_true')
-parser.add_argument('--device_preset', choices=['none', 'k4a', 'realsense', 'android-tof'], default='none')
+parser.add_argument('--device_preset', choices=['none', 'oak-d', 'k4a', 'realsense', 'android-tof'], default='none')
 parser.add_argument('--fast', action='store_true', help='Fast but lower quality settings')
 parser.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
 args = parser.parse_args()
@@ -170,6 +170,32 @@ def blurScore(path):
     magnitude_spectrum = np.abs(f_transform_shifted)
     return np.percentile(magnitude_spectrum, 95)
 
+def post_process_point_clouds(globalPointCloud, sparse_point_cloud_df):
+    # Save point clouds
+    if len(globalPointCloud) == 0:
+        # add fake (gray) colors
+        merged_df = sparse_point_cloud_df
+        for c in 'rgb': merged_df[c] = 128
+
+    else:
+        point_cloud_df = pd.DataFrame(np.array(globalPointCloud), columns=list('xyzrgb'))
+
+        # drop uncolored points
+        colored_point_cloud_df = point_cloud_df.loc[point_cloud_df[list('rgb')].max(axis=1) > 0].reset_index()
+
+        filtered_point_cloud_df = exclude_points(colored_point_cloud_df, sparse_point_cloud_df, radius=args.cell_size)
+        decimated_df = voxel_decimate(filtered_point_cloud_df, args.cell_size)
+        sparse_colored_point_cloud_df = interpolate_missing_properties(colored_point_cloud_df, sparse_point_cloud_df)
+        merged_df = pd.concat([sparse_colored_point_cloud_df, decimated_df])
+
+    if args.distance_quantile > 0:
+        dist2 = (merged_df[list('xyz')]**2).sum(axis=1).values
+        MARGIN = 1.5
+        max_dist2 = np.quantile(dist2, args.distance_quantile) * MARGIN**2
+        print(f'filtering out points further than {np.sqrt(max_dist2)}m')
+        merged_df = merged_df.iloc[dist2 < max_dist2]
+
+    return merged_df
 
 def onMappingOutput(output):
     global savedKeyFrames
@@ -189,7 +215,10 @@ def onMappingOutput(output):
             if not frameSet.rgbFrame or not frameSet.rgbFrame.image:
                 continue
 
-            pointClouds[frameId] = (np.copy(keyFrame.pointCloud.getPositionData()), np.copy(keyFrame.pointCloud.getRGB24Data()))
+            if keyFrame.pointCloud:
+                pointClouds[frameId] = (
+                    np.copy(keyFrame.pointCloud.getPositionData()),
+                    np.copy(keyFrame.pointCloud.getRGB24Data()))
 
             if frameWidth < 0:
                 frameWidth = frameSet.rgbFrame.image.getWidth()
@@ -202,7 +231,7 @@ def onMappingOutput(output):
             fileName = f"{args.output}/tmp/frame_{frameId:05}.png"
             cv2.imwrite(fileName, bgrImage)
 
-            if frameSet.depthFrame is not None:
+            if frameSet.depthFrame.image is not None:
                 alignedDepth = frameSet.getAlignedDepthFrame(undistortedFrame)
                 depthData = alignedDepth.image.toArray()
                 depthFrameName = f"{args.output}/tmp/depth_{frameId:05}.png"
@@ -272,35 +301,19 @@ def onMappingOutput(output):
             else:
                 trainingFrames.append(frame)
 
-            # Pointcloud data
-            posData, colorData = pointClouds[frameId]
-            pc = np.vstack((posData.T, np.ones((1, posData.shape[0]))))
-            pc = (cameraPose.getCameraToWorldMatrix() @ pc)[:3, :].T
-            pc = np.hstack((pc, colorData))
-            globalPointCloud.extend(pc)
+            if frameId in pointClouds:
+                # Pointcloud data
+                posData, colorData = pointClouds[frameId]
+                pc = np.vstack((posData.T, np.ones((1, posData.shape[0]))))
+                pc = (cameraPose.getCameraToWorldMatrix() @ pc)[:3, :].T
+                pc = np.hstack((pc, colorData))
+                globalPointCloud.extend(pc)
 
             index += 1
 
-        # Save files
-        point_cloud_df = pd.DataFrame(np.array(globalPointCloud), columns=list('xyzrgb'))
-        # point_cloud_df.to_csv(f"{args.output}/points.dense.csv", index=False)
-
-        # drop uncolored points
-        colored_point_cloud_df = point_cloud_df.loc[point_cloud_df[list('rgb')].max(axis=1) > 0].reset_index()
-        sparse_point_cloud_df = pd.read_csv(f"{args.output}/points.sparse.csv", usecols=list('xyz'))
-
-        sparse_colored_point_cloud_df = interpolate_missing_properties(colored_point_cloud_df, sparse_point_cloud_df)
-
-        filtered_point_cloud_df = exclude_points(colored_point_cloud_df, sparse_point_cloud_df, radius=args.cell_size)
-        decimated_df = voxel_decimate(filtered_point_cloud_df, args.cell_size)
-        merged_df = pd.concat([sparse_colored_point_cloud_df, decimated_df])
-
-        if args.distance_quantile > 0:
-            dist2 = (merged_df[list('xyz')]**2).sum(axis=1).values
-            MARGIN = 1.5
-            max_dist2 = np.quantile(dist2, args.distance_quantile) * MARGIN**2
-            print(f'filtering out points further than {np.sqrt(max_dist2)}m')
-            merged_df = merged_df.iloc[dist2 < max_dist2]
+        merged_df = post_process_point_clouds(
+            globalPointCloud,
+            pd.read_csv(f"{args.output}/points.sparse.csv", usecols=list('xyz')))
 
         if args.format == 'taichi':
             # merged_df.to_csv(f"{args.output}/points.merged-decimated.csv", index=False)
@@ -365,6 +378,8 @@ def main():
         if prefer_icp:
             parameter_sets.extend(['icp', 'realsense-icp'])
             if not args.fast: parameter_sets.append('offline-icp')
+    elif args.device_preset == 'oak-d':
+        config['stereoPointCloudStride'] = 30
 
     with open(tmp_input + "/vio_config.yaml", 'wt') as f:
         base_params = 'parameterSets: %s' % json.dumps(parameter_sets)
