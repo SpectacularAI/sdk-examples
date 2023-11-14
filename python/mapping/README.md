@@ -37,7 +37,7 @@ Where
  * `INPUT_PATH` is the dataset recorded using the SDK (i.e., the value of `recordingFolder`)
  * `/example/output/path/my-nerf` (placeholder) is the output folder of this script and the input to Nerfstudio
 
-If the processing gets slow, you can also tyr adding a `--fast` flat to `replay_to_nerf.py` to trade off quality for speed.
+If the processing gets slow, you can also try adding a `--fast` flat to `replay_to_nerf.py` to trade off quality for speed.
 Without the `--fast` flag, the processing should take around 10 minutes.
 
 ## Gaussian Splatting
