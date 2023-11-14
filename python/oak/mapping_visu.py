@@ -234,6 +234,7 @@ def parseArgs():
     p.add_argument('--ir_dot_brightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
     p.add_argument('--no_feature_tracker', help='Disable on-device feature tracking and depth map', action="store_true")
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
+    p.add_argument('--key_frame_candidate_interval', type=int, default=0, help='keyframeCandidateEveryNthFrame (0 = default)')
     return p.parse_args()
 
 if __name__ == '__main__':
@@ -310,6 +311,8 @@ if __name__ == '__main__':
                 config.recordingFolder = args.recordingFolder
             config.useColor = args.use_rgb
             config.internalParameters = configInternal
+            if args.key_frame_candidate_interval != 0:
+                config.keyframeCandidateEveryNthFrame = args.key_frame_candidate_interval
             vioPipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
 
             with depthai.Device(pipeline) as device, \
