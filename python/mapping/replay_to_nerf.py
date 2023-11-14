@@ -344,14 +344,20 @@ def onMappingOutput(output):
             write_colmap_csv(c_images, f"{fake_colmap}/images.txt")
             write_colmap_csv(c_cameras, f"{fake_colmap}/cameras.txt")
 
+def copy_input_to_tmp_safe(input_dir, tmp_input):
+    # also works if tmp dir is inside the input directory
+    os.makedirs(tmp_input, exist_ok=True)
+    shutil.rmtree(tmp_input)
+    os.makedirs(tmp_input)
+    for f in os.listdir(input_dir):
+        full_fn = os.path.join(input_dir, f)
+        if not os.path.isdir(full_fn): shutil.copy(full_fn, tmp_input)
+
 def main():
     os.makedirs(f"{args.output}/images", exist_ok=True)
     tmp_dir = f"{args.output}/tmp"
     tmp_input = f"{tmp_dir}/input"
-    os.makedirs(tmp_input, exist_ok=True)
-    shutil.rmtree(tmp_input)
-    from distutils.dir_util import copy_tree
-    copy_tree(args.input, tmp_input)
+    copy_input_to_tmp_safe(args.input, tmp_input)
 
     config = {
         "maxMapSize": 0,
