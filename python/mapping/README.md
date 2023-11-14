@@ -1,6 +1,7 @@
 # Spectacular AI mapping scripts
 
-These scripts postprocess data recorded through the Spectacular AI SDK on supported devices, export the resulting 3D maps to various formats, and visualize the process. The scripts are powered by the Spectacular AI _Mapping API_.
+These scripts post-process data recorded through the Spectacular AI SDK on supported devices, export the resulting 3D maps to various formats, and visualize the process. The scripts are powered by the Spectacular AI _Mapping API_ 
+([documentation](https://spectacularai.github.io/docs/sdk/python/latest/#module-spectacularAI.mapping)).
 
 ## Installation
 
@@ -26,18 +27,11 @@ Where
 
 ## Gaussian Splatting
 
-Currently only supports https://github.com/wanmeihuali/taichi_3d_gaussian_splatting.
-See the repository for installation instructions. The arguments to the `replay_to_nerf` script are the same as above.
+**2023-11-14**. Currently supports the Nerfstudio branch powered by [gsplat](https://github.com/nerfstudio-project/gsplat).
+Installation instructions: 
 
-    python replay_to_nerf.py \
-        --format=taichi \
-        INPUT_PATH \
-        /PATH/TO/data/taichi_3d_gaussian_splatting/data/example-splat \
-        --preview \
-        --key_frame_distance=0.05
-    cd /PATH/TO/data/taichi_3d_gaussian_splatting
-    # Then, create a config/my_config.yaml with the correponding paths
-    # see the instructions printed by replay_to_nerf.py
-    python gaussian_point_train.py --train_config config/my_config.yaml
+ 1. Install Nerfstudio and activate the Conda environment
+ 2. Install _gsplat_ to the same Conda environment `git clone https://github.com/nerfstudio-project/gsplat; cd gsplat; pip install -e .`
+ 3. Train as `ns-train gaussian-splatting --data /example/output/path/my-nerf`
 
 
