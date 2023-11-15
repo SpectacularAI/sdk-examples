@@ -25,6 +25,7 @@ parser.add_argument('--no_icp', action='store_true')
 parser.add_argument('--device_preset', choices=['none', 'oak-d', 'k4a', 'realsense', 'android-tof'], default='none')
 parser.add_argument('--fast', action='store_true', help='Fast but lower quality settings')
 parser.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
+parser.add_argument("--preview3d", help="Show 3D visualization", action="store_true")
 args = parser.parse_args()
 
 def interpolate_missing_properties(df_source, df_query, k_nearest=3):
@@ -161,6 +162,7 @@ pointClouds = {}
 frameWidth = -1
 frameHeight = -1
 intrinsics = None
+visualizer = None
 
 def blurScore(path):
     image = cv2.imread(path)
@@ -197,12 +199,21 @@ def post_process_point_clouds(globalPointCloud, sparse_point_cloud_df):
 
     return merged_df
 
+def onVioOutput(vioOutput):
+    global visualizer
+    if visualizer is not None:
+        visualizer.onVioOutput(vioOutput.getCameraPose(0))
+
 def onMappingOutput(output):
     global savedKeyFrames
     global pointClouds
     global frameWidth
     global frameHeight
     global intrinsics
+    global visualizer
+
+    if visualizer is not None:
+        visualizer.onMappingOutput(output)
 
     if not output.finalMap:
         # New frames, let's save the images to disk
@@ -354,6 +365,8 @@ def copy_input_to_tmp_safe(input_dir, tmp_input):
         if not os.path.isdir(full_fn): shutil.copy(full_fn, tmp_input)
 
 def main():
+    global visualizer
+
     os.makedirs(f"{args.output}/images", exist_ok=True)
     tmp_dir = f"{args.output}/tmp"
     tmp_input = f"{tmp_dir}/input"
@@ -395,6 +408,10 @@ def main():
     elif args.device_preset == 'oak-d':
         config['stereoPointCloudStride'] = 30
 
+    if args.preview3d:
+        from visualization.visualizer import Visualizer
+        visualizer = Visualizer()
+
     with open(tmp_input + "/vio_config.yaml", 'wt') as f:
         base_params = 'parameterSets: %s' % json.dumps(parameter_sets)
         f.write(base_params + '\n')
@@ -402,8 +419,14 @@ def main():
 
     print(config)
     replay = spectacularAI.Replay(tmp_input, mapperCallback = onMappingOutput, configuration = config)
+    replay.setOutputCallback(onVioOutput)
 
-    replay.runReplay()
+    if visualizer is None:
+        replay.runReplay()
+    else:
+        replay.startReplay()
+        visualizer.run()
+        replay.close()
 
     shutil.rmtree(tmp_dir)
     print("Done!\n")
