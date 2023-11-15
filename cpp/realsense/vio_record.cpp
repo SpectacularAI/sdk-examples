@@ -7,6 +7,7 @@ void showUsage() {
         << "  -h, --help Help" << std::endl
         << "  --output <recording_fodler>, recorded output" << std::endl
         << "  --recording_only, disables Vio" << std::endl
+        << "  --resolution <value>, 400p or 800p" << std::endl
         << "  --brightness <value>" << std::endl
         << "  --contrast <value>" << std::endl
         << "  --exposure <value>" << std::endl
@@ -42,6 +43,8 @@ int main(int argc, char** argv) {
             config.recordingFolder = arguments.at(++i);
         else if (argument == "--recording_only")
             config.recordingOnly = true;
+        else if (argument == "--resolution")
+            config.inputResolution = arguments.at(++i);
         else if (argument == "--brightness")
             colorConfig.brightness = std::stoi(arguments.at(++i));
         else if (argument == "--contrast")
@@ -71,7 +74,7 @@ int main(int argc, char** argv) {
     }
 
     if (config.recordingFolder.empty()) {
-            std::cerr << "  You must provide output folder with --output <folder> argument argument." << std::endl;;
+            std::cerr << "  You must provide output folder with --output <folder> argument." << std::endl;;
             return EXIT_FAILURE;
     }
 
