@@ -1,3 +1,8 @@
+
+
+![OAK-D NeRF](https://spectacularai.github.io/docs/gif/oak-d-nerf.gif)
+<img height="253" alt="OAK-D fast mapping" src="https://spectacularai.github.io/docs/png/oak-d-fast-mapping.png">
+
 # Spectacular AI mapping scripts
 
 These scripts post-process data recorded through the Spectacular AI SDK on supported devices, export the resulting 3D maps to various formats, and visualize the process. The scripts are powered by the Spectacular AI _Mapping API_ 
