@@ -89,10 +89,14 @@ def convert_json_taichi_to_nerfstudio(d):
         if cam_id not in by_camera:
             by_camera[cam_id] = params
 
-        by_camera[cam_id]['frames'].append({
-            'file_path':  "./images/" + c['image_path'].split('/')[-1],
+        converted = {
+            'file_path': "./images/" + c['image_path'].split('/')[-1],
             "transform_matrix": transform_camera(c['T_pointcloud_camera'])
-        })
+        }
+        if 'depth_image_path' in c:
+            converted['depth_file_path'] = "./images/" + c['depth_image_path'].split('/')[-1]
+            
+        by_camera[cam_id]['frames'].append(converted)
 
     if len(by_camera) != 1:
         raise RuntimeError("unexpected number of cameras")
@@ -276,17 +280,9 @@ def onMappingOutput(output):
 
             # Image data
             keyFrame = output.map.keyFrames.get(frameId)
-            oldImgName = f"{args.output}/tmp/frame_{frameId:05}.png"
-            newImgName = f"{args.output}/images/frame_{index:05}.png"
-            os.rename(oldImgName, newImgName)
-
-            oldDepth = f"{args.output}/tmp/depth_{frameId:05}.png"
-            newDepth = f"{args.output}/images/depth_{index:05}.png"
-            if os.path.exists(oldDepth):
-                os.rename(oldDepth, newDepth)
 
             cameraPose = keyFrame.frameSet.rgbFrame.cameraPose
-
+            
             # Camera data
             frame = {
                 "image_path": f"data/{name}/images/frame_{index:05}.png",
@@ -296,6 +292,17 @@ def onMappingOutput(output):
                 "camera_width": frameWidth, # image width, in pixel
                 "camera_id": index # camera id, not used
             }
+
+            oldImgName = f"{args.output}/tmp/frame_{frameId:05}.png"
+            newImgName = f"{args.output}/images/frame_{index:05}.png"
+            os.rename(oldImgName, newImgName)
+            
+            oldDepth = f"{args.output}/tmp/depth_{frameId:05}.png"
+            newDepth = f"{args.output}/images/depth_{index:05}.png"
+            if os.path.exists(oldDepth):
+                os.rename(oldDepth, newDepth)
+                frame['depth_image_path'] = f"data/{name}/images/depth_{index:05}.png"
+            
             if (index + 3) % 7 == 0:
                 validationFrames.append(frame)
             else:
@@ -393,6 +400,7 @@ def main():
             if not args.fast: parameter_sets.append('offline-icp')
         config['stereoPointCloudStride'] = 15
     elif args.device_preset == 'oak-d':
+        config['stereoPointCloudMinDepth'] = 0.5
         config['stereoPointCloudStride'] = 30
 
     with open(tmp_input + "/vio_config.yaml", 'wt') as f:
