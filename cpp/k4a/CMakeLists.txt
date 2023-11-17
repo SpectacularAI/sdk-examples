@@ -32,10 +32,6 @@ else()
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs=ALL")
 endif()
 
-set(JSON_Install OFF CACHE INTERNAL "")
-set(JSON_BuildTests OFF CACHE INTERNAL "")
-add_subdirectory("../offline/json" json)
-
 set(EXAMPLE_LIBS
   k4a::k4a
   spectacularAI::k4aPlugin)
@@ -47,13 +43,20 @@ endif()
 add_executable(vio_jsonl vio_jsonl.cpp)
 target_link_libraries(vio_jsonl ${EXAMPLE_LIBS})
 
-add_executable(mapping_visu mapping_visu.cpp ../common/serialize_output.cpp)
-target_link_libraries(mapping_visu PRIVATE ${EXAMPLE_LIBS} nlohmann_json::nlohmann_json Threads::Threads)
-target_include_directories(mapping_visu PRIVATE "../common")
-
 if(MSVC)
   add_custom_command(TARGET vio_jsonl POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_jsonl> $<TARGET_FILE_DIR:vio_jsonl>
     COMMAND_EXPAND_LISTS
   )
+endif()
+
+set(BUILD_MAPPING_VISU ON CACHE STRING "Build VIO mapper example (requires nlohmann_json)")
+if (BUILD_MAPPING_VISU)
+  set(JSON_Install OFF CACHE INTERNAL "")
+  set(JSON_BuildTests OFF CACHE INTERNAL "")
+  add_subdirectory("../offline/json" json)
+
+  add_executable(mapping_visu mapping_visu.cpp ../common/serialize_output.cpp)
+  target_link_libraries(mapping_visu PRIVATE ${EXAMPLE_LIBS} nlohmann_json::nlohmann_json Threads::Threads)
+  target_include_directories(mapping_visu PRIVATE "../common")
 endif()
