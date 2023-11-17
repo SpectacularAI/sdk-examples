@@ -95,7 +95,7 @@ def convert_json_taichi_to_nerfstudio(d):
         }
         if 'depth_image_path' in c:
             converted['depth_file_path'] = "./images/" + c['depth_image_path'].split('/')[-1]
-            
+
         by_camera[cam_id]['frames'].append(converted)
 
     if len(by_camera) != 1:
@@ -282,7 +282,7 @@ def onMappingOutput(output):
             keyFrame = output.map.keyFrames.get(frameId)
 
             cameraPose = keyFrame.frameSet.rgbFrame.cameraPose
-            
+
             # Camera data
             frame = {
                 "image_path": f"data/{name}/images/frame_{index:05}.png",
@@ -296,13 +296,13 @@ def onMappingOutput(output):
             oldImgName = f"{args.output}/tmp/frame_{frameId:05}.png"
             newImgName = f"{args.output}/images/frame_{index:05}.png"
             os.rename(oldImgName, newImgName)
-            
+
             oldDepth = f"{args.output}/tmp/depth_{frameId:05}.png"
             newDepth = f"{args.output}/images/depth_{index:05}.png"
             if os.path.exists(oldDepth):
                 os.rename(oldDepth, newDepth)
                 frame['depth_image_path'] = f"data/{name}/images/depth_{index:05}.png"
-            
+
             if (index + 3) % 7 == 0:
                 validationFrames.append(frame)
             else:
@@ -369,7 +369,8 @@ def main():
     config = {
         "maxMapSize": 0,
         "useSlam": True,
-        "rotateMapOnFirstNCandidates": 200,
+        "rotateMapOnFirstNCandidates": 20,
+        "rotateMapThresholdDegrees": 0.5,
         "keyframeDecisionDistanceThreshold": args.key_frame_distance,
         "icpVoxelSize": min(args.key_frame_distance, 0.1),
         "mapSavePath": f"{args.output}/points.sparse.csv"
@@ -386,7 +387,7 @@ def main():
         # remove these to further trade off speed for quality
         mid_q = {
             'maxKeypoints': 1000,
-            'optimizerMaxIterations': 10
+            'optimizerMaxIterations': 30
         }
         for k, v in mid_q.items(): config[k] = v
 
