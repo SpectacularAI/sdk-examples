@@ -2,6 +2,7 @@ import os
 import numpy as np
 import time
 
+from threading import Lock
 from enum import Enum
 from OpenGL.GL import * # all prefixed with gl so OK to import *
 
@@ -57,6 +58,7 @@ class VisualizerArgs:
     fullScreen = False # Full screen mode
     visualizationScale = 10.0 # Generic scale of visualizations. Affects color maps, camera size, etc.
     backGroundColor = [1, 1, 1] # Background color RGB color (0-1).
+    keepOpenAfterFinalMap = False # If false, window is automatically closed on final mapper output
 
     # Camera
     cameraNear = 0.01 # Camera near plane (m)
@@ -125,6 +127,8 @@ class Visualizer:
         self.shouldQuit = False
         self.shouldPause = False
         self.displayInitialized = False
+        self.outputQueue = []
+        self.outputQueueMutex = Lock()
 
         # Window
         self.fullScreen = args.fullScreen
@@ -194,6 +198,16 @@ class Visualizer:
     def __render(self, cameraPose, width, height, image=None, colorFormat=None):
         import spectacularAI
 
+        if not self.displayInitialized:
+            targetWidth = self.targetResolution[0]
+            targetHeight = self.targetResolution[1]
+            self.scale = min(targetWidth / width, targetHeight / height)
+            self.adjustedResolution = [int(self.scale * width), int(self.scale * height)]
+            self.aspectRatio = targetWidth / targetHeight
+            self.cameraFrustumRenderer = CameraFrustumRenderer(cameraPose.camera.getProjectionMatrixOpenGL(self.args.frustumNear, self.args.frustumFar))
+            self.recorder = Recorder(self.args.recordPath, self.adjustedResolution) if self.args.recordPath else None
+            self.__initDisplay()
+
         glPixelZoom(self.scale, self.scale)
         glClearColor(*self.args.backGroundColor, 1.0)
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT)
@@ -229,7 +243,6 @@ class Visualizer:
             bottom = -25.0 * self.zoom / self.aspectRatio # divide by aspect ratio to avoid strecthing (i.e. x and y directions have equal scale)
             top = 25.0 * self.zoom / self.aspectRatio
             projectionMatrix = getOrthographicProjectionMatrixOpenGL(left, right, bottom, top, -1000.0, 1000.0)
-        self.poseTrail.append(cameraPose.getPosition())
 
         self.map.render(cameraPose.getPosition(), viewMatrix, projectionMatrix)
         if self.showGrid: self.grid.render(viewMatrix, projectionMatrix)
@@ -241,25 +254,7 @@ class Visualizer:
             if self.showCameraFrustum: self.cameraFrustumRenderer.render(modelMatrix, viewMatrix, projectionMatrix, self.cameraMode is CameraMode.TOP_VIEW)
 
         if self.recorder: self.recorder.recordFrame()
-        pygame.display.flip()
-
-    def __handleVioOutput(self, cameraPose, width, height, image=None, colorFormat=None):
-        if self.shouldQuit: return
-        if not self.displayInitialized:
-            targetWidth = self.targetResolution[0]
-            targetHeight = self.targetResolution[1]
-            self.scale = min(targetWidth / width, targetHeight / height)
-            self.adjustedResolution = [int(self.scale * width), int(self.scale * height)]
-            self.aspectRatio = targetWidth / targetHeight
-            self.cameraFrustumRenderer = CameraFrustumRenderer(cameraPose.camera.getProjectionMatrixOpenGL(self.args.frustumNear, self.args.frustumFar))
-            self.recorder = Recorder(self.args.recordPath, self.adjustedResolution) if self.args.recordPath else None
-            self.__initDisplay()
-
-        self.__render(cameraPose, width, height, image, colorFormat)
-
-        while self.shouldPause:
-            if self.shouldQuit: break
-            time.sleep(0.01)
+        pygame.display.flip()        
 
     def __processUserInput(self):
         if not self.displayInitialized: return
@@ -312,20 +307,80 @@ class Visualizer:
                     self.zoom = max(0.1*self.initialZoom , self.zoom * 0.95)
 
     def onVioOutput(self, cameraPose, image=None, width=None, height=None, colorFormat=None):
+        if self.shouldQuit: return
+
         if image is None:
-            self.__handleVioOutput(cameraPose, self.targetResolution[0], self.targetResolution[1])
+            output = {
+                "type": "vio",
+                "cameraPose" : cameraPose,
+                "image" : None,
+                "width" : self.targetResolution[0],
+                "height" : self.targetResolution[1],
+                "colorFormat" : None
+            }
         else:
-            if not self.args.flip: image = np.ascontiguousarray(np.flipud(image)) # Flip the image upside down for OpenGL.
-            self.__handleVioOutput(cameraPose, width, height, image, colorFormat)
+            # Flip the image upside down for OpenGL.
+            if not self.args.flip: image = np.ascontiguousarray(np.flipud(image)) 
+            output = {
+                "type" : "vio",
+                "cameraPose" : cameraPose,
+                "image" : image,
+                "width" : width,
+                "height" : height,
+                "colorFormat" : colorFormat
+            }
+
+        if self.outputQueueMutex:
+            self.outputQueue.append(output)
+
+        # Blocks VIO until previous outputs have been processed
+        while len(self.outputQueue) > 5:
+            time.sleep(0.01)
 
     def onMappingOutput(self, mapperOutput):
         if self.shouldQuit: return
-        self.map.onMappingOutput(mapperOutput)
+
+        output = {
+            "type" : "slam",
+            "mapperOutput" : mapperOutput
+        }
+
+        if self.outputQueueMutex:
+            self.outputQueue.append(output)
 
     def run(self):
         while not self.shouldQuit:
             self.__processUserInput()
-            time.sleep(0.01)
+
+            if self.shouldPause or len(self.outputQueue) == 0:
+                time.sleep(0.01)
+                continue
+
+            # Process VIO & Mapping API outputs
+            vioOutput = None
+            while self.outputQueueMutex and len(self.outputQueue) > 0:
+                output = self.outputQueue.pop(0)
+                if output["type"] == "vio":
+                    vioOutput = output
+                    cameraPose = vioOutput["cameraPose"]
+                    self.poseTrail.append(cameraPose.getPosition())
+                    break
+                elif output["type"] == "slam":
+                    mapperOutput = output["mapperOutput"]
+                    self.map.onMappingOutput(mapperOutput)
+                    if mapperOutput.finalMap and not self.args.keepOpenAfterFinalMap:
+                        self.shouldQuit = True
+                else:
+                    print("Unknown output type: {}".format(output["type"]))
+            
+            if vioOutput:
+                self.__render(
+                    vioOutput["cameraPose"],
+                    vioOutput["width"],
+                    vioOutput["height"],
+                    vioOutput["image"],
+                    vioOutput["colorFormat"])
+
         self.__close()
 
     def printHelp(self):
