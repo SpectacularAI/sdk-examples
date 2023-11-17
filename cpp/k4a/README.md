@@ -94,27 +94,37 @@ This example uses Azure Kinect device with Mapping API and serializes the output
 
 If you are using the pre-built `./bin/mapping_visu` binary or (have built your own following the building instructions in the next section):
 
-Create a new pipe with:
+Create a new pipe with (Linux):
 ```
-mkfifo ~/my_pipe
+mkfifo /path/to/my_pipe
+```
+
+or
+
+Create a new file with (Windows):
+```
+type NUL > /path/to/my_pipe
+```
+
+Launch this example file with:
+```
+./mapping_visu -o /path/to/my_pipe
 ```
 
 Open another command prompt, go to `./sdk-examples/python/mapping/` and launch Python visualization and leave it running with:
 ```
-python mapping_visu.py --file ~/my_pipe
+python mapping_visu.py --file /path/to/my_pipe
 ```
 
-And finally launch this example file with:
-```
-./mapping_visu -o ~/my_pipe
-```
-
-You should now the visualization running in the Python window:
+Ideally, you would start both programs around the same time (~10 seconds), so that not too much outputs get queued in the file.
+You should now the visualization running in the Python window.
 
 You can add -r recording folder to additionally record the session:
 ```
-./mapping_visu -o ~/my_pipe -r <recording_folder>
+./mapping_visu -o /path/to/my_pipe -r <recording_folder>
 ```
+
+Also, you can adjust all the Python visualization options, see `python mapping_visu.py -h`
 
 ### Building (Linux)
 
