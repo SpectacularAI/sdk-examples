@@ -7,5 +7,3 @@ opencv-python
 # visualization dependencies
 pyopengl
 pygame
-# TODO: get rid of this
-open3d
