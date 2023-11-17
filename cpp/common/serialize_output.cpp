@@ -1,28 +1,30 @@
-#include <sstream>
-#include <iomanip>
 #include <nlohmann/json.hpp>
 
 #include "serialize_output.hpp"
 
-void Serializer::serializeVioOutput(FILE *out, spectacularAI::VioOutputPtr vioOutput) {
+void Serializer::serializeVioOutput(std::ofstream &outputStream, spectacularAI::VioOutputPtr vioOutput) {
     Matrix4d camMatrix = vioOutput->getCameraPose(0).getCameraToWorldMatrix();
     nlohmann::json json;
     json["cameraPoses"] = { {{"cameraToWorld", camMatrix}} };
 
     std::string jsonStr = json.dump();
     uint32_t jsonLength = jsonStr.length();
+
     MessageHeader header = {
         .magicBytes = MAGIC_BYTES,
         .messageId = messageIdCounter,
         .jsonSize = jsonLength,
         .binarySize = 0
     };
-    fwrite(&header, sizeof(MessageHeader), 1, out);
-    fprintf(out, "%s", jsonStr.c_str());
+
+    outputStream.write(reinterpret_cast<char*>(&header), sizeof(MessageHeader));
+    outputStream.write(jsonStr.c_str(), jsonStr.size());
+    outputStream.flush();
+
     messageIdCounter++;
 }
 
-void Serializer::serializeMappingOutput(FILE *out, spectacularAI::mapping::MapperOutputPtr mapperOutput) {
+void Serializer::serializeMappingOutput(std::ofstream &outputStream, spectacularAI::mapping::MapperOutputPtr mapperOutput) {
     std::map<std::string, nlohmann::json> jsonKeyFrames;
     std::size_t binaryLength = 0;
 
@@ -67,8 +69,8 @@ void Serializer::serializeMappingOutput(FILE *out, spectacularAI::mapping::Mappe
         .binarySize = (uint32_t)binaryLength
     };
 
-    fwrite(&header, sizeof(MessageHeader), 1, out);
-    fprintf(out, "%s", jsonStr.c_str());
+    outputStream.write(reinterpret_cast<char*>(&header), sizeof(MessageHeader));
+    outputStream.write(jsonStr.c_str(), jsonStr.size());
 
     for (auto keyFrameId : mapperOutput->updatedKeyFrames) {
         auto search = mapperOutput->map->keyFrames.find(keyFrameId);
@@ -76,14 +78,25 @@ void Serializer::serializeMappingOutput(FILE *out, spectacularAI::mapping::Mappe
         auto& pointCloud = search->second->pointCloud;
         std::size_t points = pointCloud->size();
         if (points > 0) {
-            fwrite(pointCloud->getPositionData(), sizeof(spectacularAI::Vector3f), points, out);
-            if (pointCloud->hasNormals())
-                fwrite(pointCloud->getNormalData(), sizeof(spectacularAI::Vector3f), points, out);
-            if (pointCloud->hasColors())
-                fwrite(pointCloud->getRGB24Data(), sizeof(std::uint8_t) * 3, points, out);
+            outputStream.write(
+                reinterpret_cast<const char*>(pointCloud->getPositionData()),
+                sizeof(spectacularAI::Vector3f) * points);
+
+            if (pointCloud->hasNormals()) {
+                outputStream.write(
+                    reinterpret_cast<const char*>(pointCloud->getNormalData()),
+                    sizeof(spectacularAI::Vector3f) * points);
+            }
+
+            if (pointCloud->hasColors()) {
+                outputStream.write(
+                    reinterpret_cast<const char*>(pointCloud->getRGB24Data()),
+                    sizeof(std::uint8_t) * 3 * points);
+            }
         }
     }
 
+    outputStream.flush();
     messageIdCounter++;
 }
 

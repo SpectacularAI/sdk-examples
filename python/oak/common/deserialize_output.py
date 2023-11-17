@@ -2,14 +2,28 @@
 An example code to deserialize data serialized by cpp/mapping_visu C++ example
 """
 
+# Needed when SLAM is disabled (no final map flag to indicate end of data)
+EXIT_AFTER_NO_DATA_FOR_N_SECONDS = 5
+
 import struct
 import json
 import numpy as np
+import time
+
 def input_stream_reader(in_stream):
     MAGIC_BYTES = 2727221974
-    while True:
+    shouldQuit = False
+    exitCounter = 0
+
+    while not shouldQuit:
         messageHeader = in_stream.read(16)
-        if len(messageHeader) < 16: break # EOF
+
+        if len(messageHeader) == 0:
+            time.sleep(0.01)
+            exitCounter += 0.01
+            shouldQuit = exitCounter >= EXIT_AFTER_NO_DATA_FOR_N_SECONDS
+            continue
+        exitCounter = 0
 
         magicBytes, messageId, jsonSize, binarySize = struct.unpack('@4I', messageHeader)
         if magicBytes != MAGIC_BYTES:
@@ -17,8 +31,9 @@ def input_stream_reader(in_stream):
         json_output = json.loads(in_stream.read(jsonSize).decode('ascii'))
 
         if 'cameraPoses' in json_output: # Vio output
-            in_stream.read(binarySize) # Dump any binary data
+            assert(binarySize == 0)
         else: # Mapper output, deserialize binary data
+            shouldQuit = json_output["finalMap"]
             for keyFrameId in json_output["updatedKeyFrames"]:
                 keyFrame = json_output["map"]["keyFrames"].get(str(keyFrameId))
                 if not keyFrame: continue # Deleted key frame
@@ -33,7 +48,6 @@ def input_stream_reader(in_stream):
                     if pointCloud["hasColors"]:
                         pointCloud["rgb24Data"] = np.frombuffer(in_stream.read(points * 3), dtype=np.ubyte)
                         pointCloud["rgb24Data"].shape = (points, 3)
-
         yield json_output
 
 class MockCameraPose:
