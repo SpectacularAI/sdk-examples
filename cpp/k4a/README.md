@@ -129,7 +129,7 @@ make
 
 The `-DspectacularAI_k4aPlugin_DIR` option is not needed is you have used `sudo make install` for the SDK.
 
-## Building (Windows)
+### Building (Windows)
 
 1. Build vio_jsonl example using CMake. The process is a bit involved so the commands are collected in `./build_windows.sh`. In PowerShell:
 
