@@ -36,11 +36,29 @@ def input_stream_reader(in_stream):
 
         yield json_output
 
+class MockCamera:
+    def __init__(self, data):
+        self.intrinsics = self.data["intrinsics"]
+        self.projectioMatrixOpenGL = self.data["projectionMatrixOpenGL"]
+
+    def getIntrinsicMatrix(self):
+        return self.intrinsics
+
+    def getProjectionMatrixOpenGL(self, near, far):
+        # TODO: use near, far
+        return self.projectioMatrixOpenGL
+
 class MockCameraPose:
     def __init__(self, data):
-        self.data = data
+        self.camera = MockCamera(data["camera"])
+        self.cameraToWorld = self.data["cameraToWorld"]
+        self.position = self.cameraToWorld[:3, 3]
+
     def getCameraToWorldMatrix(self):
-        return np.array(self.data["cameraToWorld"])
+        return self.cameraToWorld
+
+    def getPosition(self):
+        return self.position
 
 class MockVioOutput:
     def __init__(self, data):

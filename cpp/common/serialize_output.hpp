@@ -6,6 +6,7 @@
 // Random number indicating start of a MessageHeader
 #define MAGIC_BYTES 2727221974
 
+using Matrix3d = std::array<std::array<double, 3>, 3>;
 using Matrix4d = std::array<std::array<double, 4>, 4>;
 using SAI_BOOL = uint8_t;
 

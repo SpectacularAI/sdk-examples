@@ -5,9 +5,23 @@
 #include "serialize_output.hpp"
 
 void Serializer::serializeVioOutput(FILE *out, spectacularAI::VioOutputPtr vioOutput) {
-    Matrix4d camMatrix = vioOutput->getCameraPose(0).getCameraToWorldMatrix();
+    float near = 0.01f, far = 100.0f;
+    const Matrix3d intrinsics = vioOutput->getCameraPose(0).camera->getIntrinsicMatrix();
+    const Matrix4d projectionMatrixOpenGL = vioOutput->getCameraPose(0).camera->getProjectionMatrixOpenGL(near, far);
+    const Matrix4d camMatrix = vioOutput->getCameraPose(0).getCameraToWorldMatrix();
+
+    // Only properties used in current visualization are serialized, i.e. add more stuff if needed.
     nlohmann::json json;
-    json["cameraPoses"] = { {{"cameraToWorld", camMatrix}} };
+    json["cameraPoses"] = {
+        {
+            {"camera", {
+                    {"intrinsics", intrinsics},
+                    {"projectionMatrixOpenGL", projectionMatrixOpenGL}
+                }
+            },
+            {"cameraToWorld", camMatrix}
+        }
+    };
 
     std::string jsonStr = json.dump();
     uint32_t jsonLength = jsonStr.length();
