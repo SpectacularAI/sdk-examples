@@ -3,6 +3,7 @@
 #include <memory>
 #include <mutex>
 #include <fstream>
+#include <thread>
 
 #include <spectacularAI/k4a/plugin.hpp>
 #include "serialize_output.hpp"
