@@ -47,14 +47,18 @@ def invert_se3(a):
 class MockCamera:
     def __init__(self, data):
         self.intrinsics = np.array(data["intrinsics"])
-        self.projectioMatrixOpenGL = np.array(data["projectionMatrixOpenGL"])
+        self.projectionMatrixOpenGL = np.array(data["projectionMatrixOpenGL"])
 
     def getIntrinsicMatrix(self):
         return self.intrinsics
 
     def getProjectionMatrixOpenGL(self, near, far):
-        # TODO: use near, far
-        return self.projectioMatrixOpenGL
+        m22 = (near + far) / (far - near)
+        m23 = -2.0*near*far/(far-near)
+        projectionMatrixOpenGL = self.projectionMatrixOpenGL
+        projectionMatrixOpenGL[2, 2] = m22
+        projectionMatrixOpenGL[2, 3] = m23
+        return projectionMatrixOpenGL
 
 class MockCameraPose:
     def __init__(self, data):
