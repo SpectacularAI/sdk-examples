@@ -5,6 +5,8 @@ An example code to deserialize data serialized by cpp/mapping_visu C++ example
 import struct
 import json
 import numpy as np
+import spectacularAI
+
 def input_stream_reader(in_stream):
     MAGIC_BYTES = 2727221974
     while True:
@@ -36,10 +38,16 @@ def input_stream_reader(in_stream):
 
         yield json_output
 
+def invert_se3(a):
+    b = np.eye(4)
+    b[:3, :3] = a[:3, :3].transpose()
+    b[:3, 3] = -np.dot(b[:3, :3], a[:3, 3])
+    return b
+
 class MockCamera:
     def __init__(self, data):
-        self.intrinsics = self.data["intrinsics"]
-        self.projectioMatrixOpenGL = self.data["projectionMatrixOpenGL"]
+        self.intrinsics = np.array(data["intrinsics"])
+        self.projectioMatrixOpenGL = np.array(data["projectionMatrixOpenGL"])
 
     def getIntrinsicMatrix(self):
         return self.intrinsics
@@ -51,11 +59,15 @@ class MockCamera:
 class MockCameraPose:
     def __init__(self, data):
         self.camera = MockCamera(data["camera"])
-        self.cameraToWorld = self.data["cameraToWorld"]
-        self.position = self.cameraToWorld[:3, 3]
+        self.cameraToWorld = np.array(data["cameraToWorld"])
+        self.worldToCamera = invert_se3(self.cameraToWorld)
+        self.position = spectacularAI.Vector3d(*self.cameraToWorld[:3, 3])
 
     def getCameraToWorldMatrix(self):
         return self.cameraToWorld
+
+    def getWorldToCameraMatrix(self):
+        return self.worldToCamera
 
     def getPosition(self):
         return self.position
@@ -87,6 +99,8 @@ class MockPointCloud:
         return 'rgb24Data' in self.data
     def hasNormals(self):
         return 'normalData' in self.data
+    def empty(self):
+        return len(self.data["positionData"]) == 0
 
 class MockKeyFrame:
     def __init__(self, data):

@@ -4,22 +4,31 @@
 
 #include "serialize_output.hpp"
 
+namespace {
+
+    nlohmann::json serializeCamera(const spectacularAI::Camera &camera) {
+        float near = 0.01f, far = 100.0f;
+        const Matrix3d &intrinsics = camera.getIntrinsicMatrix();
+        const Matrix4d &projectionMatrixOpenGL = camera.getProjectionMatrixOpenGL(near, far);
+
+        nlohmann::json json;
+        json["intrinsics"] = intrinsics;
+        json["projectionMatrixOpenGL"] = projectionMatrixOpenGL;
+        return json;
+    }
+
+} // anonymous namespace
+
 void Serializer::serializeVioOutput(FILE *out, spectacularAI::VioOutputPtr vioOutput) {
-    float near = 0.01f, far = 100.0f;
-    const Matrix3d intrinsics = vioOutput->getCameraPose(0).camera->getIntrinsicMatrix();
-    const Matrix4d projectionMatrixOpenGL = vioOutput->getCameraPose(0).camera->getProjectionMatrixOpenGL(near, far);
-    const Matrix4d camMatrix = vioOutput->getCameraPose(0).getCameraToWorldMatrix();
+    const spectacularAI::Camera &camera = *vioOutput->getCameraPose(0).camera;
+    const Matrix4d &cameraToWorld = vioOutput->getCameraPose(0).getCameraToWorldMatrix();
 
     // Only properties used in current visualization are serialized, i.e. add more stuff if needed.
     nlohmann::json json;
     json["cameraPoses"] = {
         {
-            {"camera", {
-                    {"intrinsics", intrinsics},
-                    {"projectionMatrixOpenGL", projectionMatrixOpenGL}
-                }
-            },
-            {"cameraToWorld", camMatrix}
+            {"camera", serializeCamera(camera)},
+            {"cameraToWorld", cameraToWorld}
         }
     };
 
@@ -45,12 +54,16 @@ void Serializer::serializeMappingOutput(FILE *out, spectacularAI::mapping::Mappe
         if (search == mapperOutput->map->keyFrames.end()) continue; // deleted frame, skip
         auto& frameSet = search->second->frameSet;
         auto& pointCloud = search->second->pointCloud;
-        Matrix4d camMatrix = frameSet->primaryFrame->cameraPose.getCameraToWorldMatrix();
+        const spectacularAI::Camera &camera = *frameSet->primaryFrame->cameraPose.camera;
+        const Matrix4d &cameraToWorld = frameSet->primaryFrame->cameraPose.getCameraToWorldMatrix();
         nlohmann::json keyFrameJson;
         keyFrameJson["id"] = std::to_string(keyFrameId);
         keyFrameJson["frameSet"] = {
             {"primaryFrame", {
-                {"cameraPose", {{"cameraToWorld", camMatrix }} }
+                {"cameraPose", {
+                    {"camera", serializeCamera(camera)},
+                    {"cameraToWorld", cameraToWorld}
+                }}
             }}
         };
         std::size_t points = pointCloud->size();
