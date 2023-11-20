@@ -60,7 +60,7 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
         pip install matplotlib # install dependencies
         python vio_visu.py
 
-### Using as a library
+### Installation as a library
 
 You need to install following tools if you don't already have them:
 * Install the system dependencies as instructed in "Quick start"
