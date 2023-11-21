@@ -47,16 +47,15 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 * Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that  open `k4aviewer`.
 
  1. Unpack the SDK archive
- 2. Add `C:\Program Files\Azure Kinect SDK v1.4.1\sdk\windows-desktop\amd64\release\bin` to your PATH environment variable (Azure Kinect binaries, namely `k4a.dll` and `depthengine_2_0.dll` are not included in the SDK archive). Note: this is only required for running the pre-built examples in the `bin` directory.
- 3. Attach your Azure Kinect device to a USB3 port
- 4. Run the JSONL example:
+ 2. Attach your Azure Kinect device to a USB3 port
+ 3. Run the JSONL example:
 
         cd bin
         ./vio_jsonl.exe
         # Now you should see rapidly flowing JSONL text
         # press Ctrl+C to exit
 
- 5. Run the Python example (in the `bin` directory)
+ 4. Run the Python example (in the `bin` directory)
 
         pip install matplotlib # install dependencies
         python vio_visu.py
