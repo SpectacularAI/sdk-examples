@@ -47,11 +47,24 @@ Without the `--fast` flag, the processing should take around 10 minutes.
 
 ## Gaussian Splatting
 
-**2023-11-14**. Currently supports the Nerfstudio branch powered by [gsplat](https://github.com/nerfstudio-project/gsplat).
+**2023-11-14**. Currently supports the Nerfstudio [branch](https://github.com/nerfstudio-project/nerfstudio/pull/2521) powered by [gsplat](https://github.com/nerfstudio-project/gsplat).
 Installation instructions: 
 
- 1. Install Nerfstudio and activate the Conda environment
- 2. Install _gsplat_ to the same Conda environment `git clone https://github.com/nerfstudio-project/gsplat; cd gsplat; pip install -e .`
- 3. Train as `ns-train gaussian-splatting --data /example/output/path/my-nerf`
+ 1. Create and activate a Conda environment for Nerfstudio (see [instructions](https://github.com/nerfstudio-project/nerfstudio#create-environment))
+ 2. Install _gsplat_ to the same Conda environment:
+    
+        git clone https://github.com/nerfstudio-project/gsplat
+        cd gsplat
+        pip install -e .
+    
+ 4. Install the `gaussian-splatting` branch of Nerfstudio:
+    
+        git clone https://github.com/nerfstudio-project/nerfstudio.git
+        cd nerfstudio
+        git checkout gaussian-splatting  # <--- Different from standard instructions
+        pip install --upgrade pip setuptools
+        pip install -e .
+
+ 5. Train as `ns-train gaussian-splatting --data /example/output/path/my-nerf`
 
 
