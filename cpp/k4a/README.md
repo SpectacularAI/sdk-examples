@@ -70,9 +70,10 @@ You need to install following tools if you don't already have them:
 * Install CMake https://cmake.org/
 * Install Python https://www.python.org/downloads/
 
- 1. Build vio_jsonl example using CMake. The process is a bit involved so the commands are collected in `./build_windows.sh`. In PowerShell:
+ 1. Build vio_jsonl example using CMake. The process is a bit involved so the commands are collected in `./examples/build_windows.sh`. In PowerShell:
 
-        sh ./build_windows.sh <path\to\spectacularAI_k4aPlugin_1.23.1_windows\lib\cmake\spectacularAI> BUILD_MAPPING_VISU=OFF
+        cd examples
+        $env:BUILD_MAPPING_VISU="OFF"; sh ./build_windows.sh ..\lib\cmake\spectacularAI
 
  2. Finally running the vio_jsonl.exe should give you the pose of the Azure Kinect device in real time:
 
