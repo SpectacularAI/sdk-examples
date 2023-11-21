@@ -92,7 +92,7 @@ if __name__ == '__main__':
                 vioPipeline.startSession(device) as vio_session:
                 if args.irDotBrightness > 0:
                     device.setIrLaserDotProjectorBrightness(args.irDotBrightness)
-                while not visualizer.shouldClose:
+                while not visualizer.shouldQuit:
                     onVioOutput(vio_session.waitForOutput())
 
         thread = threading.Thread(target=captureLoop)
