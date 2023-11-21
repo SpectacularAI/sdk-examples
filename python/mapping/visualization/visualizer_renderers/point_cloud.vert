@@ -2,6 +2,7 @@
 
 layout(location = 0) in vec3 in_Position;
 layout(location = 1) in vec3 in_Color;
+layout(location = 2) in vec3 in_Normal;
 
 uniform mat4 u_Model;
 uniform mat4 u_View;
@@ -14,8 +15,10 @@ uniform float u_Opacity;
 // 2 = y
 // 3 = z
 // 4 = distance from camera (depth)
+// 5 = world normals
 uniform int u_ColorMode;
 uniform int u_HasColor;  // 0 == false, otherwise true
+uniform int u_HasNormal;  // 0 == false, otherwise true
 
 out vec4 frag_Color;
 
@@ -27,6 +30,10 @@ vec3 colorMapJET(float value) {
     float g = clamp(1.5 - abs(2.0 - 4.0 * value), 0.0, 1.0);
     float b = clamp(1.5 - abs(1.0 - 4.0 * value), 0.0, 1.0);
     return vec3(r, g, b);
+}
+
+mat3 extractMat3(mat4 matrix) {
+    return mat3(matrix[0].xyz, matrix[1].xyz, matrix[2].xyz);
 }
 
 void main() {
@@ -58,6 +65,13 @@ void main() {
             case 4:
                 float depth = length(v_PositionWorld.xyz - u_CameraPositionWorld.xyz) * COLOR_MAP_SCALE * 5.0;
                 color = colorMapJET(exp(-depth*0.5));
+                break;
+
+            case 5:
+                if (u_HasNormal > 0) {
+                    vec3 v_NormalWorld = extractMat3(u_Model) * in_Normal.xyz;
+                    color = (v_NormalWorld.xyz + vec3(1.0, 1.0, 1.0)) * 0.5;
+                }
                 break;
 
             default:

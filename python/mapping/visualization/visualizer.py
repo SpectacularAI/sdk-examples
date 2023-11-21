@@ -27,6 +27,7 @@ class ColorMode(Enum):
     COORDINATE_Y = 2
     COORDINATE_Z = 3
     DEPTH = 4
+    NORMAL = 5
 
 class CameraSmooth:
     def __init__(self):
@@ -254,7 +255,7 @@ class Visualizer:
             if self.showCameraFrustum: self.cameraFrustumRenderer.render(modelMatrix, viewMatrix, projectionMatrix, self.cameraMode is CameraMode.TOP_VIEW)
 
         if self.recorder: self.recorder.recordFrame()
-        pygame.display.flip()        
+        pygame.display.flip()
 
     def __processUserInput(self):
         if not self.displayInitialized: return
@@ -282,6 +283,8 @@ class Visualizer:
                     self.map.setColorMode(ColorMode.COORDINATE_Z.value)
                 elif event.key == pygame.K_4:
                     self.map.setColorMode(ColorMode.DEPTH.value)
+                elif event.key == pygame.K_5:
+                    self.map.setColorMode(ColorMode.NORMAL.value)
                 elif event.key == pygame.K_m:
                     self.map.setRenderMesh(not self.map.renderMesh)
                 elif event.key == pygame.K_n:
@@ -320,7 +323,7 @@ class Visualizer:
             }
         else:
             # Flip the image upside down for OpenGL.
-            if not self.args.flip: image = np.ascontiguousarray(np.flipud(image)) 
+            if not self.args.flip: image = np.ascontiguousarray(np.flipud(image))
             output = {
                 "type" : "vio",
                 "cameraPose" : cameraPose,
@@ -372,7 +375,7 @@ class Visualizer:
                         self.shouldQuit = True
                 else:
                     print("Unknown output type: {}".format(output["type"]))
-            
+
             if vioOutput:
                 self.__render(
                     vioOutput["cameraPose"],
@@ -395,6 +398,6 @@ class Visualizer:
         print("* N: Toggle SLAM map key frames")
         print("* G: Toggle 2D grid")
         print("* P: Toggle pose trail")
-        print("* 0-4: Select point cloud color mode (ORIGINAL/X/Y/Z/DEPTH)")
+        print("* 0-5: Select point cloud color mode (ORIGINAL/X/Y/Z/DEPTH/NORMAL)")
         print("* H: Print this help window")
         print("------\n")

@@ -114,16 +114,16 @@ class MapRenderer:
             if kfId not in self.pointCloudRenderers:
                 pc = keyFrame.pointCloud
                 positions = pc.getPositionData()
-                if pc.hasColors():
-                    colors = pc.getRGB24Data().astype(np.float32) * 1./255
-                    if self.skipPointsWithoutColor:
-                        indices = np.sum(colors, axis=1) > 0
-                        positions = positions[indices, :]
-                        colors = colors[indices, :]
-                    pc = PointCloud(positions.flatten(), colors.flatten())
-                else:
-                    pc = PointCloud(positions.flatten())
+                colors = pc.getRGB24Data().astype(np.float32) * 1./255 if pc.hasColors() else None
+                normals = pc.getNormalData() if pc.hasNormals() else None
 
+                if pc.hasColors() and self.skipPointsWithoutColor:
+                    indices = np.sum(colors, axis=1) > 0
+                    positions = positions[indices, :]
+                    colors = colors[indices, :]
+                    if normals is not None: normals = normals[indices, :]
+
+                pc = PointCloud(positions, colors, normals)
                 if self.voxelSize > 0: pc.downsample(self.voxelSize)
 
                 self.pointCloudRenderers[kfId] = PointCloudRenderer(
