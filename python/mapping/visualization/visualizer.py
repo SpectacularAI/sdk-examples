@@ -186,6 +186,7 @@ class Visualizer:
         pygame.display.gl_set_attribute(GL_MULTISAMPLESAMPLES, 4)
         if self.fullScreen: pygame.display.set_mode((w, h), DOUBLEBUF | OPENGL | FULLSCREEN)
         else: pygame.display.set_mode((w, h), DOUBLEBUF | OPENGL)
+        pygame.display.set_caption("Spectacular AI Visualizer")
 
         # Enable multi-sampling in OpenGL
         glEnable(GL_MULTISAMPLE)
