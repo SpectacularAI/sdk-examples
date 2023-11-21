@@ -9,7 +9,12 @@ Optional: PyOpenGL_accelerate
 import spectacularAI
 import depthai
 import threading
-from common.deserialize_output import input_stream_reader, MockVioOutput, MockMapperOutput
+
+# Ugly
+import sys
+from pathlib import Path
+sys.path.append(str(Path.joinpath(Path(__file__).resolve().parent.parent, "mapping")))
+from visualization.serialization import input_stream_reader, MockVioOutput, MockMapperOutput
 from visualization.visualizer import Visualizer, VisualizerArgs
 
 def parseArgs():

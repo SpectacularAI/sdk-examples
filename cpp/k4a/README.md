@@ -112,7 +112,7 @@ Launch this example file with:
 ./mapping_visu -o /path/to/my_pipe
 ```
 
-Open another command prompt, go to `./sdk-examples/python/mapping/` and launch Python visualization and leave it running with:
+Open another command prompt, go to `./sdk-examples/python/oak/` and launch Python visualization and leave it running with:
 ```
 python mapping_visu.py --file /path/to/my_pipe
 ```
