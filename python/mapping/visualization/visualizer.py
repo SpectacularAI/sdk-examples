@@ -339,6 +339,7 @@ class Visualizer:
         # Blocks VIO until previous outputs have been processed
         while len(self.outputQueue) > 5:
             time.sleep(0.01)
+            if self.shouldQuit: break
 
     def onMappingOutput(self, mapperOutput):
         if self.shouldQuit: return
