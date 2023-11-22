@@ -1,13 +1,8 @@
-#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <mutex>
-#include <fcntl.h>
-//#include <errno.h>
-//#include <termios.h>
-//#include <unistd.h>
 
 #include <spectacularAI/vio.hpp>
 #include <spectacularAI/replay.hpp>
@@ -66,11 +61,10 @@ int main(int argc, char *argv[]) {
     // Vio and Mapping outputs come from different threads, prevent mixing output stream by mutex
     std::mutex m;
 
-    int fileDescriptor = open(outputFile.c_str(), O_RDWR);
-    FILE *outputStream = fdopen(fileDescriptor, "w+");
-    if (fileDescriptor == -1) {
-        std::cerr << "Failed to open file: " << outputFile;
-        exit(EXIT_FAILURE);
+    std::ofstream outputStream(outputFile.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!outputStream.is_open()) {
+        std::cerr << "Failed to open file: " << outputFile << std::endl;
+        return EXIT_FAILURE;
     }
 
     spectacularAI::Vio::Builder vioBuilder = spectacularAI::Vio::builder()
@@ -91,6 +85,8 @@ int main(int argc, char *argv[]) {
     });
 
     replay->runReplay();
+
+    outputStream.close();
 
     return 0;
 }

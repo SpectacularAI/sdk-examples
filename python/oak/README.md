@@ -20,8 +20,7 @@ To install dependecies for all examples you can use: `pip install -r requirement
  * **Minimal example**. Prints 6-DoF poses as JSON text: [`python vio_jsonl.py`](vio_jsonl.py)
  * **Basic visualization**. Interactive 3D plot / draw in the air with the device: [`python vio_visu.py`](vio_visu.py)
  * **3D pen**. Draw in the air: cover the OAK-D color camera to activate the ink. [`python pen_3d.py`](pen_3d.py)
- * **3D mapping**. Build and visualize 3D point cloud of the environment in real-time.
-    Also requires `open3d` to be installed, see [`mapping_visu.py`](mapping_visu.py) for details.
+ * **3D mapping**. Build and visualize 3D point cloud of the environment in real-time. [`mapping_visu.py`](mapping_visu.py)
  * **3D mapping with Augmented Reality**. Show 3D mesh or point cloud on top of camera view, using OpenGL. [`mapping_ar.py`](mapping_ar.py)
  * **3D Mapping with ROS Integration**. Runs Spectacular AI VIO and publishes pose information and keyframes over ROS topics. [`mapping_ros.py`](mapping_ros.py)
  * **Advanced Spatial AI example**. Spectacular AI VIO + Tiny YOLO object detection.
