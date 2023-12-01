@@ -30,6 +30,8 @@ parser.add_argument("--preview", help="Show latest primary image as a preview", 
 parser.add_argument("--preview3d", help="Show 3D visualization", action="store_true")
 args = parser.parse_args()
 
+useMono = None
+
 def interpolate_missing_properties(df_source, df_query, k_nearest=3):
     xyz = list('xyz')
 
@@ -217,6 +219,7 @@ def onMappingOutput(output):
     global frameHeight
     global intrinsics
     global visualizer
+    global useMono
 
     if visualizer is not None:
         visualizer.onMappingOutput(output)
@@ -249,7 +252,7 @@ def onMappingOutput(output):
             fileName = f"{args.output}/tmp/frame_{frameId:05}.{args.image_format}"
             cv2.imwrite(fileName, bgrImage)
 
-            if frameSet.depthFrame.image is not None and not args.mono:
+            if frameSet.depthFrame.image is not None and not useMono:
                 alignedDepth = frameSet.getAlignedDepthFrame(undistortedFrame)
                 depthData = alignedDepth.image.toArray()
                 depthFrameName = f"{args.output}/tmp/depth_{frameId:05}.png"
@@ -378,24 +381,35 @@ def copy_input_to_tmp_safe(input_dir, tmp_input):
         elif f.startswith("frames"): shutil.copytree(full_fn, f"{tmp_input}/{f}", dirs_exist_ok=True)
 
 def detect_device_preset(input_dir):
+    cameras = None
+    calibrationJson = f"{input_dir}/calibration.json"
+    if os.path.exists(calibrationJson):
+        with open(calibrationJson) as f:
+            calibration = json.load(f)
+            if "cameras" in calibration:
+                cameras = len(calibration["cameras"])
+    device = None
     metadataJson = f"{input_dir}/metadata.json"
     if os.path.exists(metadataJson):
         with open(metadataJson) as f:
              metadata = json.load(f)
              if metadata.get("platform") == "ios":
-                return "ios-tof"
-    vioConfigYaml = f"{input_dir}/vio_config.yaml"
-    if os.path.exists(vioConfigYaml):
-        with open(vioConfigYaml) as file:
-            for line in file:
-                if "parameterSets" in line:
-                    if "oak-d" in line: return "oak-d"
-                    if "k4a" in line: return "k4a"
-                    if "realsense" in line: return "realsense"
-    return None
+                device = "ios-tof"
+    if device == None:
+        vioConfigYaml = f"{input_dir}/vio_config.yaml"
+        if os.path.exists(vioConfigYaml):
+            with open(vioConfigYaml) as file:
+                for line in file:
+                    if "parameterSets" in line:
+                        if "oak-d" in line: device = "oak-d"
+                        if "k4a" in line: device = "k4a"
+                        if "realsense" in line: device = "realsense"
+                    if device: break
+    return (device, cameras)
 
 def main():
     global visualizer
+    global useMono
 
     os.makedirs(f"{args.output}/images", exist_ok=True)
     tmp_dir = f"{args.output}/tmp"
@@ -411,9 +425,13 @@ def main():
         "mapSavePath": f"{args.output}/points.sparse.csv"
     }
 
-    if args.mono: config['useStereo'] = False
+    device_preset, cameras = detect_device_preset(args.input)
 
-    prefer_icp = not args.no_icp and not args.mono
+    useMono = args.mono or (cameras != None and cameras == 1)
+
+    if useMono: config['useStereo'] = False
+
+    prefer_icp = not args.no_icp and not useMono
     parameter_sets = ['wrapper-base']
 
     if not args.fast:
@@ -427,10 +445,10 @@ def main():
 
     if args.device_preset:
         device_preset = args.device_preset
-    else:
-        device_preset = detect_device_preset(args.input)
-        if device_preset: print(f"Detected device type: {device_preset}")
-        else: print("Warning! Couldn't automatically detect device preset, to ensure best results suply one via --device_preset argument")
+
+
+    if device_preset: print(f"Selected device type: {device_preset}")
+    else: print("Warning! Couldn't automatically detect device preset, to ensure best results suply one via --device_preset argument")
 
     if device_preset:
         parameter_sets.append(device_preset)
