@@ -22,7 +22,7 @@ parser.add_argument("--cell_size", help="Point cloud decimation cell size", type
 parser.add_argument("--distance_quantile", help="Max point distance filter quantile (0 = disabled)", type=float, default=0.99)
 parser.add_argument("--key_frame_distance", help="Minimum distance between keyframes (meters)", type=float, default=0.05)
 parser.add_argument('--no_icp', action='store_true')
-parser.add_argument('--device_preset', choices=['none', 'oak-d', 'k4a', 'realsense', 'android-tof', 'ios-tof'], default='none')
+parser.add_argument('--device_preset', choices=['none', 'oak-d', 'k4a', 'realsense', 'android-tof', 'ios-tof'], help="Automatically detected in most cases")
 parser.add_argument('--fast', action='store_true', help='Fast but lower quality settings')
 parser.add_argument('--mono', action='store_true', help='Monocular mode: disable ToF and stereo data')
 parser.add_argument('--image_format', type=str, default='jpg', help="Color image format (use 'png' for top quality)")
@@ -375,6 +375,24 @@ def copy_input_to_tmp_safe(input_dir, tmp_input):
     for f in os.listdir(input_dir):
         full_fn = os.path.join(input_dir, f)
         if not os.path.isdir(full_fn): shutil.copy(full_fn, tmp_input)
+        elif f.startswith("frames"): shutil.copytree(full_fn, f"{tmp_input}/{f}", dirs_exist_ok=True)
+
+def detect_device_preset(input_dir):
+    metadataJson = f"{input_dir}/metadata.json"
+    if os.path.exists(metadataJson):
+        with open(metadataJson) as f:
+             metadata = json.load(f)
+             if metadata.get("platform") == "ios":
+                return "ios-tof"
+    vioConfigYaml = f"{input_dir}/vio_config.yaml"
+    if os.path.exists(vioConfigYaml):
+        with open(vioConfigYaml) as file:
+            for line in file:
+                if "parameterSets" in line:
+                    if "oak-d" in line: return "oak-d"
+                    if "k4a" in line: return "k4a"
+                    if "realsense" in line: return "realsense"
+    return None
 
 def main():
     global visualizer
@@ -407,19 +425,26 @@ def main():
         }
         for k, v in mid_q.items(): config[k] = v
 
-    if args.device_preset != 'none':
-        parameter_sets.append(args.device_preset)
+    if args.device_preset:
+        device_preset = args.device_preset
+    else:
+        device_preset = detect_device_preset(args.input)
+        if device_preset: print(f"Detected device type: {device_preset}")
+        else: print("Warning! Couldn't automatically detect device preset, to ensure best results suply one via --device_preset argument")
 
-    if args.device_preset == 'k4a':
+    if device_preset:
+        parameter_sets.append(device_preset)
+
+    if device_preset == 'k4a':
         if prefer_icp:
             parameter_sets.extend(['icp'])
             if not args.fast: parameter_sets.append('offline-icp')
-    elif args.device_preset == 'realsense':
+    elif device_preset == 'realsense':
         if prefer_icp:
             parameter_sets.extend(['icp', 'realsense-icp'])
             if not args.fast: parameter_sets.append('offline-icp')
         config['stereoPointCloudStride'] = 15
-    elif args.device_preset == 'oak-d':
+    elif device_preset == 'oak-d':
         config['stereoPointCloudMinDepth'] = 0.5
         config['stereoPointCloudStride'] = 30
 
