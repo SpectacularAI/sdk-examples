@@ -22,8 +22,10 @@ parser.add_argument("--cell_size", help="Point cloud decimation cell size", type
 parser.add_argument("--distance_quantile", help="Max point distance filter quantile (0 = disabled)", type=float, default=0.99)
 parser.add_argument("--key_frame_distance", help="Minimum distance between keyframes (meters)", type=float, default=0.05)
 parser.add_argument('--no_icp', action='store_true')
-parser.add_argument('--device_preset', choices=['none', 'oak-d', 'k4a', 'realsense', 'android-tof'], default='none')
+parser.add_argument('--device_preset', choices=['none', 'oak-d', 'k4a', 'realsense', 'android-tof', 'ios-tof'], default='none')
 parser.add_argument('--fast', action='store_true', help='Fast but lower quality settings')
+parser.add_argument('--mono', action='store_true', help='Monocular mode: disable ToF and stereo data')
+parser.add_argument('--image_format', type=str, default='jpg', help="Color image format (use 'png' for top quality)")
 parser.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
 parser.add_argument("--preview3d", help="Show 3D visualization", action="store_true")
 args = parser.parse_args()
@@ -227,8 +229,9 @@ def onMappingOutput(output):
                 continue
             savedKeyFrames[frameId] = True
             frameSet = keyFrame.frameSet
-            if not frameSet.rgbFrame or not frameSet.rgbFrame.image:
-                continue
+            targetFrame = frameSet.rgbFrame
+            if not targetFrame: targetFrame = frameSet.primaryFrame
+            if not targetFrame or not targetFrame.image: continue
 
             if keyFrame.pointCloud:
                 pointClouds[frameId] = (
@@ -236,17 +239,17 @@ def onMappingOutput(output):
                     np.copy(keyFrame.pointCloud.getRGB24Data()))
 
             if frameWidth < 0:
-                frameWidth = frameSet.rgbFrame.image.getWidth()
-                frameHeight = frameSet.rgbFrame.image.getHeight()
+                frameWidth = targetFrame.image.getWidth()
+                frameHeight = targetFrame.image.getHeight()
 
-            undistortedFrame = frameSet.getUndistortedFrame(frameSet.rgbFrame)
+            undistortedFrame = frameSet.getUndistortedFrame(targetFrame)
             if intrinsics is None: intrinsics = undistortedFrame.cameraPose.camera.getIntrinsicMatrix()
             img = undistortedFrame.image.toArray()
             bgrImage = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            fileName = f"{args.output}/tmp/frame_{frameId:05}.png"
+            fileName = f"{args.output}/tmp/frame_{frameId:05}.{args.image_format}"
             cv2.imwrite(fileName, bgrImage)
 
-            if frameSet.depthFrame.image is not None:
+            if frameSet.depthFrame.image is not None and not args.mono:
                 alignedDepth = frameSet.getAlignedDepthFrame(undistortedFrame)
                 depthData = alignedDepth.image.toArray()
                 depthFrameName = f"{args.output}/tmp/depth_{frameId:05}.png"
@@ -270,7 +273,7 @@ def onMappingOutput(output):
         blurryImages = {}
         imageSharpness = []
         for frameId in output.map.keyFrames:
-            imageSharpness.append((frameId, blurScore(f"{args.output}/tmp/frame_{frameId:05}.png")))
+            imageSharpness.append((frameId, blurScore(f"{args.output}/tmp/frame_{frameId:05}.{args.image_format}")))
 
         # Look two images forward and two backwards, if current frame is blurriest, don't use it
         for i in range(len(imageSharpness)):
@@ -292,11 +295,13 @@ def onMappingOutput(output):
             # Image data
             keyFrame = output.map.keyFrames.get(frameId)
 
-            cameraPose = keyFrame.frameSet.rgbFrame.cameraPose
+            targetFrame = keyFrame.frameSet.rgbFrame
+            if not targetFrame: targetFrame = keyFrame.frameSet.primaryFrame
+            cameraPose = targetFrame.cameraPose
 
             # Camera data
             frame = {
-                "image_path": f"data/{name}/images/frame_{index:05}.png",
+                "image_path": f"data/{name}/images/frame_{index:05}.{args.image_format}",
                 "T_pointcloud_camera": cameraPose.getCameraToWorldMatrix().tolist(), # 4x4 matrix, the transformation matrix from camera coordinate to point cloud coordinate
                 "camera_intrinsics": intrinsics.tolist(), # 3x3 matrix, the camera intrinsics matrix K
                 "camera_height": frameHeight, # image height, in pixel
@@ -304,8 +309,8 @@ def onMappingOutput(output):
                 "camera_id": index # camera id, not used
             }
 
-            oldImgName = f"{args.output}/tmp/frame_{frameId:05}.png"
-            newImgName = f"{args.output}/images/frame_{index:05}.png"
+            oldImgName = f"{args.output}/tmp/frame_{frameId:05}.{args.image_format}"
+            newImgName = f"{args.output}/images/frame_{index:05}.{args.image_format}"
             os.rename(oldImgName, newImgName)
 
             oldDepth = f"{args.output}/tmp/depth_{frameId:05}.png"
@@ -382,18 +387,16 @@ def main():
     config = {
         "maxMapSize": 0,
         "useSlam": True,
-        "rotateMapOnFirstNCandidates": 20,
-        "rotateMapThresholdDegrees": 0.5,
+        "passthroughColorImages": True,
         "keyframeDecisionDistanceThreshold": args.key_frame_distance,
         "icpVoxelSize": min(args.key_frame_distance, 0.1),
         "mapSavePath": f"{args.output}/points.sparse.csv"
     }
 
-    prefer_icp = not args.no_icp
-    parameter_sets = ['wrapper-base']
+    if args.mono: config['useStereo'] = False
 
-    if args.device_preset != 'none':
-        parameter_sets.append(args.device_preset)
+    prefer_icp = not args.no_icp and not args.mono
+    parameter_sets = ['wrapper-base']
 
     if not args.fast:
         parameter_sets.append('offline-base')
@@ -403,6 +406,9 @@ def main():
             'optimizerMaxIterations': 30
         }
         for k, v in mid_q.items(): config[k] = v
+
+    if args.device_preset != 'none':
+        parameter_sets.append(args.device_preset)
 
     if args.device_preset == 'k4a':
         if prefer_icp:
