@@ -8,7 +8,11 @@ For commercial licenses and version for other OS and CPU architectures, contact 
 
 ### Quick start
 
- 1. If you have not used the RealSense device before, run from the [librealsense GitHub repository](https://github.com/IntelRealSense/librealsense):
+ 1. If you have not used the RealSense device before, you will need to setup udev rules. Either, run
+
+        ./bin/3rdparty/librealsense/setup_udev_rules.sh
+
+       or run from the [librealsense GitHub repository](https://github.com/IntelRealSense/librealsense):
 
         ./scripts/setup_udev_rules.sh
 

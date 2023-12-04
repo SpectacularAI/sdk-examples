@@ -8,10 +8,12 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 
 ### Quick start
 
-* Dependencies: Azure Kinect drivers
-* Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that  open `k4aviewer`.
-
  1. Unpack the SDK archive
+ 2. If you have not used the Azure Kinect device before, you will need to setup udev rules. Either, run
+
+        ./bin/3rdparty/k4a/setup_udev_rules.sh
+
+    or follow the official instructions in [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/docs/usage.md#linux-device-setup).
  2. Attach your Azure Kinect device to a USB3 port
  3. Run the JSONL example:
 
@@ -27,7 +29,7 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 
 ### Installation as a library
 
- 1. Install the system dependencies as instructed in "Quick start"
+ 1. Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that  open `k4aviewer`.
  2. Select where you want the library installed, e.g.,
 
         export MY_INSTALL_PREFIX=~/.local
