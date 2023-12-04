@@ -63,10 +63,15 @@ class PointCloudRenderer:
         if self.pcProgram is None:
             assetDir = pathlib.Path(__file__).resolve().parent
             pcVert = (assetDir / "point_cloud.vert").read_text()
+
+            defines = ""
+            if self.pointCloud.colors is not None: defines += "#define HAS_COLORS\n"
+            if self.pointCloud.normals is not None: defines += "#define HAS_NORMALS\n"
             # Poor man's GLSL templates
             replaceMap = {
                 '{MAX_Z}': str(self.maxZ),
-                '{COLOR_MAP_SCALE}': str(self.colorMapScale)
+                '{COLOR_MAP_SCALE}': str(self.colorMapScale),
+                '{DEFINES}': defines
             }
             for k, v in replaceMap.items():
                 pcVert = pcVert.replace(k, v)
@@ -92,8 +97,6 @@ class PointCloudRenderer:
         glUniform1f(self.pcProgram.uniformPointSize, self.pointSize)
         glUniform1f(self.pcProgram.uniformOpacity, self.opacity)
         glUniform1i(self.pcProgram.uniformColorMode, self.colorMode)
-        glUniform1i(self.pcProgram.uniformHasColor, 0 if self.pointCloud.colors is None else 1)
-        glUniform1i(self.pcProgram.uniformHasNormal, 0 if self.pointCloud.normals is None else 1)
 
         if self.updated:
             self.updated = False
