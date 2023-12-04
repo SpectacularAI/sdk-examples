@@ -486,7 +486,11 @@ def main():
         visualizer.run()
         replay.close()
 
-    shutil.rmtree(tmp_dir)
+    try:
+        shutil.rmtree(tmp_dir)
+    except:
+        print(f"Failed to clean temporary directory, you can delete these files manually, they are no longer required: {tmp_dir}")
+
     print("Done!\n")
 
     if args.format == 'taichi':
