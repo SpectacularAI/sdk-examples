@@ -29,7 +29,7 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 
 ### Installation as a library
 
- 1. Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that  open `k4aviewer`.
+ 1. Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that open `k4aviewer`.
  2. Select where you want the library installed, e.g.,
 
         export MY_INSTALL_PREFIX=~/.local
@@ -44,9 +44,6 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 ## Windows
 
 ### Quick start
-
-* Dependencies: Azure Kinect drivers
-* Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that  open `k4aviewer`.
 
  1. Unpack the SDK archive
  2. Attach your Azure Kinect device to a USB3 port
@@ -65,7 +62,7 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 ### Installation as a library
 
 You need to install following tools if you don't already have them:
-* Install the system dependencies as instructed in "Quick start"
+* Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that open `k4aviewer`.
 * Install Git for Windows https://git-scm.com
 * Install Visual Studio Community 2019 https://visualstudio.microsoft.com/vs/community/
   * When launching, install dependencies for "Desktop Development with C++"
