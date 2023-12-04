@@ -1,16 +1,8 @@
 #version 330 core
 
-{DEFINES}
-
 layout(location = 0) in vec3 in_Position;
-
-#if defined(HAS_COLORS)
 layout(location = 1) in vec3 in_Color;
-#endif
-
-#if defined(HAS_NORMALS)
 layout(location = 2) in vec3 in_Normal;
-#endif
 
 uniform mat4 u_Model;
 uniform mat4 u_View;
@@ -25,6 +17,8 @@ uniform float u_Opacity;
 // 4 = distance from camera (depth)
 // 5 = world normals
 uniform int u_ColorMode;
+uniform int u_HasColor;  // 0 == false, otherwise true
+uniform int u_HasNormal;  // 0 == false, otherwise true
 
 out vec4 frag_Color;
 
@@ -74,16 +68,14 @@ void main() {
                 break;
 
             case 5:
-                #if defined(HAS_NORMALS)
-                vec3 v_NormalWorld = extractMat3(u_Model) * in_Normal.xyz;
-                color = (v_NormalWorld.xyz + vec3(1.0, 1.0, 1.0)) * 0.5;
-                #endif
+                if (u_HasNormal > 0) {
+                    vec3 v_NormalWorld = extractMat3(u_Model) * in_Normal.xyz;
+                    color = (v_NormalWorld.xyz + vec3(1.0, 1.0, 1.0)) * 0.5;
+                }
                 break;
 
             default:
-                #if defined(HAS_COLORS)
-                color = in_Color.xyz;
-                #endif
+                if (u_HasColor > 0) color = in_Color.xyz;
                 break;
         }
     }
