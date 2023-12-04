@@ -110,18 +110,18 @@ class PointCloudRenderer:
 
             # Create new VBOs
             self.vboPosition = glGenBuffers(1)
-            self.vboColor = glGenBuffers(1)
-            self.vboNormal = glGenBuffers(1)
 
             # Bind and populate the new VBOs with updated data
             glBindBuffer(GL_ARRAY_BUFFER, self.vboPosition)
             glBufferData(GL_ARRAY_BUFFER, np.array(self.pointCloud.vertices, dtype=np.float32), GL_STATIC_DRAW)
 
             if self.pointCloud.colors is not None:
+                self.vboColor = glGenBuffers(1)
                 glBindBuffer(GL_ARRAY_BUFFER, self.vboColor)
                 glBufferData(GL_ARRAY_BUFFER, np.array(self.pointCloud.colors, dtype=np.float32), GL_STATIC_DRAW)
 
             if self.pointCloud.normals is not None:
+                self.vboNormal = glGenBuffers(1)
                 glBindBuffer(GL_ARRAY_BUFFER, self.vboNormal)
                 glBufferData(GL_ARRAY_BUFFER, np.array(self.pointCloud.normals, dtype=np.float32), GL_STATIC_DRAW)
 
