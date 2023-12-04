@@ -272,103 +272,105 @@ def onMappingOutput(output):
 
     else:
         # Final optimized poses
+        try:
+            blurryImages = {}
+            imageSharpness = []
+            for frameId in output.map.keyFrames:
+                imageSharpness.append((frameId, blurScore(f"{args.output}/tmp/frame_{frameId:05}.{args.image_format}")))
 
-        blurryImages = {}
-        imageSharpness = []
-        for frameId in output.map.keyFrames:
-            imageSharpness.append((frameId, blurScore(f"{args.output}/tmp/frame_{frameId:05}.{args.image_format}")))
+            # Look two images forward and two backwards, if current frame is blurriest, don't use it
+            for i in range(len(imageSharpness)):
+                if i + 2 > len(imageSharpness): break
+                group = [imageSharpness[j+i] for j in range(-2,2)]
+                group.sort(key=lambda x : x[1])
+                cur = imageSharpness[i][0]
+                if group[0][0] == cur:
+                    blurryImages[cur] = True
 
-        # Look two images forward and two backwards, if current frame is blurriest, don't use it
-        for i in range(len(imageSharpness)):
-            if i + 2 > len(imageSharpness): break
-            group = [imageSharpness[j+i] for j in range(-2,2)]
-            group.sort(key=lambda x : x[1])
-            cur = imageSharpness[i][0]
-            if group[0][0] == cur:
-                blurryImages[cur] = True
+            trainingFrames = []
+            validationFrames = []
+            globalPointCloud = []
+            index = 0
+            name = os.path.split(args.output)[-1]
+            for frameId in output.map.keyFrames:
+                if blurryImages.get(frameId): continue # Skip blurry images
 
-        trainingFrames = []
-        validationFrames = []
-        globalPointCloud = []
-        index = 0
-        name = os.path.split(args.output)[-1]
-        for frameId in output.map.keyFrames:
-            if blurryImages.get(frameId): continue # Skip blurry images
+                # Image data
+                keyFrame = output.map.keyFrames.get(frameId)
 
-            # Image data
-            keyFrame = output.map.keyFrames.get(frameId)
+                targetFrame = keyFrame.frameSet.rgbFrame
+                if not targetFrame: targetFrame = keyFrame.frameSet.primaryFrame
+                cameraPose = targetFrame.cameraPose
 
-            targetFrame = keyFrame.frameSet.rgbFrame
-            if not targetFrame: targetFrame = keyFrame.frameSet.primaryFrame
-            cameraPose = targetFrame.cameraPose
+                # Camera data
+                frame = {
+                    "image_path": f"data/{name}/images/frame_{index:05}.{args.image_format}",
+                    "T_pointcloud_camera": cameraPose.getCameraToWorldMatrix().tolist(), # 4x4 matrix, the transformation matrix from camera coordinate to point cloud coordinate
+                    "camera_intrinsics": intrinsics.tolist(), # 3x3 matrix, the camera intrinsics matrix K
+                    "camera_height": frameHeight, # image height, in pixel
+                    "camera_width": frameWidth, # image width, in pixel
+                    "camera_id": index # camera id, not used
+                }
 
-            # Camera data
-            frame = {
-                "image_path": f"data/{name}/images/frame_{index:05}.{args.image_format}",
-                "T_pointcloud_camera": cameraPose.getCameraToWorldMatrix().tolist(), # 4x4 matrix, the transformation matrix from camera coordinate to point cloud coordinate
-                "camera_intrinsics": intrinsics.tolist(), # 3x3 matrix, the camera intrinsics matrix K
-                "camera_height": frameHeight, # image height, in pixel
-                "camera_width": frameWidth, # image width, in pixel
-                "camera_id": index # camera id, not used
-            }
+                oldImgName = f"{args.output}/tmp/frame_{frameId:05}.{args.image_format}"
+                newImgName = f"{args.output}/images/frame_{index:05}.{args.image_format}"
+                os.rename(oldImgName, newImgName)
 
-            oldImgName = f"{args.output}/tmp/frame_{frameId:05}.{args.image_format}"
-            newImgName = f"{args.output}/images/frame_{index:05}.{args.image_format}"
-            os.rename(oldImgName, newImgName)
+                oldDepth = f"{args.output}/tmp/depth_{frameId:05}.png"
+                newDepth = f"{args.output}/images/depth_{index:05}.png"
+                if os.path.exists(oldDepth):
+                    os.rename(oldDepth, newDepth)
+                    frame['depth_image_path'] = f"data/{name}/images/depth_{index:05}.png"
 
-            oldDepth = f"{args.output}/tmp/depth_{frameId:05}.png"
-            newDepth = f"{args.output}/images/depth_{index:05}.png"
-            if os.path.exists(oldDepth):
-                os.rename(oldDepth, newDepth)
-                frame['depth_image_path'] = f"data/{name}/images/depth_{index:05}.png"
+                if (index + 3) % 7 == 0:
+                    validationFrames.append(frame)
+                else:
+                    trainingFrames.append(frame)
 
-            if (index + 3) % 7 == 0:
-                validationFrames.append(frame)
-            else:
-                trainingFrames.append(frame)
+                if frameId in pointClouds:
+                    # Pointcloud data
+                    posData, colorData = pointClouds[frameId]
+                    pc = np.vstack((posData.T, np.ones((1, posData.shape[0]))))
+                    pc = (cameraPose.getCameraToWorldMatrix() @ pc)[:3, :].T
+                    pc = np.hstack((pc, colorData))
+                    globalPointCloud.extend(pc)
 
-            if frameId in pointClouds:
-                # Pointcloud data
-                posData, colorData = pointClouds[frameId]
-                pc = np.vstack((posData.T, np.ones((1, posData.shape[0]))))
-                pc = (cameraPose.getCameraToWorldMatrix() @ pc)[:3, :].T
-                pc = np.hstack((pc, colorData))
-                globalPointCloud.extend(pc)
+                index += 1
 
-            index += 1
+            merged_df = post_process_point_clouds(
+                globalPointCloud,
+                pd.read_csv(f"{args.output}/points.sparse.csv", usecols=list('xyz')))
 
-        merged_df = post_process_point_clouds(
-            globalPointCloud,
-            pd.read_csv(f"{args.output}/points.sparse.csv", usecols=list('xyz')))
+            if args.format == 'taichi':
+                # merged_df.to_csv(f"{args.output}/points.merged-decimated.csv", index=False)
+                merged_df.to_parquet(f"{args.output}/point_cloud.parquet")
 
-        if args.format == 'taichi':
-            # merged_df.to_csv(f"{args.output}/points.merged-decimated.csv", index=False)
-            merged_df.to_parquet(f"{args.output}/point_cloud.parquet")
+                with open(f"{args.output}/train.json", "w") as outFile:
+                    json.dump(trainingFrames, outFile, indent=2, sort_keys=True)
 
-            with open(f"{args.output}/train.json", "w") as outFile:
-                json.dump(trainingFrames, outFile, indent=2, sort_keys=True)
+                with open(f"{args.output}/val.json", "w") as outFile:
+                    json.dump(validationFrames, outFile, indent=2, sort_keys=True)
+            elif args.format == 'nerfstudio':
+                allFrames = trainingFrames + validationFrames
+                with open(f"{args.output}/transforms.json", "w") as outFile:
+                    json.dump(convert_json_taichi_to_nerfstudio(allFrames), outFile, indent=2, sort_keys=True)
 
-            with open(f"{args.output}/val.json", "w") as outFile:
-                json.dump(validationFrames, outFile, indent=2, sort_keys=True)
-        elif args.format == 'nerfstudio':
-            allFrames = trainingFrames + validationFrames
-            with open(f"{args.output}/transforms.json", "w") as outFile:
-                json.dump(convert_json_taichi_to_nerfstudio(allFrames), outFile, indent=2, sort_keys=True)
+                # colmap text point format
+                fake_colmap = f"{args.output}/colmap/sparse/0"
+                os.makedirs(fake_colmap, exist_ok=True)
 
-            # colmap text point format
-            fake_colmap = f"{args.output}/colmap/sparse/0"
-            os.makedirs(fake_colmap, exist_ok=True)
+                c_points, c_images, c_cameras = convert_json_taichi_to_colmap(allFrames, merged_df, nerfstudio_fake_obs=True)
 
-            c_points, c_images, c_cameras = convert_json_taichi_to_colmap(allFrames, merged_df, nerfstudio_fake_obs=True)
+                def write_colmap_csv(data, fn):
+                    with open(fn, 'wt') as f:
+                        for row in data:
+                            f.write(' '.join([str(c) for c in row])+'\n')
 
-            def write_colmap_csv(data, fn):
-                with open(fn, 'wt') as f:
-                    for row in data:
-                        f.write(' '.join([str(c) for c in row])+'\n')
-
-            write_colmap_csv(c_points, f"{fake_colmap}/points3D.txt")
-            write_colmap_csv(c_images, f"{fake_colmap}/images.txt")
-            write_colmap_csv(c_cameras, f"{fake_colmap}/cameras.txt")
+                write_colmap_csv(c_points, f"{fake_colmap}/points3D.txt")
+                write_colmap_csv(c_images, f"{fake_colmap}/images.txt")
+                write_colmap_csv(c_cameras, f"{fake_colmap}/cameras.txt")
+        except Exception as e:
+            print(f"Something went wrong: {e}")
 
 def copy_input_to_tmp_safe(input_dir, tmp_input):
     # also works if tmp dir is inside the input directory
@@ -411,6 +413,8 @@ def main():
     global visualizer
     global useMono
 
+    # Clear output dir
+    shutil.rmtree(f"{args.output}/images", ignore_errors=True)
     os.makedirs(f"{args.output}/images", exist_ok=True)
     tmp_dir = f"{args.output}/tmp"
     tmp_input = f"{tmp_dir}/input"
@@ -447,8 +451,8 @@ def main():
         device_preset = args.device_preset
 
 
-    if device_preset: print(f"Selected device type: {device_preset}")
-    else: print("Warning! Couldn't automatically detect device preset, to ensure best results suply one via --device_preset argument")
+    if device_preset: print(f"Selected device type: {device_preset}", flush=True)
+    else: print("Warning! Couldn't automatically detect device preset, to ensure best results suply one via --device_preset argument", flush=True)
 
     if device_preset:
         parameter_sets.append(device_preset)
@@ -479,30 +483,34 @@ def main():
     replay = spectacularAI.Replay(tmp_input, mapperCallback = onMappingOutput, configuration = config)
     replay.setOutputCallback(onVioOutput)
 
-    if visualizer is None:
-        replay.runReplay()
-    else:
-        replay.startReplay()
-        visualizer.run()
-        replay.close()
+    try:
+        if visualizer is None:
+            replay.runReplay()
+        else:
+            replay.startReplay()
+            visualizer.run()
+            replay.close()
+    except Exception as e:
+        print(f"Something went wrong! {e}", flush=True)
+        raise e
 
     try:
         shutil.rmtree(tmp_dir)
     except:
-        print(f"Failed to clean temporary directory, you can delete these files manually, they are no longer required: {tmp_dir}")
+        print(f"Failed to clean temporary directory, you can delete these files manually, they are no longer required: {tmp_dir}", flush=True)
 
-    print("Done!\n")
+    print("Done!\n", flush=True)
 
     if args.format == 'taichi':
         name = os.path.split(args.output)[-1]
-        print("You should use following paths in taichi_3d_gaussian_splatting config file:")
-        print(f"pointcloud-parquet-path: 'data/{name}/point_cloud.parquet'")
-        print(f"summary-writer-log-dir: data/{name}/logs")
-        print(f"output-model-dir: data/{name}/output")
-        print(f"train-dataset-json-path: 'data/{name}/train.json'")
-        print(f"val-dataset-json-path: 'data/{name}/val.json'")
+        print("You should use following paths in taichi_3d_gaussian_splatting config file:", flush=True)
+        print(f"pointcloud-parquet-path: 'data/{name}/point_cloud.parquet'", flush=True)
+        print(f"summary-writer-log-dir: data/{name}/logs", flush=True)
+        print(f"output-model-dir: data/{name}/output", flush=True)
+        print(f"train-dataset-json-path: 'data/{name}/train.json'", flush=True)
+        print(f"val-dataset-json-path: 'data/{name}/val.json'", flush=True)
     elif args.format == 'nerfstudio':
-        print(f'output written to {args.output}')
+        print(f'output written to {args.output}', flush=True)
 
 if __name__ == '__main__':
     main()
