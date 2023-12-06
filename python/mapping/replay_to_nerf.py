@@ -17,7 +17,7 @@ from scipy.spatial import KDTree
 parser = argparse.ArgumentParser(__doc__)
 parser.add_argument("input", help="Path to folder with session to process")
 parser.add_argument("output", help="Output folder")
-parser.add_argument('--format', choices=['taichi', 'nerfstudio'], default='nerfstudio', help='Output format')
+parser.add_argument('--format', choices=['taichi', 'nerfstudio', 'nerfcapture'], default='nerfstudio', help='Output format')
 parser.add_argument("--cell_size", help="Point cloud decimation cell size", type=float, default=0.025)
 parser.add_argument("--distance_quantile", help="Max point distance filter quantile (0 = disabled)", type=float, default=0.99)
 parser.add_argument("--key_frame_distance", help="Minimum distance between keyframes (meters)", type=float, default=0.05)
@@ -31,6 +31,7 @@ parser.add_argument("--preview3d", help="Show 3D visualization", action="store_t
 args = parser.parse_args()
 
 useMono = None
+useAlignedDepth = False
 
 def interpolate_missing_properties(df_source, df_query, k_nearest=3):
     xyz = list('xyz')
@@ -220,6 +221,7 @@ def onMappingOutput(output):
     global intrinsics
     global visualizer
     global useMono
+    global useAlignedDepth
 
     if visualizer is not None:
         visualizer.onMappingOutput(output)
@@ -253,7 +255,10 @@ def onMappingOutput(output):
             cv2.imwrite(fileName, bgrImage)
 
             if frameSet.depthFrame.image is not None and not useMono:
-                alignedDepth = frameSet.getAlignedDepthFrame(undistortedFrame)
+                if useAlignedDepth:
+                    alignedDepth = frameSet.getAlignedDepthFrame(undistortedFrame)
+                else:
+                    alignedDepth = frameSet.depthFrame
                 depthData = alignedDepth.image.toArray()
                 depthFrameName = f"{args.output}/tmp/depth_{frameId:05}.png"
                 cv2.imwrite(depthFrameName, depthData)
@@ -350,25 +355,46 @@ def onMappingOutput(output):
 
                 with open(f"{args.output}/val.json", "w") as outFile:
                     json.dump(validationFrames, outFile, indent=2, sort_keys=True)
-            elif args.format == 'nerfstudio':
+            elif args.format == 'nerfstudio' or args.format == 'nerfcapture':
                 allFrames = trainingFrames + validationFrames
+                framesConverted = convert_json_taichi_to_nerfstudio(allFrames)
+
+                if args.format == 'nerfcapture':
+                    # Quick fix, just rename files and dirs
+                    for dir in ['rgb', 'depth']:
+                        os.makedirs(f"{args.output}/{dir}", exist_ok=True)
+                    for frame in framesConverted['frames']:
+                        old_rgb_fn = f"{args.output}/{frame['file_path']}"
+                        old_depth_fn = f"{args.output}/{frame['depth_file_path']}"
+                        new_rgb = frame['file_path'].replace('./images/', 'rgb/')
+                        new_depth = new_rgb.replace('rgb', 'depth')
+                        assert('.png' in new_rgb)
+                        frame['file_path'] = new_rgb
+                        frame['depth_file_path'] = new_depth
+                        os.rename(old_rgb_fn, f"{args.output}/{new_rgb}")
+                        os.rename(old_depth_fn, f"{args.output}/{new_depth}")
+                    os.rmdir(f"{args.output}/images")
+
                 with open(f"{args.output}/transforms.json", "w") as outFile:
-                    json.dump(convert_json_taichi_to_nerfstudio(allFrames), outFile, indent=2, sort_keys=True)
+                    json.dump(framesConverted, outFile, indent=2, sort_keys=True)
 
-                # colmap text point format
-                fake_colmap = f"{args.output}/colmap/sparse/0"
-                os.makedirs(fake_colmap, exist_ok=True)
+                if args.format == 'nerfstudio':
+                    # colmap text point format
+                    fake_colmap = f"{args.output}/colmap/sparse/0"
+                    os.makedirs(fake_colmap, exist_ok=True)
 
-                c_points, c_images, c_cameras = convert_json_taichi_to_colmap(allFrames, merged_df, nerfstudio_fake_obs=True)
+                    c_points, c_images, c_cameras = convert_json_taichi_to_colmap(allFrames, merged_df, nerfstudio_fake_obs=True)
 
-                def write_colmap_csv(data, fn):
-                    with open(fn, 'wt') as f:
-                        for row in data:
-                            f.write(' '.join([str(c) for c in row])+'\n')
+                    def write_colmap_csv(data, fn):
+                        with open(fn, 'wt') as f:
+                            for row in data:
+                                f.write(' '.join([str(c) for c in row])+'\n')
 
-                write_colmap_csv(c_points, f"{fake_colmap}/points3D.txt")
-                write_colmap_csv(c_images, f"{fake_colmap}/images.txt")
-                write_colmap_csv(c_cameras, f"{fake_colmap}/cameras.txt")
+                    write_colmap_csv(c_points, f"{fake_colmap}/points3D.txt")
+                    write_colmap_csv(c_images, f"{fake_colmap}/images.txt")
+                    write_colmap_csv(c_cameras, f"{fake_colmap}/cameras.txt")
+
+
         except Exception as e:
             print(f"Something went wrong: {e}")
 
@@ -412,6 +438,7 @@ def detect_device_preset(input_dir):
 def main():
     global visualizer
     global useMono
+    global useAlignedDepth
 
     # Clear output dir
     shutil.rmtree(f"{args.output}/images", ignore_errors=True)
@@ -458,17 +485,23 @@ def main():
         parameter_sets.append(device_preset)
 
     if device_preset == 'k4a':
+        useAlignedDepth = True
         if prefer_icp:
             parameter_sets.extend(['icp'])
             if not args.fast: parameter_sets.append('offline-icp')
     elif device_preset == 'realsense':
+        useAlignedDepth = True
         if prefer_icp:
             parameter_sets.extend(['icp', 'realsense-icp'])
             if not args.fast: parameter_sets.append('offline-icp')
         config['stereoPointCloudStride'] = 15
     elif device_preset == 'oak-d':
+        useAlignedDepth = True
         config['stereoPointCloudMinDepth'] = 0.5
         config['stereoPointCloudStride'] = 30
+
+    if args.format == 'nerfcapture':
+        config['keyframeCandidateInterval'] = 2
 
     if args.preview3d:
         from visualization.visualizer import Visualizer
