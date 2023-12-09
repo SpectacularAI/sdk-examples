@@ -84,7 +84,8 @@ def onOutput(output, frameSet):
             pygame.display.flip()
             break # Skip other frames
 
-replay = spectacularAI.Replay(args.dataFolder)
+configInternal = { "useRectification": "true" } # Undistort images for visualization (assumes undistorted pinhole model)
+replay = spectacularAI.Replay(args.dataFolder, configuration=configInternal)
 replay.setExtendedOutputCallback(onOutput)
 replay.startReplay()
 while not shouldQuit:
