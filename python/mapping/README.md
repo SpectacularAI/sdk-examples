@@ -11,13 +11,14 @@ This page has instructions for post-processing data recorded through the Spectac
 ## Installation
 
  1. [install Nerfstudio](https://github.com/nerfstudio-project/nerfstudio#1-installation-setup-the-environment) (**Requirement**: a good NVidia GPU + CUDA).
- 2. Install FFmpeg
-    * Linux `apt install ffmpeg` (or similar, if using another package manager)
-    * Windows: [see here](https://www.ffmpeg.org/download.html#build-windows). FFmpeg must be in your `PATH` so that `ffmpeg` works on the command line).
-       
- 3. In Nerfstudio's Conda environment, install the Spectacular AI Python library with all recommended dependencies:
+ 2. In Nerfstudio's Conda environment, install the Spectacular AI Python library with all recommended dependencies:
 
         pip install spectacularAI[full]
+
+For non-phone devices only: Install FFmpeg
+
+  * Linux `apt install ffmpeg` (or similar, if using another package manager)
+  * Windows: [see here](https://www.editframe.com/guides/how-to-install-and-start-using-ffmpeg-in-under-10-minutes). FFmpeg must be in your `PATH` so that `ffmpeg` works on the command line.
 
 ## Recording data
 
