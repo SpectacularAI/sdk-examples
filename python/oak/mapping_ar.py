@@ -76,7 +76,7 @@ def updateRenderer(state, cameraPose, t):
         elif state.currentMapperOutput.mesh is not state.lastMapperOutput.mesh: updateMesh()
         return renderMesh()
 
-def handleVioOutput(state, cameraPose, t, img, width, height):
+def handleVioOutput(state, cameraPose, t, img, width, height, colorFormat):
     if state.shouldQuit:
         return
 
@@ -106,7 +106,7 @@ def handleVioOutput(state, cameraPose, t, img, width, height):
             return
 
     glPixelZoom(state.scale, state.scale)
-    glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, img.data)
+    glDrawPixels(width, height, GL_LUMINANCE if colorFormat == spectacularAI.ColorFormat.GRAY else GL_RGB, GL_UNSIGNED_BYTE, img.data)
 
     updateRenderer(state, cameraPose, t)
 
@@ -152,7 +152,7 @@ def oakdLoop(state, device, vioSession):
                 img = frames.get(vioOutput.tag)
                 cameraPose = vioSession.getRgbCameraPose(vioOutput)
                 time = vioOutput.pose.time
-                handleVioOutput(state, cameraPose, time, img.getRaw().data, img.getWidth(), img.getHeight())
+                handleVioOutput(state, cameraPose, time, img.getRaw().data, img.getWidth(), img.getHeight(), spectacularAI.ColorFormat.RGB)
                 # Discard old tags.
                 frames = { tag: v for tag, v in frames.items() if tag > vioOutput.tag }
         else:
@@ -207,7 +207,7 @@ def main(args):
             width = img.shape[1]
             height = img.shape[0]
             time = vioOutput.pose.time
-            handleVioOutput(state, frame.cameraPose, time, img, width, height)
+            handleVioOutput(state, frame.cameraPose, time, img, width, height, frame.image.getColorFormat())
 
     if args.mapLoadPath:
         onMappingOutput = None # Appending to existing map is not currently supported.
