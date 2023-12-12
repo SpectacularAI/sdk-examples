@@ -98,6 +98,28 @@ Installation instructions:
 
  5. Train as `ns-train gaussian-splatting --data /example/output/path/my-nerf`
 
+## Export to other tools
+
+The data can also be exported to 
+
+ * Nvidia Instant NGP: see [replay_to_instant_ngp.py](./replay_to_instant_ngp.py)
+ * https://github.com/wanmeihuali/taichi_3d_gaussian_splatting (use `sai-cli process --format=taichi ...`)
+ * Other tools that use a similar COLMAP-like folder structure than Nerfstudio (`sai-cli process` default output format)
+
+The export process can also be customized by modifying the source code of [`sai-cli process`](https://github.com/SpectacularAI/sdk/blob/main/python/cli/process/process.py)
+which can also be used as a standalone Python script.
+
+## Recording data format
+
+The recording format created by the SDK and Spectacular Rec is [documented here](https://github.com/SpectacularAI/vio_benchmark/blob/main/DATA_FORMAT.md),
+and can also be used for other purposes. It is based on encoded videos and JSONL, making it a convinient and effective choice for high-resolution, high-frequency multi-camera, multi-sensor data.
+In particular, we can efficiently and economically store
+
+ * Multi-camera RGB or monochrome data
+ * Depth data (via PNGs or FFV1)
+ * IMU, synchronized with the camera frames
+ * Other sensors, e.g., barometer or GPS
+
 ## License note
 
 Spectacular AI SDK is free to use for non-commercial purposes. [Contact us](https://www.spectacularai.com/#contact) for commercial licensing (e.g., running this in your own cloud service).
