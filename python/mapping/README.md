@@ -10,21 +10,19 @@ This page has instructions for post-processing data recorded through the Spectac
 
 ## Installation
 
+These instructions assume you want to train NeRFs or 3DGS using Nerfstudio. For other uses, Nerfstudio and CUDA are not required, but you simply need Python, `pip` and FFmpeg.
+
  1. [install Nerfstudio](https://github.com/nerfstudio-project/nerfstudio#1-installation-setup-the-environment) (**Requirement**: a good NVidia GPU + CUDA).
- 2. In Nerfstudio's Conda environment, install the Spectacular AI Python library with all recommended dependencies:
+ 2. Install FFmpeg. Linux `apt install ffmpeg` (or similar, if using another package manager). Windows: [see here](https://www.editframe.com/guides/how-to-install-and-start-using-ffmpeg-in-under-10-minutes). FFmpeg must be in your `PATH` so that `ffmpeg` works on the command line.
+ 3. In Nerfstudio's Conda environment, install the Spectacular AI Python library with all recommended dependencies:
 
         pip install spectacularAI[full]
-
-For non-phone devices only: Install FFmpeg
-
-  * Linux `apt install ffmpeg` (or similar, if using another package manager)
-  * Windows: [see here](https://www.editframe.com/guides/how-to-install-and-start-using-ffmpeg-in-under-10-minutes). FFmpeg must be in your `PATH` so that `ffmpeg` works on the command line.
 
 ## Recording data
 
 Choose your device below to see more detailed instructions for creating Spectacular AI recordings (folders or zip files):
 
-<details><summary><b>iPhone with LiDAR</b></summary><p>
+<details><summary><b>iPhone</b> (with or without LiDAR)</summary><p>
    
  1. Download [Spectacular Rec](https://apps.apple.com/us/app/spectacular-rec/id6473188128) from App Store.
  2. See our [instruction video on YouTube](https://youtu.be/d77u-E96VVw) on how to create recording files and transfer them to your computer.
