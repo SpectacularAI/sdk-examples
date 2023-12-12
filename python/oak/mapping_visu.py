@@ -10,12 +10,8 @@ import spectacularAI
 import depthai
 import threading
 
-# Ugly
-import sys
-from pathlib import Path
-sys.path.append(str(Path.joinpath(Path(__file__).resolve().parent.parent, "mapping")))
-from visualization.serialization import input_stream_reader, MockVioOutput, MockMapperOutput
-from visualization.visualizer import Visualizer, VisualizerArgs
+from spectacularAI.cli.visualization.serialization import input_stream_reader, MockVioOutput, MockMapperOutput
+from spectacularAI.cli.visualization.visualizer import Visualizer, VisualizerArgs
 
 def parseArgs():
     import argparse
