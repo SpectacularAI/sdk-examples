@@ -1,9 +1,0 @@
-spectacularAI
-numpy
-scipy
-pandas
-pyarrow
-opencv-python
-# visualization dependencies
-pyopengl
-pygame
