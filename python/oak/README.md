@@ -11,11 +11,24 @@
 
 ## Installation
 
-Install the Python pacakge: `pip install spectacularAI`
+Install the Python pacakge: `pip install spectacularAI[full]`.
+The postfix `[full]` will also install the `sai-cli` tool and the requirements for the
+visualizations and examples. In more advanced use of the SDK, it may not be needed.
+
+Note: On Linux, you may also need to `sudo apt install python3-tk` to run the Matplotlib-based visualizations
+
+## Recording data
+
+For recording and replay, you also need to install FFmpeg:
+ - Linux: `apt install ffmpeg` (or similar for other package manager)
+ - Windows: see [here](https://www.editframe.com/guides/how-to-install-and-start-using-ffmpeg-in-under-10-minutes). Make sure that FFmpeg is your `PATH`` and `ffmpeg` command works.
+
+To record data for troubleshooting and offline replay, see
+
+    sai-cli record oak --help
+
 
 ## Examples
-
-To install dependecies for all examples you can use: `pip install -r requirements.txt`. On Linux, you may also need to `sudo apt install python3-tk` to run the Matplotlib-based visualizations.
 
  * **Minimal example**. Prints 6-DoF poses as JSON text: [`python vio_jsonl.py`](vio_jsonl.py)
  * **Basic visualization**. Interactive 3D plot / draw in the air with the device: [`python vio_visu.py`](vio_visu.py)
@@ -27,7 +40,6 @@ To install dependecies for all examples you can use: `pip install -r requirement
     See [`depthai_combination.py`](depthai_combination.py) for additional dependencies that also need to be installed.
  * **Mixed reality**. In less than 130 lines of Python, with the good old OpenGL functions like `glTranslatef` used for rendering.
     Also requires `PyOpenGL_accelerate` to be installed, see [`mixed_reality.py`](mixed_reality.py) for details.
- * **Data recording** for, e.g., replay and troubleshooting: [`vio_record.py`](vio_record.py)
  * **GNSS-VIO** example, reads external GNSS from standard input [`vio_gnss.py`](vio_gnss.py) (see also [these instructions](https://spectacularai.github.io/docs/pdf/GNSS-VIO_OAK-D_Python.pdf))
  * **AprilTag integration**: https://spectacularai.github.io/docs/pdf/april_tag_instructions.pdf
  * **Remote visualization over SSH**. Can be achieved by combining the `vio_jsonl.py` and `vio_visu.py` scripts as follows:
