@@ -12,11 +12,14 @@ both real-time and offline 3D reconstruction use cases.
 
 ## SDK architecture and documentation
 
-The SDK consists of a device-independent C++ _core SDK_, which is included in SDK _wrappers_ for different out-of-the-box supported devices (see below). All wrappers have a C++ API and their documentation is included in the [release packages](https://github.com/SpectacularAI/sdk/releases).
-
-The SDK also has a Python API, which supports OAK-D devices and post-processing data from other devices using the _Mapping API_ (see [examples here](python/mapping)).
+The SDK consists of a device-independent C++ _core SDK_, which is included in SDK _wrappers_ for different out-of-the-box supported devices (see below). All wrappers have a C++ API and their documentation is included in the [release packages](https://github.com/SpectacularAI/sdk/releases). The SDK also has a Python API, which supports OAK-D devices and post-processing data from other devices using the _Mapping API_.
 
 [**Link to Python API documentation**](https://spectacularai.github.io/docs/sdk/python/latest/)
+
+## Mapping tools
+
+The most convenient interface to the mapping capabilities is the `sai-cli` mapping tool, powered by the Mapping API and described in more detail in the [`python/mapping` folder](python/mapping).
+It can be used to create NeRF and Gaussian Splatting reconstructions using any of the devices supported by the SDK, as well as smartphones via our separate recording apps: [iOS](https://apps.apple.com/us/app/spectacular-rec/id6473188128) and [Android](https://play.google.com/store/apps/details?id=com.spectacularai.rec) (alpha version). The NeRF and 3DGS reconstructions are powered by Nerfstudio. [Start here](https://docs.nerf.studio/quickstart/custom_dataset.html#spectacularai) for instructions on using Spectacular AI with Nerstudio.
 
 ## Supported devices
 
@@ -26,7 +29,7 @@ The SDK supports a limited set of devices out-of-the-box. This means that the SD
 
  * [OAK-D by Luxonis](https://store.opencv.ai/products/oak-d). Other stereo OAK variants with IMU sensors (e.g., OAK-D-PoE, OAK-D-CM3/4) are also supported, but _not_ monocular systems nor OAK-D-Lite. There is an easy-to-use [Python wrapper](python/oak) and a [C++ version](cpp/oak).
  * [Intel RealSense D455](https://www.intelrealsense.com/depth-camera-d455/) and D435i (notice the "i", which is for IMU and is a must-have. D435 is _not_ supported). Currently only supported on x86-64. Available as a [C++ version](cpp/realsense).
- * _Azure Kinect DK_. [Contact us](https://www.spectacularai.com/#contact) for access to the SDK.
+ * _Azure Kinect DK_. [Download v1.14 here](https://github.com/SpectacularAI/sdk/releases/tag/v1.24.0).
 
 All the non-commerical SDKs are available [here](https://github.com/SpectacularAI/sdk).
 
