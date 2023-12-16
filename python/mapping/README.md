@@ -29,6 +29,15 @@ Choose your device below to see more detailed instructions for creating Spectacu
 
 </p></details>
 
+<details><summary><b>Android</b> (with or without ToF)</summary><p>
+   
+ 1. Download [Spectacular Rec](https://play.google.com/store/apps/details?id=com.spectacularai.rec) from Play Store.
+ 2. Use like the iPhone version (tutorial here [here](https://youtu.be/d77u-E96VVw)
+
+Note: the Android pipeline in the first app and `sai-cli` version is currently less stable than the iOS version and, the Gaussian Splatting accuracy is not as good as NeRFs. This will be improved in the near future.
+
+</p></details>
+
 <details><summary><b>OAK-D</b></summary><p>
 
  1. Plug in the OAK-D to your laptop (or directly the computer with the heavy GPU)
@@ -51,7 +60,7 @@ Download our binary recorder [here](https://github.com/SpectacularAI/sdk/release
 
 <details><summary><b>Coming soon</b></summary><p>
 
- * Android phones
+ * Orbbec Astra
  * Orbbec Femto
 
 </p></details>
@@ -78,25 +87,9 @@ Without the `--fast` flag, the processing should take around 10 minutes tops.
 
 ### Gaussian Splatting
 
-**2023-11-14**. Currently supports the Nerfstudio [branch](https://github.com/nerfstudio-project/nerfstudio/pull/2521) powered by [gsplat](https://github.com/nerfstudio-project/gsplat).
-Installation instructions: 
+**2023-12-15**. Gaussian Splatting has been merged to the Nerfstudio main branch: Update Nerfstudio and train as
 
- 1. Create and activate a Conda environment for Nerfstudio (see [instructions](https://github.com/nerfstudio-project/nerfstudio#create-environment))
- 2. Install _gsplat_ to the same Conda environment:
-    
-        git clone https://github.com/nerfstudio-project/gsplat
-        cd gsplat
-        pip install -e .
-    
- 4. Install the `gaussian-splatting` branch of Nerfstudio:
-    
-        git clone https://github.com/nerfstudio-project/nerfstudio.git
-        cd nerfstudio
-        git checkout gaussian-splatting  # <--- Different from standard instructions
-        pip install --upgrade pip setuptools
-        pip install -e .
-
- 5. Train as `ns-train gaussian-splatting --data /example/output/path/my-nerf`
+    ns-train gaussian-splatting --data /example/output/path/my-nerf
 
 ## Export to other tools
 
