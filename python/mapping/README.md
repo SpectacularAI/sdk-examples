@@ -91,9 +91,22 @@ Without the `--fast` flag, the processing should take around 10 minutes tops.
 
     ns-train gaussian-splatting --data /example/output/path/my-nerf
 
-## Export to other tools
+To use the resulting "splats" in other tools, first export as PLY
 
-The data can also be exported to 
+    ns-export gaussian-splat \
+        --load-config outputs/my-nerf/gaussian-splatting/DATE/config.yaml
+        --output-dir exports/splats
+
+Then copy the the file `exports/point_cloud.ply`. Examples:
+
+ * Edit in [Super Splat](https://playcanvas.com/super-splat) (splat colors may look wrong here)
+ * Export to `.splat` or [stand-alone HTML](https://spectacularai.github.io/docs/other/android-3dgs-example-ramen.html)
+   using [SpectacularAI/point-cloud-tools](https://github.com/SpectacularAI/point-cloud-tools#gaussian-splatting)
+ * View or embed `.splat` to a web page using [gsplat.js](https://github.com/huggingface/gsplat.js)
+
+## Export mapping API data to other tools
+
+As an alternative to Nerfstudio, the pose and image data computed by the Spectacular AI Mapping API can also be exported to:
 
  * Nvidia Instant NGP: see [replay_to_instant_ngp.py](./replay_to_instant_ngp.py)
  * https://github.com/wanmeihuali/taichi_3d_gaussian_splatting (use `sai-cli process --format=taichi ...`)
