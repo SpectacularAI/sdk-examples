@@ -1,6 +1,6 @@
-# Spectacular AI SDK for Azure Kinect DK
+# Spectacular AI SDK for Orbbec
 
-You can find the non-commercial C++ SDK for Azure Kinect from https://github.com/SpectacularAI/sdk/releases.
+You can find the non-commercial C++ SDK for Orbbec from https://github.com/SpectacularAI/sdk/releases.
 
 For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 
@@ -9,27 +9,27 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 ### Quick start
 
  1. Unpack the SDK archive
- 2. If you have not used the Azure Kinect device before, you will need to setup udev rules. Either, run
+ 2. If you have not used the Orbbec device before, you will need to setup udev rules. Either, run
 
-        ./bin/3rdparty/k4a/setup_udev_rules.sh
+        sudo ./bin/3rdparty/OrbbecSDK/install_udev_rules.sh
 
-    or follow the official instructions in [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/docs/usage.md#linux-device-setup).
- 2. Attach your Azure Kinect device to a USB3 port
- 3. Run the JSONL example:
+    or follow the official instructions in [OrbbecSDK](https://github.com/orbbec/OrbbecSDK?tab=readme-ov-file#environment-setup).
+ 3. Attach your Orbbec device to a USB3 port
+ 4. Run the JSONL example:
 
         cd bin
         ./vio_jsonl
         # Now you should see rapidly flowing JSONL text
         # press Ctrl+C to exit
 
- 4. Run the Python example (in the `bin` directory)
+ 5. Run the Python example (in the `bin` directory)
 
         pip install matplotlib # install dependencies
         python vio_visu.py
 
 ### Installation as a library
 
- 1. Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that open `k4aviewer`.
+ 1. Install [OrbbecSDK](https://github.com/orbbec/OrbbecSDK)
  2. Select where you want the library installed, e.g.,
 
         export MY_INSTALL_PREFIX=~/.local
@@ -46,15 +46,16 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 ### Quick start
 
  1. Unpack the SDK archive
- 2. Attach your Azure Kinect device to a USB3 port
- 3. Run the JSONL example:
+ 2. If you have not used the Orbbec device before, you will need to setup timestamp registration. Please follow the official instructions in [OrbbecSDK](https://github.com/orbbec/OrbbecSDK?tab=readme-ov-file#environment-setup).
+ 3. Attach your OrbbecSDK device to a USB3 port
+ 4. Run the JSONL example:
 
         cd bin
         ./vio_jsonl.exe
         # Now you should see rapidly flowing JSONL text
         # press Ctrl+C to exit
 
- 4. Run the Python example (in the `bin` directory)
+ 5. Run the Python example (in the `bin` directory)
 
         pip install matplotlib # install dependencies
         python vio_visu.py
@@ -62,7 +63,7 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 ### Installation as a library
 
 You need to install following tools if you don't already have them:
-* Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that open `k4aviewer`.
+* Install [OrbbecSDK](https://github.com/orbbec/OrbbecSDK)
 * Install Git for Windows https://git-scm.com
 * Install Visual Studio Community 2019 https://visualstudio.microsoft.com/vs/community/
   * When launching, install dependencies for "Desktop Development with C++"
@@ -74,14 +75,14 @@ You need to install following tools if you don't already have them:
         cd examples
         $env:BUILD_MAPPING_VISU="OFF"; sh ./build_windows.sh ..\lib\cmake\spectacularAI
 
- 2. Finally running the vio_jsonl.exe should give you the pose of the Azure Kinect device in real time:
+ 2. Finally running the vio_jsonl.exe should give you the pose of the Orbbec device in real time:
 
         cd target/Release
         ./vio_jsonl.exe
 
 ## Mapping visualization example
 
-This example uses Azure Kinect device with Mapping API and serializes the output in custom format tha can be sent to Python for visualization.
+This example uses Orbbec device with Mapping API and serializes the output in custom format that can be sent to Python for visualization.
 
 ### Setup
 * Clone sdk-examples and submodules:
@@ -133,19 +134,19 @@ Also, you can adjust all the Python visualization options, see `python mapping_v
 ```
 mkdir target
 cd target
-cmake -DspectacularAI_k4aPlugin_DIR=<path/to/spectacularAI_k4aPlugin/install/lib/cmake/spectacularAI/> ..
+cmake -DspectacularAI_orbbecPlugin_DIR=<path/to/spectacularAI_orbbecPlugin/install/lib/cmake/spectacularAI/> ..
 make
 ```
 
-The `-DspectacularAI_k4aPlugin_DIR` option is not needed is you have used `sudo make install` for the SDK.
+The `-DspectacularAI_orbbecPlugin_DIR` option is not needed is you have used `sudo make install` for the SDK.
 
 ### Building (Windows)
 
 1. Build vio_jsonl example using CMake. The process is a bit involved so the commands are collected in `./build_windows.sh`. In PowerShell:
 
-        sh ./build_windows.sh <path\to\spectacularAI_k4aPlugin_1.23.1_windows\lib\cmake\spectacularAI>
+        sh ./build_windows.sh <path\to\spectacularAI_orbbecPlugin_1.26.0_windows\lib\cmake\spectacularAI>
 
 ## License information
 
-See `share/doc/spectacularAI_k4aPlugin/LICENSE` for copyright notices
+See `share/doc/spectacularAI_orbbecPlugin/LICENSE` for copyright notices
 that must be included in all software using this SDK.
