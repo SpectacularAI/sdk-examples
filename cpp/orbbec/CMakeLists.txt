@@ -52,11 +52,6 @@ if(MSVC)
   )
 endif()
 
-# General tool for the orbbec plugin
-add_executable(main main.cpp)
-target_link_libraries(main ${EXAMPLE_LIBS} Threads::Threads)
-target_include_directories(main PRIVATE ${OrbbecSDK_INCLUDE_DIRS})
-
 # Mapping example, used together with mapping_visu.py visulization
 set(BUILD_MAPPING_VISU ON CACHE STRING "Build VIO mapper example (requires nlohmann_json)")
 if (BUILD_MAPPING_VISU)
