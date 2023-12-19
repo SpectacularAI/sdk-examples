@@ -14,22 +14,22 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
         ./bin/3rdparty/k4a/setup_udev_rules.sh
 
     or follow the official instructions in [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/docs/usage.md#linux-device-setup).
- 2. Attach your Azure Kinect device to a USB3 port
- 3. Run the JSONL example:
+ 3. Attach your Azure Kinect device to a USB3 port
+ 4. Run the JSONL example:
 
         cd bin
         ./vio_jsonl
         # Now you should see rapidly flowing JSONL text
         # press Ctrl+C to exit
 
- 4. Run the Python example (in the `bin` directory)
+ 5. Run the Python example (in the `bin` directory)
 
         pip install matplotlib # install dependencies
         python vio_visu.py
 
 ### Installation as a library
 
- 1. Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that open `k4aviewer`.
+ 1. Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that open `k4aviewer`.
  2. Select where you want the library installed, e.g.,
 
         export MY_INSTALL_PREFIX=~/.local
@@ -62,7 +62,7 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 ### Installation as a library
 
 You need to install following tools if you don't already have them:
-* Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that that open `k4aviewer`.
+* Verify that you have installed [Azure Kinect SDK](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/), e.g. check that open `k4aviewer`.
 * Install Git for Windows https://git-scm.com
 * Install Visual Studio Community 2019 https://visualstudio.microsoft.com/vs/community/
   * When launching, install dependencies for "Desktop Development with C++"
@@ -81,7 +81,7 @@ You need to install following tools if you don't already have them:
 
 ## Mapping visualization example
 
-This example uses Azure Kinect device with Mapping API and serializes the output in custom format tha can be sent to Python for visualization.
+This example uses Azure Kinect device with Mapping API and serializes the output in custom format that can be sent to Python for visualization.
 
 ### Setup
 * Clone sdk-examples and submodules:
