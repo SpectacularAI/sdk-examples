@@ -73,7 +73,7 @@ You need to install following tools if you don't already have them:
  1. Build vio_jsonl example using CMake. The process is a bit involved so the commands are collected in `./examples/build_windows.sh`. In PowerShell:
 
         cd examples
-        $env:BUILD_MAPPING_VISU="OFF"; sh ./build_windows.sh ..\lib\cmake\spectacularAI
+        $env:BUILD_MAPPING_VISU="OFF"; sh ./build_windows.sh ..\lib\cmake\spectacularAI <path\to\OrbbecSDK\lib>
 
  2. Finally running the vio_jsonl.exe should give you the pose of the Orbbec device in real time:
 
@@ -83,13 +83,6 @@ You need to install following tools if you don't already have them:
 ## Mapping visualization example
 
 This example uses Orbbec device with Mapping API and serializes the output in custom format that can be sent to Python for visualization.
-
-### Setup
-* Clone sdk-examples and submodules:
-
-        git clone https://github.com/SpectacularAI/sdk-examples.git
-        cd sdk-examples
-        git submodule update --init --recursive
 
 ### Usage
 
@@ -112,7 +105,7 @@ Launch this example file with:
 ./mapping_visu -o /path/to/my_pipe
 ```
 
-Open another command prompt, go to `./sdk-examples/python/oak/` and launch Python visualization and leave it running with:
+Open another command prompt, and launch Python visualization (found in `./bin` or https://github.com/SpectacularAI/sdk-examples/blob/main/python/oak/mapping_visu.py) and leave it running with:
 ```
 python mapping_visu.py --file /path/to/my_pipe
 ```
@@ -144,7 +137,7 @@ The `-DspectacularAI_orbbecPlugin_DIR` option is not needed is you have used `su
 
 1. Build vio_jsonl example using CMake. The process is a bit involved so the commands are collected in `./build_windows.sh`. In PowerShell:
 
-        sh ./build_windows.sh <path\to\spectacularAI_orbbecPlugin_1.26.0_windows\lib\cmake\spectacularAI>
+        sh ./build_windows.sh <path\to\spectacularAI_orbbecPlugin_1.26.0_windows\lib\cmake\spectacularAI> <path\to\OrbbecSDK\lib>
 
 ## License information
 
