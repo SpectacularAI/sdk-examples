@@ -29,16 +29,9 @@ endif()
 add_executable(vio_jsonl vio_jsonl.cpp)
 target_link_libraries(vio_jsonl ${EXAMPLE_LIBS})
 
-add_executable(vio_record vio_record.cpp)
-target_link_libraries(vio_record ${EXAMPLE_LIBS})
-
 if(MSVC)
   add_custom_command(TARGET vio_jsonl POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_jsonl> $<TARGET_FILE_DIR:vio_jsonl>
-    COMMAND_EXPAND_LISTS
-  )
-  add_custom_command(TARGET vio_record POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_record> $<TARGET_FILE_DIR:vio_record>
     COMMAND_EXPAND_LISTS
   )
 endif()
