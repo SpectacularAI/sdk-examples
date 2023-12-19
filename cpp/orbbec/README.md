@@ -84,6 +84,11 @@ You need to install following tools if you don't already have them:
 
 This example uses Orbbec device with Mapping API and serializes the output in custom format that can be sent to Python for visualization.
 
+### Dependencies
+
+Install Python visualization dependencies:
+`pip install spectacularAI[full]`
+
 ### Usage
 
 If you are using the pre-built `./bin/mapping_visu` binary or (have built your own following the building instructions in the next section):
@@ -105,7 +110,7 @@ Launch this example file with:
 ./mapping_visu -o /path/to/my_pipe
 ```
 
-Open another command prompt, and launch Python visualization (found in `./bin` or https://github.com/SpectacularAI/sdk-examples/blob/main/python/oak/mapping_visu.py) and leave it running with:
+Open another command prompt, and launch Python visualization (in `./bin` directory or https://github.com/SpectacularAI/sdk-examples/blob/main/python/oak/mapping_visu.py) and leave it running with:
 ```
 python mapping_visu.py --file /path/to/my_pipe
 ```
