@@ -29,6 +29,7 @@ void Serializer::serializeVioOutput(std::ofstream &outputStream, spectacularAI::
             {"cameraToWorld", cameraToWorld}
         }
     };
+    json["trackingStatus"] = static_cast<int32_t>(vioOutput->status);
 
     std::string jsonStr = json.dump();
     uint32_t jsonLength = jsonStr.length();
