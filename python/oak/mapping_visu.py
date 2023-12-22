@@ -62,10 +62,13 @@ if __name__ == '__main__':
     if args.file:
         print("Starting reading input from file or pipe")
         def inputStreamLoop():
-            vio_source = input_stream_reader(args.file)
-            for vio_out in vio_source:
-                if 'cameraPoses' in vio_out: onVioOutput(MockVioOutput(vio_out))
-                else: onMappingOutput(MockMapperOutput(vio_out))
+            vioSource = input_stream_reader(args.file)
+            for output in vioSource:
+                if 'cameraPoses' in output:
+                    vioOutput = MockVioOutput(output)
+                    vioOutput.status = spectacularAI.TrackingStatus.TRACKING # TODO: remove, temporary fix for SDK v.1.26.2
+                    onVioOutput(vioOutput)
+                else: onMappingOutput(MockMapperOutput(output))
         thread = threading.Thread(target=inputStreamLoop)
         thread.start()
         visualizer.run()
