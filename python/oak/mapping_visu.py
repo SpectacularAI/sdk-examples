@@ -57,7 +57,7 @@ if __name__ == '__main__':
         if mapperOutput.finalMap: print("Final map ready!")
 
     def onVioOutput(vioOutput):
-        visualizer.onVioOutput(vioOutput.getCameraPose(0))
+        visualizer.onVioOutput(vioOutput.getCameraPose(0), status=vioOutput.status)
 
     if args.file:
         print("Starting reading input from file or pipe")
