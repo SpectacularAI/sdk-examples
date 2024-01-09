@@ -4,7 +4,7 @@
 #include <mutex>
 #include <fstream>
 #include <thread>
-#include <libobsensor/hpp/Pipeline.hpp>
+#include <libobsensor/ObSensor.hpp>
 #include <spectacularAI/orbbec/plugin.hpp>
 
 #include "serialize_output.hpp"
@@ -22,6 +22,8 @@ void showUsage() {
 int main(int argc, char *argv[]) {
     std::vector<std::string> arguments(argv, argv + argc);
     std::string outputFile;
+
+    ob::Context::setLoggerSeverity(OB_LOG_SEVERITY_OFF);
 
     // Create OrbbecSDK pipeline (with default device).
     ob::Pipeline obPipeline;
