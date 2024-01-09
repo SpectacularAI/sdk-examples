@@ -19,21 +19,20 @@ endif()
 
 find_package(Threads REQUIRED)
 find_package(spectacularAI_orbbecPlugin REQUIRED)
+find_package(OrbbecSDK REQUIRED PATHS "${OrbbecSDK_DIR}")
 
 if(MSVC) # Must be after project() is called
   set(CMAKE_CXX_STANDARD 20)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /Gy")
-  find_package(OrbbecSDK CONFIG REQUIRED PATHS "${OrbbecSDK_DIR}")
 else()
   set(CMAKE_CXX_STANDARD 14)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-  find_package(OrbbecSDK CONFIG REQUIRED PATHS "${OrbbecSDK_DIR}")
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs=ALL")
 endif()
 
 set(EXAMPLE_LIBS
-  ${OrbbecSDK_LIBS}
-  spectacularAI::orbbecPlugin)
+  spectacularAI::orbbecPlugin
+  OrbbecSDK::OrbbecSDK)
 
 # enables searching for dynamic libraries from the relative path ../lib
 if(NOT MSVC)
@@ -43,7 +42,6 @@ endif()
 # Minimal example
 add_executable(vio_jsonl vio_jsonl.cpp)
 target_link_libraries(vio_jsonl ${EXAMPLE_LIBS})
-target_include_directories(vio_jsonl PRIVATE ${OrbbecSDK_INCLUDE_DIRS})
 
 if(MSVC)
   add_custom_command(TARGET vio_jsonl POST_BUILD
@@ -61,5 +59,5 @@ if (BUILD_MAPPING_VISU)
 
   add_executable(mapping_visu mapping_visu.cpp ../common/serialize_output.cpp)
   target_link_libraries(mapping_visu PRIVATE ${EXAMPLE_LIBS} nlohmann_json::nlohmann_json Threads::Threads)
-  target_include_directories(mapping_visu PRIVATE "../common" ${OrbbecSDK_INCLUDE_DIRS})
+  target_include_directories(mapping_visu PRIVATE "../common")
 endif()
