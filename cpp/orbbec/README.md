@@ -29,7 +29,7 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 
 ### Installation as a library
 
- 1. Install [OrbbecSDK](https://github.com/orbbec/OrbbecSDK)
+ 1. Download [OrbbecSDK](https://github.com/orbbec/OrbbecSDK)
  2. Select where you want the library installed, e.g.,
 
         export MY_INSTALL_PREFIX=~/.local
@@ -39,7 +39,7 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
  4. Make sure you have CMake and Git (`sudo apt install cmake git`)
  5. Build the vio_jsonl example using CMake
 
-        make PREFIX=$MY_INSTALL_PREFIX examples
+        make PREFIX=$MY_INSTALL_PREFIX example
 
 ## Windows
 
@@ -63,7 +63,7 @@ For commercial licenses, contact us at https://www.spectacularai.com/#contact.
 ### Installation as a library
 
 You need to install following tools if you don't already have them:
-* Install [OrbbecSDK](https://github.com/orbbec/OrbbecSDK)
+* Download [OrbbecSDK](https://github.com/orbbec/OrbbecSDK)
 * Install Git for Windows https://git-scm.com
 * Install Visual Studio Community 2019 https://visualstudio.microsoft.com/vs/community/
   * When launching, install dependencies for "Desktop Development with C++"
@@ -73,7 +73,7 @@ You need to install following tools if you don't already have them:
  1. Build vio_jsonl example using CMake. The process is a bit involved so the commands are collected in `./examples/build_windows.sh`. In PowerShell:
 
         cd examples
-        $env:BUILD_MAPPING_VISU="OFF"; sh ./build_windows.sh ..\lib\cmake\spectacularAI <path\to\OrbbecSDK\lib>
+        $env:BUILD_MAPPING_VISU="OFF"; sh ./build_windows.sh ..\lib\cmake\spectacularAI <path\to\OrbbecSDK>
 
  2. Finally running the vio_jsonl.exe should give you the pose of the Orbbec device in real time:
 
@@ -132,17 +132,17 @@ Also, you can adjust all the Python visualization options, see `python mapping_v
 ```
 mkdir target
 cd target
-cmake -DspectacularAI_orbbecPlugin_DIR=<path/to/spectacularAI_orbbecPlugin/install/lib/cmake/spectacularAI/> ..
+cmake -DspectacularAI_orbbecPlugin_DIR=<path/to/spectacularAI_orbbecPlugin/install/lib/cmake/spectacularAI/> -DOrbbecSDK_DIR=<path/to/OrbbecSDK> ..
 make
 ```
 
-The `-DspectacularAI_orbbecPlugin_DIR` option is not needed is you have used `sudo make install` for the SDK.
+The `-DspectacularAI_orbbecPlugin_DIR` option is not needed if you have used `sudo make install` for the SDK.
 
 ### Building (Windows)
 
 1. Build vio_jsonl example using CMake. The process is a bit involved so the commands are collected in `./build_windows.sh`. In PowerShell:
 
-        sh ./build_windows.sh <path\to\spectacularAI_orbbecPlugin_1.26.0_windows\lib\cmake\spectacularAI> <path\to\OrbbecSDK\lib>
+        sh ./build_windows.sh <path\to\spectacularAI_orbbecPlugin_1.26.0_windows\lib\cmake\spectacularAI> <path\to\OrbbecSDK>
 
 ## License information
 
