@@ -1,10 +1,11 @@
 #include <iostream>
 #include <vector>
-#include <libobsensor/hpp/Pipeline.hpp>
+#include <libobsensor/ObSensor.hpp>
 #include <spectacularAI/orbbec/plugin.hpp>
 
 int main(int argc, char *argv[]) {
     std::vector<std::string> arguments(argv, argv + argc);
+    ob::Context::setLoggerSeverity(OB_LOG_SEVERITY_OFF);
 
     // Create OrbbecSDK pipeline (with default device).
     ob::Pipeline obPipeline;
