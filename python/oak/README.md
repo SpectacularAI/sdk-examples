@@ -1,32 +1,8 @@
-# Spectacular AI Python SDK for OAK-D
+# Spectacular AI Python SDK examples for OAK-D
 
 ![SDK install demo](https://spectacularai.github.io/docs/gif/pip-install.gif)
 
-## Prerequisites
-
- * An [OAK-D device](https://store.opencv.ai/products/oak-d)
- * Supported operating systems: Windows 10 or Linux (e.g., Ubuntu 20+)
- * Supported Python versions 3.6+
- * Linux only: set up [OAK-D udev rules](https://docs.luxonis.com/en/latest/pages/troubleshooting/#udev-rules-on-linux)
-
-## Installation
-
-Install the Python pacakge: `pip install spectacularAI[full]`.
-The postfix `[full]` will also install the `sai-cli` tool and the requirements for the
-visualizations and examples. In more advanced use of the SDK, it may not be needed.
-
-Note: On Linux, you may also need to `sudo apt install python3-tk` to run the Matplotlib-based visualizations
-
-## Recording data
-
-For recording and replay, you also need to install FFmpeg:
- - Linux: `apt install ffmpeg` (or similar for other package manager)
- - Windows: see [here](https://www.editframe.com/guides/how-to-install-and-start-using-ffmpeg-in-under-10-minutes). Make sure that FFmpeg is your `PATH`` and `ffmpeg` command works.
-
-To record data for troubleshooting and offline replay, see
-
-    sai-cli record oak --help
-
+**See https://spectacularai.github.io/docs/sdk/wrappers/oak.html for instructions and API documentation**
 
 ## Examples
 
@@ -48,79 +24,3 @@ To record data for troubleshooting and offline replay, see
 
     Here `user@example.org` represents a machine (e.g., Raspberry Pi) that is connected to the OAK-D, but is not necessarily attached to a monitor.
     The above command can then be executed on a laptop/desktop machine, which then shows the trajectory of the OAK-D remotely (like in [this video](https://youtu.be/mBZ8bszNnwI?t=17)).
-
-## API documentation
-
-https://spectacularai.github.io/docs/sdk/python/latest
-
-### Coordinate systems
-
-The SDK uses the following coordinate conventions, which are also elaborated in the diagram below:
- * **World coordinate system**: Right-handed Z-is-up
- * **Camera coordinate system**: OpenCV convention (see [here](https://learnopencv.com/geometry-of-image-formation/) for a nice illustration), which is also right-handed
-
-These conventions are _different_ from, e.g., Intel RealSense SDK (cf. [here](https://github.com/IntelRealSense/librealsense/blob/master/doc/t265.md#sensor-origin-and-coordinate-system)), ARCore, Unity and most OpenGL tutorials, most of which use an "Y-is-up" coordinate system, often different camera coordinates systems, and sometimes different pixel (or "NDC") coordinate conventions.
-
-By default, the [pose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.VioOutput.pose) object returned by the Spectacular AI SDK uses the left camera as the local reference frame. To get the pose for another camera, use either [getCameraPose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.VioOutput.getCameraPose) OR [getRgbCameraPose](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.depthai.Session.getRgbCameraPose).
-
-![SDK coordinate systems](https://spectacularai.github.io/docs/png/SpectacularAI-coordinate-systems-oak-d.png?v=2)
-
-## Troubleshooting and customization
-
-### Camera calibration
-
-Rarely, the OAK-D device factory calibration may be inaccurate, which may cause the the VIO performance to be always very bad in all environments. If this is the case, the device can be recalibrated following [Luxonis' instructions](https://docs.luxonis.com/en/latest/pages/calibration/) (see also [our instructions for fisheye cameras](https://spectacularai.github.io/docs/pdf/oak_fisheye_calibration_instructions.pdf) for extra tips).
-
-Also calibrate the camera according to [these instructions](https://spectacularai.github.io/docs/pdf/oak_fisheye_calibration_instructions.pdf), if you have changed the lenses or the device did not include a factory calibration.
-
-### Frame rate
-
-The camera frame rate can be controlled with the [Depth AI methods](https://docs.luxonis.com/projects/api/en/latest/components/nodes/mono_camera/)
-```python
-vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
-changed_fps = 25 # new
-vio_pipeline.monoLeft.setFps(changed_fps) # new
-vio_pipeline.monoRight.setFps(changed_fps) # new
-```
-Reducing the frame rate (the default is 30) can be used to lower power consumption at the expense of accuracy. Depending on the use case (vehicular, hand-held, etc.), frame rates as low as 10 or 15 FPS may yield acceptable performance.
-
-### Camera modes
-
-By default, the SDK reads the following types of data from the OAK devices:
-
- * Depth map at full FPS (30 FPS)
- * Sparse image features at full FPS
- * Rectified monochrome images from two cameras at a reduced FPS (resolution 400p)
- * IMU data at full frequency (> 200Hz)
-
-This can be controlled with the following configuration flags, which can be modified using the [Configuration](https://spectacularai.github.io/docs/sdk/python/latest/#spectacularAI.depthai.Configuration) object, for example
-```python
-config = spectacularAI.depthai.Configuration()
-config.useStereo = False # example: enable monocular mode
-vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config)
-# ...
-```
-Arbitrary combinations of configuration changes are not supported, and non-default configurations are not guaranteed to be forward-compatible (may break between SDK releases). Changing the configuration is not expected to improve performance in general, but may help in specific use cases. Testing the following modes is encouraged:
-
- 1. `useFeatureTracker = False`. Disabled accelerated feature tracking, which can improve accuracy, but also increases CPU consumption. Causes depth map and feature inputs to be replaced with full FPS monochrome image data.
- 2. `useStereo = False`. Enable monocular mode. Reduces accuracy and robustness but also decreases CPU consumption.
- 3. `useSlam = False`. Disable loop closures and other related processing. Can make the relative pose changes more predictable. Disables reduced FPS image data input.
- 4. `useVioAutoExposure = True`. Enable custom auto-exposure to improve low-light scenarios and reduce motion blur (BETA).
-
-### Unsupported OAK-D models
-
-Some (less common) OAK models require setting certain parameters manually. Namely, the IMU-to-camera matrix may need to be changed if the device model was not recognized by the SDK. For example, For example:
-```python
-vio_pipeline = spectacularAI.depthai.Pipeline(pipeline)
-# manual IMU-to-camera matrix configuration
-vio_pipeline.imuToCameraLeft = [
-    [0, 1, 0, 0],
-    [1, 0, 0, 0],
-    [0, 0,-1, 0],
-    [0, 0, 0, 1]
-]
-```
-
-## License
-
-For more info, see the [main README.md](../../README.md).
