@@ -1,12 +1,10 @@
 
 
 ![OAK-D NeRF](https://spectacularai.github.io/docs/gif/oak-d-nerf.gif)
-<img height="253" alt="OAK-D fast mapping" src="https://spectacularai.github.io/docs/png/oak-d-fast-mapping.png">
 
-# Spectacular AI mapping tools
+# Gaussian Splatting & NeRFs
 
-This page has instructions for post-processing data recorded through the Spectacular AI SDK on supported devices, exporting to Nerfstudio, training NeRFs and 3DGS, and visualizing the process. The Spectacular AI mapping tool (`sai-cli process`) is powered by the Spectacular AI _Mapping API_ 
-([documentation](https://spectacularai.github.io/docs/sdk/python/latest/#module-spectacularAI.mapping)).
+This page has instructions for post-processing data recorded through the Spectacular AI SDK on supported devices, exporting to Nerfstudio, training NeRFs and 3DGS, and visualizing the process. The Spectacular AI mapping tool (`sai-cli process`) is powered by the Spectacular AI [Mapping API](https://spectacularai.github.io/docs/sdk/mapping.html).
 
 ## Installation
 
@@ -23,14 +21,14 @@ These instructions assume you want to train NeRFs or 3DGS using Nerfstudio. For 
 Choose your device below to see more detailed instructions for creating Spectacular AI recordings (folders or zip files):
 
 <details><summary><b>iPhone</b> (with or without LiDAR)</summary><p>
-   
+
  1. Download [Spectacular Rec](https://apps.apple.com/us/app/spectacular-rec/id6473188128) from App Store.
  2. See our [instruction video on YouTube](https://youtu.be/d77u-E96VVw) on how to create recording files and transfer them to your computer.
 
 </p></details>
 
 <details><summary><b>Android</b> (with or without ToF)</summary><p>
-   
+
  1. Download [Spectacular Rec](https://play.google.com/store/apps/details?id=com.spectacularai.rec) from Play Store.
  2. Use like the iPhone version (tutorial here [here](https://youtu.be/d77u-E96VVw)
 
@@ -48,22 +46,23 @@ If the above settings cause issues, try running `sai-cli record oak` instead. Co
 </p></details>
 
 <details><summary><b>RealSense D455/D435i</b></summary><p>
-See the <i>Recording data</i> item under the <a href="https://github.com/SpectacularAI/sdk-examples/tree/main/cpp/realsense#quick-start">RealSense example folder</a>
+See the <a href="https://spectacularai.github.io/docs/sdk/wrappers/realsense.html#recording-data">Recording data</a> section under the RealSense wrapper instructions
 
 </p></details>
 
 <details><summary><b>Azure Kinect DK</b></summary><p>
 
-Download our binary recorder [here](https://github.com/SpectacularAI/sdk/releases/download/v1.24.0/spectacularAI_k4aPlugin_cpp_non-commercial_1.24.0.zip) and see the README within for recording instructions.
+See the https://spectacularai.github.io/docs/sdk/wrappers/k4a.html for more information
 
 </p></details>
 
-<details><summary><b>Coming soon</b></summary><p>
+<details><summary><b>Orbbec</b></summary><p>
 
- * Orbbec Astra
- * Orbbec Femto
+See the <a href="https://spectacularai.github.io/docs/sdk/wrappers/orbbec.html#recording-data">Recording data</a> section under the Orbbec wrapper instructions
 
 </p></details>
+
+---
 
 With OAK-D or RealSense devices, you can currently expect to be able to map "table-sized" scenes
 quite fast and accurately. Move slow while mapping and shoot from different angles to increase quality.
@@ -87,7 +86,7 @@ Without the `--fast` flag, the processing should take around 10 minutes tops.
 
 ### Gaussian Splatting
 
-**2023-12-15**. Gaussian Splatting has been merged to the Nerfstudio main branch: Update Nerfstudio and train as
+Update Nerfstudio and train as
 
     ns-train gaussian-splatting --data /example/output/path/my-nerf
 
@@ -114,17 +113,6 @@ As an alternative to Nerfstudio, the pose and image data computed by the Spectac
 
 The export process can also be customized by modifying the source code of [`sai-cli process`](https://github.com/SpectacularAI/sdk/blob/main/python/cli/process/process.py)
 which can also be used as a standalone Python script.
-
-## Recording data format
-
-The recording format created by the SDK and Spectacular Rec is [documented here](https://github.com/SpectacularAI/vio_benchmark/blob/main/DATA_FORMAT.md),
-and can also be used for other purposes. It is based on encoded videos and JSONL, making it a convinient and effective choice for high-resolution, high-frequency multi-camera, multi-sensor data.
-In particular, we can efficiently and economically store
-
- * Multi-camera RGB or monochrome data
- * Depth data (via PNGs or FFV1)
- * IMU, synchronized with the camera frames
- * Other sensors, e.g., barometer or GPS
 
 ## License note
 
