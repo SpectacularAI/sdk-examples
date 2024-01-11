@@ -105,9 +105,9 @@ def load_obj(objLoadPath, origin=(0.5, 0, 0)):
     glEndList()
     return gl_list
 
-def draw(cam, width, height, data, obj, is_tracking):
+def draw(cam, width, height, data, obj, is_tracking, colorFormat=spectacularAI.ColorFormat.RGB):
     # copy image as AR background
-    glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_BYTE, data)
+    glDrawPixels(width, height, GL_LUMINANCE if colorFormat == spectacularAI.ColorFormat.GRAY else GL_RGB, GL_UNSIGNED_BYTE, data)
     if not is_tracking: return
 
     # setup OpenGL camera based on VIO output

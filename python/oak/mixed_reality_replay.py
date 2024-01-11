@@ -4,7 +4,6 @@ Mixed reality example using PyOpenGL. Requirements:
     pip install pygame PyOpenGL PyOpenGL_accelerate
 
 """
-import depthai
 import spectacularAI
 import pygame
 import time
@@ -23,6 +22,7 @@ def parse_args():
     p.add_argument('--latitude', help="Scene coordinate system geographic origin (WGS84): latitude in degrees", default=None)
     p.add_argument('--longitude', help="Scene coordinate system geographic origin (WGS84): longitude in degrees", default=None)
     p.add_argument('--altitude', help="Scene coordinate system geographic origin (WGS84): altitude in meters", default=None)
+    p.add_argument('--cameraInd', help="Which camera to use. Typically 0=left, 1=right, 2=auxiliary/RGB (OAK-D default)", type=int, default=2)
     return p.parse_args()
 args = parse_args()
 
@@ -53,12 +53,13 @@ def onOutput(output, frameSet):
 
     for frame in frameSet:
         if frame.image is None: continue
-        if frame.image.getColorFormat() == spectacularAI.ColorFormat.RGB:
+        if frame.index == args.cameraInd:
             img = frame.image.toArray()
             # Flip the image upside down for OpenGL
             img = np.ascontiguousarray(np.flipud(img))
             width = img.shape[1]
             height = img.shape[0]
+            colorFormat = frame.image.getColorFormat()
 
             if not display_initialized:
                 display_initialized = True
@@ -80,7 +81,7 @@ def onOutput(output, frameSet):
             else:
                 cameraPose = frame.cameraPose
 
-            draw(cameraPose, width, height, img.data, obj, is_tracking)
+            draw(cameraPose, width, height, img.data, obj, is_tracking, colorFormat)
             pygame.display.flip()
             break # Skip other frames
 
