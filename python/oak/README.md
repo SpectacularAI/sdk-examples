@@ -1,6 +1,6 @@
 # Spectacular AI Python SDK examples for OAK-D
 
-![SDK install demo](https://spectacularai.github.io/docs/gif/pip-install.gif)
+![SDK install demo](https://spectacularai.github.io/docs/gif/spatial-ai.gif)
 
 **See https://spectacularai.github.io/docs/sdk/wrappers/oak.html for instructions and API documentation**
 
