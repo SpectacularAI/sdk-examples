@@ -1,94 +1,100 @@
 """
-Mixed reality example using PyOpenGL. Requirements:
-
-    pip install pygame PyOpenGL PyOpenGL_accelerate
+Mixed reality example using PyOpenGL. Requirements: spectacularai[full]
 
 """
-import depthai
+
 import spectacularAI
-import pygame
-import time
-import numpy as np
-# import init_display from mixed_reality
-from mixed_reality import init_display, draw_cube, draw, load_obj
+from spectacularAI.cli.visualization.visualizer import Visualizer, VisualizerArgs, CameraMode
+from mixed_reality import load_obj
 
 from OpenGL.GL import * # all prefixed with gl so OK to import *
 
-def parse_args():
+def parseArgs():
     import argparse
     p = argparse.ArgumentParser(__doc__)
     p.add_argument("dataFolder", help="Folder containing the recorded session for replay", default="data")
+    p.add_argument("--useRectification", help="This parameter must be set if the videos inputs are not rectified", action="store_true")
+    p.add_argument('--cameraInd', help="Which camera to use. Typically 0=left, 1=right, 2=auxiliary/RGB (OAK-D default)", type=int, default=2)
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
     p.add_argument('--latitude', help="Scene coordinate system geographic origin (WGS84): latitude in degrees", default=None)
     p.add_argument('--longitude', help="Scene coordinate system geographic origin (WGS84): longitude in degrees", default=None)
     p.add_argument('--altitude', help="Scene coordinate system geographic origin (WGS84): altitude in meters", default=None)
+    p.add_argument("--recordWindow", help="Window recording filename")
     return p.parse_args()
-args = parse_args()
 
-display_initialized = False
-shouldQuit = False
-obj = None
-objPos = None # Position in WGS84 coordinates when GPS fusion is enabled
-if args.latitude and args.longitude and args.altitude:
-    objPos = spectacularAI.WgsCoordinates()
-    objPos.latitude = float(args.latitude)
-    objPos.longitude = float(args.longitude)
-    objPos.altitude = float(args.altitude)
+if __name__ == '__main__':
+    args = parseArgs()
 
-def onOutput(output, frameSet):
-    global display_initialized
-    global shouldQuit
-    global objPos
-    global obj
-    global args
+    configInternal = {}
+    if args.useRectification:
+        configInternal["useRectification"] = "true" # Undistort images for visualization (assumes undistorted pinhole model)
+    else:
+        configInternal["alreadyRectified"] = "true"
 
-    if shouldQuit: return
+    if args.mapLoadPath:
+        configInternal["mapLoadPath"] = args.mapLoadPath
 
-    if output.globalPose and objPos == None:
-        # If we receive global pose i.e. recording contains GPS coordinates, then
-        # place object at the first received device coordinates if not provide
-        # through CLI arguments
-        objPos = output.globalPose.coordinates
+    obj = None
+    objPos = None # Position in WGS84 coordinates when GPS fusion is enabled
+    if args.latitude and args.longitude and args.altitude:
+        objPos = spectacularAI.WgsCoordinates()
+        objPos.latitude = float(args.latitude)
+        objPos.longitude = float(args.longitude)
+        objPos.altitude = float(args.altitude)
 
-    for frame in frameSet:
-        if frame.image is None: continue
-        if frame.image.getColorFormat() == spectacularAI.ColorFormat.RGB:
+    def renderObj():
+        global obj
+        if obj is None:
+            obj = load_obj(args.objLoadPath)
+
+        viewMatrix = visualizer.getViewMatrix()
+        projectionMatrix = visualizer.getProjectionMatrix()
+
+        modelView = viewMatrix
+        glMatrixMode(GL_MODELVIEW)
+        glLoadMatrixf(modelView.transpose())
+        glMatrixMode(GL_PROJECTION)
+        glLoadMatrixf(projectionMatrix.transpose())
+
+        glColor3f(1, 0, 1)
+        glLineWidth(2.0)
+        glCallList(obj)
+
+    visArgs = VisualizerArgs()
+    visArgs.recordPath = args.recordWindow
+    visArgs.cameraMode = CameraMode.AR
+    visArgs.showPoseTrail = False
+    visArgs.showKeyFrames = False
+    visArgs.showGrid = False
+    visArgs.customRenderCallback = renderObj
+    visualizer = Visualizer(visArgs)
+
+    def replayOnVioOutput(output, frameSet):
+        if output.globalPose and objPos == None:
+            # If we receive global pose i.e. recording contains GPS coordinates, then
+            # place object at the first received device coordinates if not provide
+            # through CLI arguments
+            objPos = output.globalPose.coordinates
+
+        for frame in frameSet:
+            if not frame.image: continue
+            if not frame.index == args.cameraInd: continue
             img = frame.image.toArray()
-            # Flip the image upside down for OpenGL
-            img = np.ascontiguousarray(np.flipud(img))
             width = img.shape[1]
             height = img.shape[0]
-
-            if not display_initialized:
-                display_initialized = True
-                init_display(width, height)
-                obj = load_obj(args.objLoadPath)
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    shouldQuit = True
-                    pygame.quit()
-                    return
-
-            is_tracking = output.status == spectacularAI.TrackingStatus.TRACKING
+            colorFormat = frame.image.getColorFormat()
 
             if output.globalPose:
-                cameraIndex = 0
                 # Gives camera pose relative to objPos that sits at [0,0,0] in ENU
-                cameraPose = output.globalPose.getEnuCameraPose(cameraIndex, objPos)
+                cameraPose = output.globalPose.getEnuCameraPose(args.cameraInd, objPos)
             else:
                 cameraPose = frame.cameraPose
 
-            draw(cameraPose, width, height, img.data, obj, is_tracking)
-            pygame.display.flip()
-            break # Skip other frames
+            visualizer.onVioOutput(cameraPose, img, width, height, colorFormat, output.status)
 
-configInternal = { "useRectification": "true" } # Undistort images for visualization (assumes undistorted pinhole model)
-replay = spectacularAI.Replay(args.dataFolder, configuration=configInternal)
-replay.setExtendedOutputCallback(onOutput)
-replay.startReplay()
-while not shouldQuit:
-    time.sleep(0.05)
-print("Quitting...")
-replay.close()
+    replay = spectacularAI.Replay(args.dataFolder, configuration=configInternal)
+    replay.setExtendedOutputCallback(replayOnVioOutput)
+    replay.startReplay()
+    visualizer.run()
+    replay.close()

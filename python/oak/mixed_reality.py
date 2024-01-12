@@ -57,19 +57,17 @@ def init_display(w, h):
 
 def draw_cube(origin):
     CUBE_VERTICES = (
-        (1, -1, -1), (1, 1, -1), (-1, 1, -1), (-1, -1, -1),
-        (1, -1, 1), (1, 1, 1), (-1, -1, 1), (-1, 1, 1)
+        (0.1, -0.1, -0.1), (0.1, 0.1, -0.1), (-0.1, 0.1, -0.1), (-0.1, -0.1, -0.1),
+        (0.1, -0.1, 0.1), (0.1, 0.1, 0.1), (-0.1, -0.1, 0.1), (-0.1, 0.1, 0.1)
     )
-
     CUBE_EDGES = (
         (0,1), (0,3), (0,4), (2,1), (2,3), (2,7),
         (6,3), (6,4), (6,7), (5,1), (5,4), (5,7)
     )
+
     glPushMatrix()
     # cube world position
     glTranslatef(origin[0], origin[1], origin[2])
-    glScalef(*([0.1] * 3))
-
     glBegin(GL_LINES)
     for edge in CUBE_EDGES:
         for vertex in edge:
