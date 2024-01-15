@@ -56,24 +56,24 @@ def init_display(w, h):
     pygame.display.set_mode((w, h), DOUBLEBUF | OPENGL)
 
 def draw_cube(origin):
-    CUBE_VERTICES = (
-        (0.1, -0.1, -0.1), (0.1, 0.1, -0.1), (-0.1, 0.1, -0.1), (-0.1, -0.1, -0.1),
-        (0.1, -0.1, 0.1), (0.1, 0.1, 0.1), (-0.1, -0.1, 0.1), (-0.1, 0.1, 0.1)
-    )
-    CUBE_EDGES = (
-        (0,1), (0,3), (0,4), (2,1), (2,3), (2,7),
-        (6,3), (6,4), (6,7), (5,1), (5,4), (5,7)
-    )
+    import numpy as np
 
-    glPushMatrix()
-    # cube world position
-    glTranslatef(origin[0], origin[1], origin[2])
+    CUBE_VERTICES = np.array([
+        [1, -1, -1], [1, 1, -1], [-1, 1, -1], [-1, -1, -1],
+        [1, -1, 1], [1, 1, 1], [-1, -1, 1], [-1, 1, 1]
+    ], dtype=np.float32)
+    CUBE_EDGES = np.array([
+        [0,1], [0,3], [0,4], [2,1], [2,3], [2,7],
+        [6,3], [6,4], [6,7], [5,1], [5,4], [5,7]
+    ])
+    CUBE_VERTICES *= 0.1
+    CUBE_VERTICES += origin
+
     glBegin(GL_LINES)
     for edge in CUBE_EDGES:
         for vertex in edge:
             glVertex3fv(CUBE_VERTICES[vertex])
     glEnd()
-    glPopMatrix()
 
 def load_and_draw_obj_as_wireframe(in_stream):
     vertices = []
