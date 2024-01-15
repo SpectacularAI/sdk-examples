@@ -48,15 +48,6 @@ if __name__ == '__main__':
         if obj is None:
             obj = load_obj(args.objLoadPath)
 
-        viewMatrix = visualizer.getViewMatrix()
-        projectionMatrix = visualizer.getProjectionMatrix()
-
-        modelView = viewMatrix
-        glMatrixMode(GL_MODELVIEW)
-        glLoadMatrixf(modelView.transpose())
-        glMatrixMode(GL_PROJECTION)
-        glLoadMatrixf(projectionMatrix.transpose())
-
         glColor3f(1, 0, 1)
         glLineWidth(2.0)
         glCallList(obj)
