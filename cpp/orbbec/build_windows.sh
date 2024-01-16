@@ -28,7 +28,7 @@ TARGET="$ROOT/target"
 
 mkdir -p "$TARGET"
 cd "$TARGET"
-cmake "${CMAKE_FLAGS[@]}" -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+cmake "${CMAKE_FLAGS[@]}" \
   -DOrbbecSDK_DIR="${OrbbecSDK_DIR}" \
   -DspectacularAI_orbbecPlugin_DIR="$spectacularAI_orbbecPlugin_DIR" \
   -DBUILD_MAPPING_VISU="$BUILD_MAPPING_VISU" \
