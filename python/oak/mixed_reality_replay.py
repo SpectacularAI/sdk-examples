@@ -4,7 +4,6 @@ Mixed reality example using PyOpenGL. Requirements:
     pip install pygame PyOpenGL PyOpenGL_accelerate
 
 """
-import depthai
 import spectacularAI
 import pygame
 import time

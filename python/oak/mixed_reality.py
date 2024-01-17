@@ -1,7 +1,7 @@
 """
 Mixed reality example using PyOpenGL. Requirements:
 
-    pip install pygame PyOpenGL PyOpenGL_accelerate
+    pip install pygame PyOpenGL PyOpenGL_accelerate opencv-python
 
 For AprilTag mode, see: https://github.com/SpectacularAI/docs/blob/main/pdf/april_tag_instructions.pdf
 """
@@ -14,6 +14,9 @@ import time
 from OpenGL.GL import * # all prefixed with gl so OK to import *
 
 FPS = 24 # set to 30 for smoother frame rate
+CAM_RESOLUTION = depthai.ColorCameraProperties.SensorResolution.THE_1080_P
+CAM_SOCKET = depthai.CameraBoardSocket.CAM_A
+ISP_SCALE = (1,2)
 
 def parse_args():
     import argparse
@@ -23,30 +26,84 @@ def parse_args():
     p.add_argument('--aprilTagPath', help="Path to .json file with AprilTag ids, sizes and poses", default=None)
     return p.parse_args()
 
+# https://github.com/luxonis/depthai-python/blob/855e0208361d60ad250bc83ae64ce7d44e23140d/examples/ColorCamera/rgb_undistort.py#L9
+def getMesh(calibData, ispSize):
+    import numpy as np
+    import cv2
+
+    M1 = np.array(calibData.getCameraIntrinsics(CAM_SOCKET, ispSize[0], ispSize[1]))
+    d1 = np.array(calibData.getDistortionCoefficients(CAM_SOCKET))
+    R1 = np.identity(3)
+    mapX, mapY = cv2.initUndistortRectifyMap(M1, d1, R1, M1, ispSize, cv2.CV_32FC1)
+
+    meshCellSize = 16
+    mesh0 = []
+    # Creates subsampled mesh which will be loaded on to device to undistort the image
+    for y in range(mapX.shape[0] + 1): # iterating over height of the image
+        if y % meshCellSize == 0:
+            rowLeft = []
+            for x in range(mapX.shape[1]): # iterating over width of the image
+                if x % meshCellSize == 0:
+                    if y == mapX.shape[0] and x == mapX.shape[1]:
+                        rowLeft.append(mapX[y - 1, x - 1])
+                        rowLeft.append(mapY[y - 1, x - 1])
+                    elif y == mapX.shape[0]:
+                        rowLeft.append(mapX[y - 1, x])
+                        rowLeft.append(mapY[y - 1, x])
+                    elif x == mapX.shape[1]:
+                        rowLeft.append(mapX[y, x - 1])
+                        rowLeft.append(mapY[y, x - 1])
+                    else:
+                        rowLeft.append(mapX[y, x])
+                        rowLeft.append(mapY[y, x])
+            if (mapX.shape[1] % meshCellSize) % 2 != 0:
+                rowLeft.append(0)
+                rowLeft.append(0)
+
+            mesh0.append(rowLeft)
+
+    mesh0 = np.array(mesh0)
+    meshWidth = mesh0.shape[1] // 2
+    meshHeight = mesh0.shape[0]
+    mesh0.resize(meshWidth * meshHeight, 2)
+
+    mesh = list(map(tuple, mesh0))
+
+    return mesh, meshWidth, meshHeight
+
 def make_pipelines(config, onMappingOutput=None):
     pipeline = depthai.Pipeline()
     vio_pipeline = spectacularAI.depthai.Pipeline(pipeline, config, onMappingOutput)
 
-    # NOTE: this simple method of reading RGB data from the device does not
-    # scale so well to higher resolutions. Use YUV data with larger resolutions
-    RGB_OUTPUT_WIDTH = 1024
-    REF_ASPECT = 1920 / 1080.0
-    w = RGB_OUTPUT_WIDTH
-    h = int(round(w / REF_ASPECT))
+    # read rgb calibration
+    with depthai.Device() as device:
+        calibData = device.readCalibration()
 
-    camRgb = pipeline.createColorCamera()
-    camRgb.setPreviewSize(w, h)
-    camRgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
-    camRgb.setColorOrder(depthai.ColorCameraProperties.ColorOrder.RGB)
+    camRgb = pipeline.create(depthai.node.ColorCamera)
+    camRgb.setBoardSocket(CAM_SOCKET)
+    camRgb.setResolution(CAM_RESOLUTION)
+    camRgb.setIspScale(ISP_SCALE)
     camRgb.setImageOrientation(depthai.CameraImageOrientation.VERTICAL_FLIP) # for OpenGL
     camRgb.setFps(FPS)
     camRgb.initialControl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.OFF)
     camRgb.initialControl.setManualFocus(130) # seems to be about 1m
-    out_source = camRgb.preview
 
-    xout_camera = pipeline.createXLinkOut()
-    xout_camera.setStreamName("cam_out")
-    out_source.link(xout_camera.input)
+    # undistort
+    manipUndistort = pipeline.create(depthai.node.ImageManip)
+    mesh, meshWidth, meshHeight = getMesh(calibData, camRgb.getIspSize())
+    manipUndistort.setWarpMesh(mesh, meshWidth, meshHeight)
+    manipUndistort.setMaxOutputFrameSize(camRgb.getIspWidth() * camRgb.getIspHeight() * 3 // 2)
+    camRgb.isp.link(manipUndistort.inputImage)
+
+    # yuv->rgb
+    manipRgb = pipeline.create(depthai.node.ImageManip)
+    manipRgb.setMaxOutputFrameSize(1555200)
+    manipRgb.initialConfig.setFrameType(depthai.ImgFrame.Type.RGB888i)
+    manipUndistort.out.link(manipRgb.inputImage)
+
+    cam_xout = pipeline.create(depthai.node.XLinkOut)
+    cam_xout.setStreamName("cam_out")
+    manipRgb.out.link(cam_xout.input)
 
     return (pipeline, vio_pipeline)
 
