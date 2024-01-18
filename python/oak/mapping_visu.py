@@ -66,7 +66,6 @@ if __name__ == '__main__':
             for output in vioSource:
                 if 'cameraPoses' in output:
                     vioOutput = MockVioOutput(output)
-                    vioOutput.status = spectacularAI.TrackingStatus.TRACKING # TODO: remove, temporary fix for SDK v.1.26.2
                     onVioOutput(vioOutput)
                 else: onMappingOutput(MockMapperOutput(output))
         thread = threading.Thread(target=inputStreamLoop)
