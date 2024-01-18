@@ -60,11 +60,11 @@ def draw_cube(origin):
         (1, -1, -1), (1, 1, -1), (-1, 1, -1), (-1, -1, -1),
         (1, -1, 1), (1, 1, 1), (-1, -1, 1), (-1, 1, 1)
     )
-
     CUBE_EDGES = (
         (0,1), (0,3), (0,4), (2,1), (2,3), (2,7),
         (6,3), (6,4), (6,7), (5,1), (5,4), (5,7)
     )
+
     glPushMatrix()
     # cube world position
     glTranslatef(origin[0], origin[1], origin[2])
@@ -111,10 +111,11 @@ def draw(cam, width, height, data, obj, is_tracking):
     if not is_tracking: return
 
     # setup OpenGL camera based on VIO output
-    glLoadIdentity()
     near, far = 0.01, 100.0 # clip
-    glMultMatrixd(cam.camera.getProjectionMatrixOpenGL(near, far).transpose())
-    glMultMatrixd(cam.getWorldToCameraMatrix().transpose())
+    glMatrixMode(GL_PROJECTION)
+    glLoadMatrixf(cam.camera.getProjectionMatrixOpenGL(near, far).transpose())
+    glMatrixMode(GL_MODELVIEW)
+    glLoadMatrixf(cam.getWorldToCameraMatrix().transpose())
 
     glClear(GL_DEPTH_BUFFER_BIT)
     glColor3f(1, 0, 1)
