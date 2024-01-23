@@ -113,48 +113,20 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    spectacularAI::rsPlugin::Configuration vioConfig;
-    vioConfig.useSlam = true;
-    spectacularAI::rsPlugin::Pipeline vioPipeline(vioConfig);
-
-    {
-        // Find RealSense device
-        rs2::context rsContext;
-        rs2::device_list devices = rsContext.query_devices();
-        if (devices.size() != 1) {
-            std::cout << "Connect exactly one RealSense device." << std::endl;
-            return EXIT_SUCCESS;
-        }
-        rs2::device device = devices.front();
-        vioPipeline.configureDevice(device);
-    }
-
-    // Start pipeline
-    rs2::config rsConfig;
-    vioPipeline.configureStreams(rsConfig);
-
-    // VIO works fine with BGR-flipped data too
-    rsConfig.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_BGR8);
-
     // The RS callback thread should not be blocked for long.
     // Using worker threads for image encoding and disk I/O
+    std::atomic<bool> shouldQuit(false);
     constexpr int N_WORKER_THREADS = 4;
     std::mutex queueMutex;
     std::deque<ImageToSave> imageQueue;
-    std::atomic<bool> shouldQuit(false);
-
-    std::vector<std::thread> imageWriterThreads;
-    for (int i = 0; i < N_WORKER_THREADS; ++i) {
-        imageWriterThreads.emplace_back(buildImageWriter(imageQueue, queueMutex, shouldQuit));
-    }
-
-    std::vector<char> fileNameBuf;
-    fileNameBuf.resize(1000, 0);
-    std::shared_ptr<spectacularAI::rsPlugin::Session> vioSession;
-
     std::ofstream posesFile = std::ofstream(recordingFolder + "/poses.jsonl");
     std::set<int64_t> savedFrames;
-    vioPipeline.setMapperCallback([&](std::shared_ptr<const spectacularAI::mapping::MapperOutput> output){
+    std::vector<char> fileNameBuf;
+    fileNameBuf.resize(1000, 0);
+
+    // Create vio pipeline with mapper callback
+    spectacularAI::rsPlugin::Configuration vioConfig;
+    spectacularAI::rsPlugin::Pipeline vioPipeline(vioConfig, [&](std::shared_ptr<const spectacularAI::mapping::MapperOutput> output) {
         for (int64_t frameId : output->updatedKeyFrames) {
             auto search = output->map->keyFrames.find(frameId);
             if (search == output->map->keyFrames.end()) {
@@ -189,6 +161,31 @@ int main(int argc, char** argv) {
         }
     });
 
+    {
+        // Find RealSense device
+        rs2::context rsContext;
+        rs2::device_list devices = rsContext.query_devices();
+        if (devices.size() != 1) {
+            std::cout << "Connect exactly one RealSense device." << std::endl;
+            return EXIT_SUCCESS;
+        }
+        rs2::device device = devices.front();
+        vioPipeline.configureDevice(device);
+    }
+
+    // Start pipeline
+    rs2::config rsConfig;
+    vioPipeline.configureStreams(rsConfig);
+
+    // VIO works fine with BGR-flipped data too
+    rsConfig.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_BGR8);
+
+    std::vector<std::thread> imageWriterThreads;
+    for (int i = 0; i < N_WORKER_THREADS; ++i) {
+        imageWriterThreads.emplace_back(buildImageWriter(imageQueue, queueMutex, shouldQuit));
+    }
+
+    std::shared_ptr<spectacularAI::rsPlugin::Session> vioSession;
     vioSession = vioPipeline.startSession(rsConfig);
 
     std::thread inputThread([&]() {

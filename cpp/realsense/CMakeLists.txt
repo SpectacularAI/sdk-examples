@@ -38,13 +38,14 @@ endif()
 
 set(BUILD_MAPPER ON CACHE STRING "Build VIO mapper example (requires OpenCV)")
 if (BUILD_MAPPER)
+  find_package(Threads REQUIRED)
   set(USE_STATIC_OPENCV OFF CACHE STRING "Use OpenCV as statically linked library (internal and unsupported flag, do not use)")
   if (USE_STATIC_OPENCV)
     find_package(mobile-cv-suite REQUIRED)
-    set(MAPPER_LIBS mobile-cv-suite::static mobile-cv-suite::imgcodecs)
+    set(MAPPER_LIBS mobile-cv-suite::static mobile-cv-suite::imgcodecs Threads::Threads)
   else()
     find_package(OpenCV REQUIRED)
-    set(MAPPER_LIBS "${OpenCV_LIBS}")
+    set(MAPPER_LIBS "${OpenCV_LIBS}" Threads::Threads)
   endif()
 
   add_executable(vio_mapper vio_mapper.cpp)
@@ -61,6 +62,25 @@ if (BUILD_MAPPER)
   if(MSVC)
     add_custom_command(TARGET vio_mapper_legacy POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_mapper_legacy> $<TARGET_FILE_DIR:vio_mapper_legacy>
+      COMMAND_EXPAND_LISTS
+    )
+  endif()
+endif()
+
+# Mapping example, used together with mapping_visu.py visulization
+set(BUILD_MAPPING_VISU ON CACHE STRING "Build VIO mapper example (requires nlohmann_json)")
+if (BUILD_MAPPING_VISU)
+  find_package(Threads REQUIRED)
+  set(JSON_Install OFF CACHE INTERNAL "")
+  set(JSON_BuildTests OFF CACHE INTERNAL "")
+  add_subdirectory("../offline/json" json)
+
+  add_executable(mapping_visu mapping_visu.cpp ../common/serialize_output.cpp)
+  target_link_libraries(mapping_visu PRIVATE ${EXAMPLE_LIBS} nlohmann_json::nlohmann_json Threads::Threads)
+  target_include_directories(mapping_visu PRIVATE "../common")
+  if(MSVC)
+    add_custom_command(TARGET mapping_visu POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:mapping_visu> $<TARGET_FILE_DIR:mapping_visu>
       COMMAND_EXPAND_LISTS
     )
   endif()
