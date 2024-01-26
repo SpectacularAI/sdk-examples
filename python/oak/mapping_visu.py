@@ -1,9 +1,7 @@
 """
 Visualize 3D point cloud of the environment in real-time, or playback your recordings and view their 3D point cloud.
 
-Requirements: pygame, numpy, PyOpenGL
-Optional: PyOpenGL_accelerate
-
+Requirements: pip install spectacularAI[full]
 """
 
 import spectacularAI
