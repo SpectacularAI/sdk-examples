@@ -13,7 +13,6 @@ spectacularAI_k4aPlugin_DIR=$1
 : "${WINDOWS_SDK_VERSION:=10.0.19041.0}"
 : "${WINDOWS_SDK_VERSION:=10.0.19041.0}"
 : "${VISUAL_STUDIO_VERSION:=Visual Studio 16 2019}"
-: "${BUILD_MAPPING_VISU:=ON}"
 
 CMAKE_FLAGS=(-G "${VISUAL_STUDIO_VERSION}" -A x64 -DCMAKE_SYSTEM_VERSION=${WINDOWS_SDK_VERSION})
 
@@ -30,7 +29,6 @@ cd "$TARGET"
 cmake "${CMAKE_FLAGS[@]}" -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
   -Dk4a_DIR="${K4A_SDK_FOLDER}" \
   -DspectacularAI_k4aPlugin_DIR="$spectacularAI_k4aPlugin_DIR" \
-  -DBUILD_MAPPING_VISU="$BUILD_MAPPING_VISU" \
   ..
 cmake --build . --config $BUILD_TYPE
 

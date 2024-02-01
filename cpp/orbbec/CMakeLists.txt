@@ -49,15 +49,3 @@ if(MSVC)
     COMMAND_EXPAND_LISTS
   )
 endif()
-
-# Mapping example, used together with mapping_visu.py visulization
-set(BUILD_MAPPING_VISU ON CACHE STRING "Build VIO mapper example (requires nlohmann_json)")
-if (BUILD_MAPPING_VISU)
-  set(JSON_Install OFF CACHE INTERNAL "")
-  set(JSON_BuildTests OFF CACHE INTERNAL "")
-  add_subdirectory("../offline/json" json)
-
-  add_executable(mapping_visu mapping_visu.cpp ../common/serialize_output.cpp)
-  target_link_libraries(mapping_visu PRIVATE ${EXAMPLE_LIBS} nlohmann_json::nlohmann_json Threads::Threads)
-  target_include_directories(mapping_visu PRIVATE "../common")
-endif()

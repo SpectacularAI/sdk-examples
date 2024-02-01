@@ -1,23 +1,19 @@
 """
 Visualize 3D point cloud of the environment in real-time, or playback your recordings and view their 3D point cloud.
 
-Requirements: pygame, numpy, PyOpenGL
-Optional: PyOpenGL_accelerate
-
+Requirements: pip install spectacularAI[full]
 """
 
 import spectacularAI
 import depthai
 import threading
 
-from spectacularAI.cli.visualization.serialization import input_stream_reader, MockVioOutput, MockMapperOutput
 from spectacularAI.cli.visualization.visualizer import Visualizer, VisualizerArgs
 
 def parseArgs():
     import argparse
     p = argparse.ArgumentParser(__doc__)
     p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
-    p.add_argument('--file', type=argparse.FileType('rb'), help='Read data from file or pipe, using this with mapping_visu C++ example', default=None)
     p.add_argument("--recordingFolder", help="Record live mapping session for replay")
     p.add_argument("--resolution", help="Window resolution", default="1280x720")
     p.add_argument("--fullScreen", help="Start in full screen mode", action="store_true")
@@ -50,6 +46,7 @@ if __name__ == '__main__':
     visArgs.recordPath = args.recordWindow
     visArgs.pointCloudVoxelSize = args.voxel
     visArgs.skipPointsWithoutColor = args.color
+    visArgs.targetFps = 0 if args.dataFolder else 30
     visualizer = Visualizer(visArgs)
 
     def onMappingOutput(mapperOutput):
@@ -59,20 +56,7 @@ if __name__ == '__main__':
     def onVioOutput(vioOutput):
         visualizer.onVioOutput(vioOutput.getCameraPose(0), status=vioOutput.status)
 
-    if args.file:
-        print("Starting reading input from file or pipe")
-        def inputStreamLoop():
-            vioSource = input_stream_reader(args.file)
-            for output in vioSource:
-                if 'cameraPoses' in output:
-                    vioOutput = MockVioOutput(output)
-                    onVioOutput(vioOutput)
-                else: onMappingOutput(MockMapperOutput(output))
-        thread = threading.Thread(target=inputStreamLoop)
-        thread.start()
-        visualizer.run()
-        thread.join()
-    elif args.dataFolder:
+    if args.dataFolder:
         print("Starting replay")
         replay = spectacularAI.Replay(args.dataFolder, onMappingOutput, configuration=configInternal)
         replay.setOutputCallback(onVioOutput)
