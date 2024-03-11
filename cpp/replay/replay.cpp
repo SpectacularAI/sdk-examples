@@ -8,8 +8,6 @@
 #include <spectacularAI/vio.hpp>
 #include <spectacularAI/replay.hpp>
 
-const std::string SEPARATOR = "/";
-
 std::string readFileToString(const std::string &filename) {
     std::ifstream f(filename);
     std::ostringstream oss;
@@ -45,20 +43,10 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    std::ostringstream configurationYaml;
-    std::string dataConfigurationYamlPath = inputFolder + SEPARATOR + "vio_config.yaml";
-    if (fileExists(dataConfigurationYamlPath)) {
-        // Vio::Builder::setConfigurationYAML overwrites the configuration in the data
-        // directory, but in most cases that configuration is needed for the best VIO
-        // performance, so we concatenate our changes to it.
-        configurationYaml << readFileToString(dataConfigurationYamlPath) << std::endl;
-    }
-    configurationYaml << userConfigurationYaml;
-
     // The Replay API builder takes as input the main API builder as a way to share
     // configuration methods.
     spectacularAI::Vio::Builder vioBuilder = spectacularAI::Vio::builder()
-        .setConfigurationYAML(configurationYaml.str());
+        .setConfigurationYAML(userConfigurationYaml);
 
     std::unique_ptr<spectacularAI::Replay> replay
         = spectacularAI::Replay::builder(inputFolder, vioBuilder).build();
