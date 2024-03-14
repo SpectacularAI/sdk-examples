@@ -12,7 +12,7 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 else()
   set(CMAKE_CXX_STANDARD 14)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wl,--no-as-needed")
 endif()
 
 set(USE_OPENCV OFF CACHE STRING "Use OpenCV debug visualizations")
