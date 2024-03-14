@@ -7,7 +7,10 @@
 #endif
 
 int main(int argc, char** argv) {
-    if (argc < 2) return 1;
+    if (argc < 2) {
+        std::cout << "Usage: vio_jsonl path/to/recording" << std::endl;
+        return 1;
+    }
 
     std::string dataFolder = argv[1];
 
