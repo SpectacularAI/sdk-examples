@@ -8,7 +8,7 @@
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::cout << "Usage: vio_jsonl path/to/recording" << std::endl;
+        std::cout << "Usage: vio_replay path/to/recording" << std::endl;
         return 1;
     }
 
