@@ -122,6 +122,7 @@ public:
         data.gyroscope = nullptr;
 
         json j = json::parse(line, nullptr, false); // stream, callback, allow_exceptions
+        if (!j.contains("time")) return true;
         data.timestamp = j["time"].get<double>();
 
         if (j.find("sensor") != j.end()) {
