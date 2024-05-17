@@ -2,8 +2,6 @@
 Mixed reality example using PyOpenGL. Requirements:
 
     pip install pygame PyOpenGL PyOpenGL_accelerate
-
-For AprilTag mode, see: https://github.com/SpectacularAI/docs/blob/main/pdf/april_tag_instructions.pdf
 """
 
 import depthai
@@ -20,7 +18,6 @@ def parse_args():
     p = argparse.ArgumentParser(__doc__)
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
-    p.add_argument('--aprilTagPath', help="Path to .json file with AprilTag ids, sizes and poses", default=None)
     return p.parse_args()
 
 def make_pipelines(config, onMappingOutput=None):
@@ -149,8 +146,7 @@ def main_loop(args, device, vio_session):
                     display_initialized = True
                     clock = pygame.time.Clock()
                     init_display(img.getWidth(), img.getHeight())
-                    origin = (0, 0, 0) if args.aprilTagPath is not None else (0.5, 0, 0)
-                    obj = load_obj(args.objLoadPath, origin)
+                    obj = load_obj(args.objLoadPath)
 
                 cam = vio_session.getRgbCameraPose(out)
 
@@ -178,8 +174,6 @@ if __name__ == '__main__':
     if args.mapLoadPath is not None:
         config.mapLoadPath = args.mapLoadPath
         config.useSlam = True
-    elif args.aprilTagPath is not None:
-        config.aprilTagPath = args.aprilTagPath
 
     pipeline, vio_pipeline = make_pipelines(config)
     with depthai.Device(pipeline) as device, \
