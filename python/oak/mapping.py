@@ -13,7 +13,6 @@ args =  p.parse_args()
 # KeyFrames for which we've already saved the image
 savedKeyFrames = {}
 
-
 def saveAsPng(outputFolder, frameId, cameraName, frame):
     if not frame or not frame.image: return
     fileName = outputFolder + "/" + cameraName + "_" + f'{frameId:05}' + ".png"
@@ -40,9 +39,8 @@ def onMappingOutput(output):
         # New frames, let's save the images to disk
         for frameId in output.updatedKeyFrames:
             keyFrame = output.map.keyFrames.get(frameId)
-            if not keyFrame or savedKeyFrames.get(keyFrame):
-                continue
-            savedKeyFrames[keyFrame] = True
+            if not keyFrame or savedKeyFrames.get(frameId): continue
+            savedKeyFrames[frameId] = True
             frameSet = keyFrame.frameSet
             saveAsPng(args.outputFolder, frameId, "primary", frameSet.primaryFrame)
             saveAsPng(args.outputFolder, frameId, "secondary", frameSet.secondaryFrame)
