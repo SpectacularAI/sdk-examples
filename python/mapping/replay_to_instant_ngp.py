@@ -91,9 +91,9 @@ def onMappingOutput(output):
         # New frames, let's save the images to disk
         for frameId in output.updatedKeyFrames:
             keyFrame = output.map.keyFrames.get(frameId)
-            if not keyFrame or savedKeyFrames.get(keyFrame):
+            if not keyFrame or savedKeyFrames.get(frameId):
                 continue
-            savedKeyFrames[keyFrame] = True
+            savedKeyFrames[frameId] = True
             frameSet = keyFrame.frameSet
             if not frameSet.rgbFrame or not frameSet.rgbFrame.image:
                 continue
