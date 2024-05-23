@@ -168,8 +168,6 @@ if __name__ == '__main__':
     }
     if args.useRectification:
         configInternal["useRectification"] = "true"
-    else:
-        configInternal["alreadyRectified"] = "true"
 
     slam_node = SLAMNode()
 

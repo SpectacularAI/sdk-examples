@@ -182,8 +182,6 @@ if __name__ == '__main__':
         }
         if args.useRectification:
             configInternal["useRectification"] = "true" # Undistort images for visualization (assumes undistorted pinhole model)
-        else:
-            configInternal["alreadyRectified"] = "true"
 
         replay = spectacularAI.Replay(args.dataFolder, onMappingOutput, configuration=configInternal)
         replay.setExtendedOutputCallback(replayOnVioOutput)

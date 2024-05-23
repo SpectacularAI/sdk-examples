@@ -108,8 +108,7 @@ class SpectacularAINode(Node):
         config.internalParameters = {
             "ffmpegVideoCodec": "libx264 -crf 15 -preset ultrafast",
             "computeStereoPointCloud": "true",
-            "computeDenseStereoDepthKeyFramesOnly": "true",
-            "alreadyRectified": "true"
+            "computeDenseStereoDepthKeyFramesOnly": "true"
         }
         config.useSlam = True
 
