@@ -185,8 +185,6 @@ def main(args):
         }
     if args.useRectification:
         configInternal["useRectification"] = "true"
-    else:
-        configInternal["alreadyRectified"] = "true"
     configInternal["stereoPointCloudMaxDepth"] = str(args.depth)
     configInternal["recMaxDistance"] = str(args.depth)
 

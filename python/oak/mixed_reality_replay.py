@@ -13,7 +13,7 @@ def parseArgs():
     import argparse
     p = argparse.ArgumentParser(__doc__)
     p.add_argument("dataFolder", help="Folder containing the recorded session for replay", default="data")
-    p.add_argument("--useRectification", help="This parameter must be set if the videos inputs are not rectified", action="store_true")
+    p.add_argument("--useRectification", help="This parameter must be set if the video inputs are not rectified", action="store_true")
     p.add_argument('--cameraInd', help="Which camera to use. Typically 0=left, 1=right, 2=auxiliary/RGB (OAK-D default)", type=int, default=2)
     p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
@@ -29,8 +29,6 @@ if __name__ == '__main__':
     configInternal = {}
     if args.useRectification:
         configInternal["useRectification"] = "true" # Undistort images for visualization (assumes undistorted pinhole model)
-    else:
-        configInternal["alreadyRectified"] = "true"
 
     if args.mapLoadPath:
         configInternal["mapLoadPath"] = args.mapLoadPath

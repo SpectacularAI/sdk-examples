@@ -23,7 +23,7 @@ def parseArgs():
     p.add_argument("--useRgb", help="Use OAK-D RGB camera", action="store_true")
     p.add_argument('--irDotBrightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200', type=float, default=0)
     p.add_argument('--noFeatureTracker', help='Disable on-device feature tracking and depth map', action="store_true")
-    p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
+    p.add_argument("--useRectification", help="This parameter must be set if the stereo video inputs are not rectified", action="store_true")
     p.add_argument('--keyFrameCandidateInterval', type=int, help='Sets internal parameter keyframeCandidateEveryNthFrame')
     return p.parse_args()
 
@@ -35,10 +35,9 @@ if __name__ == '__main__':
         "pointCloudNormalsEnabled": "true",
         "computeDenseStereoDepth": "true",
     }
+
     if args.dataFolder and args.useRectification:
         configInternal["useRectification"] = "true"
-    else:
-        configInternal["alreadyRectified"] = "true"
 
     visArgs = VisualizerArgs()
     visArgs.resolution = args.resolution
