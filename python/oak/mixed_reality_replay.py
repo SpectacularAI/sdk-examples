@@ -32,6 +32,7 @@ if __name__ == '__main__':
 
     if args.mapLoadPath:
         configInternal["mapLoadPath"] = args.mapLoadPath
+        configInternal["extendParameterSets"] = ["relocalization"]
 
     obj = None
     objPos = None # Position in WGS84 coordinates when GPS fusion is enabled
