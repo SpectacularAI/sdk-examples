@@ -167,33 +167,35 @@ def main(args):
     print("* M: Cycle through visualization options.")
     print("------\n")
 
-    if args.mapLoadPath:
-        configInternal = {
-            "mapLoadPath": args.mapLoadPath,
-            "useSlam": "true",
-            "fixedMap": "true",
-        }
-    else:
-        configInternal = {
-            "computeStereoPointCloud": "true",
-            "pointCloudNormalsEnabled": "true",
-            "computeDenseStereoDepth": "true",
-            "computeDenseStereoDepthKeyFramesOnly": "true",
-            "recEnabled": "true",
-            "recCellSize": "0.02",
-            "useSlam": "true",
-        }
-    if args.useRectification:
-        configInternal["useRectification"] = "true"
-    configInternal["stereoPointCloudMaxDepth"] = str(args.depth)
-    configInternal["recMaxDistance"] = str(args.depth)
-
     state = State()
     state.args = args
     state.targetResolution = [int(s) for s in args.resolution.split("x")]
     if args.objLoadPath:
         position = [float(s) for s in args.objPosition.split(",")]
         state.mesh = loadObjToMesh(args.objLoadPath, position)
+
+    configInternal = {
+        "stereoPointCloudMaxDepth": str(args.depth),
+        "recMaxDistance": str(args.depth)
+    }
+
+    if args.mapLoadPath:
+        onMappingOutput = None # Appending to existing map is not currently supported.
+    else:
+        def onMappingOutput(mapperOutput):
+            nonlocal state
+            state.currentMapperOutput = mapperOutput
+            if mapperOutput.finalMap:
+                # TODO: call pygame.quit() BUT it has to be called from same thread as init_display(...)
+                state.shouldQuit = True
+
+        configInternal["computeStereoPointCloud"] = "true"
+        configInternal["pointCloudNormalsEnabled"] = "true"
+        configInternal["computeDenseStereoDepth"] = "true"
+        configInternal["computeDenseStereoDepthKeyFramesOnly"] = "true"
+        configInternal["recEnabled"] = "true"
+        configInternal["recCellSize"] = "0.02"
+        configInternal["useSlam"] = "true"
 
     def replayOnVioOutput(vioOutput, frameSet):
         nonlocal state
@@ -207,17 +209,12 @@ def main(args):
             time = vioOutput.pose.time
             handleVioOutput(state, frame.cameraPose, time, img, width, height, frame.image.getColorFormat())
 
-    if args.mapLoadPath:
-        onMappingOutput = None # Appending to existing map is not currently supported.
-    else:
-        def onMappingOutput(mapperOutput):
-            nonlocal state
-            state.currentMapperOutput = mapperOutput
-            if mapperOutput.finalMap:
-                # TODO: call pygame.quit() BUT it has to be called from same thread as init_display(...)
-                state.shouldQuit = True
-
     if args.dataFolder:
+        if args.useRectification: configInternal["useRectification"] = "true"
+        if args.mapLoadPath:
+            configInternal["mapLoadPath"] = args.mapLoadPath
+            configInternal["extendParameterSets"] = ["relocalization"]
+
         replay = spectacularAI.Replay(args.dataFolder, onMappingOutput, configuration=configInternal)
         replay.setExtendedOutputCallback(replayOnVioOutput)
         replay.startReplay()
@@ -229,7 +226,7 @@ def main(args):
         config = spectacularAI.depthai.Configuration()
         config.internalParameters = configInternal
         if args.noFeatureTracker: config.useFeatureTracker = False
-        if args.mapLoadPath is not None:
+        if args.mapLoadPath:
             config.mapLoadPath = args.mapLoadPath
             config.useSlam = True
 
@@ -251,15 +248,15 @@ def parseArgs():
     p.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
     p.add_argument("--recordPath", help="Record the window to video file given by path.")
     p.add_argument("--depth", help="In meters, the max distance to detect points and construct mesh. Lower values may improve positioning accuracy.", default=4, type=float)
+    p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
+    p.add_argument('--objPosition', help="Set position of .obj mesh", default="0,0,0")
+    p.add_argument("--mapLoadPath", help="SLAM map path (use in combination with objLoadPath)", default=None)
     # OAK-D parameters.
     p.add_argument('--irBrightness', help='OAK-D Pro (W) IR laser projector brightness (mA), 0 - 1200. Enabling may improve depth tracking.', type=float, default=0)
     p.add_argument('--noFeatureTracker', help="On OAK-D, use stereo images rather than accelerated features + depth.", action="store_true")
     # Parameters for non-OAK-D recordings.
     p.add_argument("--useRectification", help="--dataFolder option can also be used with some non-OAK-D recordings, but this parameter must be set if the videos inputs are not rectified.", action="store_true")
-    p.add_argument('--objLoadPath', help="Load scene as .obj", default=None)
-    p.add_argument('--objPosition', help="Set position of .obj mesh", default="0,0,0")
     p.add_argument('--cameraInd', help="Which camera to use. Typically 0=left, 1=right, 2=auxiliary/RGB (OAK-D default)", type=int, default=2)
-    p.add_argument("--mapLoadPath", help="SLAM map path", default=None)
     return p.parse_args()
 
 if __name__ == '__main__':
