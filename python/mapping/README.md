@@ -30,9 +30,7 @@ Choose your device below to see more detailed instructions for creating Spectacu
 <details><summary><b>Android</b> (with or without ToF)</summary><p>
 
  1. Download [Spectacular Rec](https://play.google.com/store/apps/details?id=com.spectacularai.rec) from Play Store.
- 2. Use like the iPhone version (tutorial here [here](https://youtu.be/d77u-E96VVw)
-
-Note: the Android pipeline in the first app and `sai-cli` version is currently less stable than the iOS version and, the Gaussian Splatting accuracy is not as good as NeRFs. This will be improved in the near future.
+ 2. Use like the iPhone version (tutorial here [here](https://youtu.be/d77u-E96VVw))
 
 </p></details>
 
@@ -41,7 +39,7 @@ Note: the Android pipeline in the first app and `sai-cli` version is currently l
  1. Plug in the OAK-D to your laptop (or directly the computer with the heavy GPU)
  2. Run `sai-cli record oak --no_feature_tracker --resolution=800p`.
 
-If the above settings cause issues, try running `sai-cli record oak` instead. Coming soon: 🌈 colors.
+If the above settings cause issues, try running `sai-cli record oak` instead.
 
 </p></details>
 
@@ -52,7 +50,7 @@ See the <a href="https://spectacularai.github.io/docs/sdk/wrappers/realsense.htm
 
 <details><summary><b>Azure Kinect DK</b></summary><p>
 
-See the https://spectacularai.github.io/docs/sdk/wrappers/k4a.html for more information
+See the <a href="https://spectacularai.github.io/docs/sdk/wrappers/k4a.html">Kinect wrapper page</a> for more information
 
 </p></details>
 
@@ -102,14 +100,6 @@ Then copy the the file `exports/point_cloud.ply`. Examples:
  * Export to `.splat` or [stand-alone HTML](https://spectacularai.github.io/docs/other/android-3dgs-example-ramen.html)
    using [SpectacularAI/point-cloud-tools](https://github.com/SpectacularAI/point-cloud-tools#gaussian-splatting)
  * View or embed `.splat` to a web page using [gsplat.js](https://github.com/huggingface/gsplat.js)
-
-## Export mapping API data to other tools
-
-As an alternative to Nerfstudio, the pose and image data computed by the Spectacular AI Mapping API can also be exported to:
-
- * Nvidia Instant NGP: see [replay_to_instant_ngp.py](./replay_to_instant_ngp.py)
- * https://github.com/wanmeihuali/taichi_3d_gaussian_splatting (use `sai-cli process --format=taichi ...`)
- * Other tools that use a similar COLMAP-like folder structure than Nerfstudio (`sai-cli process` default output format)
 
 The export process can also be customized by modifying the source code of [`sai-cli process`](https://github.com/SpectacularAI/sdk/blob/main/python/cli/process/process.py)
 which can also be used as a standalone Python script.
