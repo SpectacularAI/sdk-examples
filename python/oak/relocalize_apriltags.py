@@ -36,7 +36,7 @@ def onRelocalizeExtendedOutput(output, frameSet):
         elif state == State.FindRelocalizePose and output.pose.time >= aprilTagFrameTime:
             if relocalizedFramePose is None:
                 relocalizedFramePose = frame.cameraPose.pose.asMatrix()
-                print("Relocalized camera to world at: {}\n{}".format(output.pose.time, relocalizedFramePose))
+                print("Camera to relocalized world at: {}\n{}".format(output.pose.time, relocalizedFramePose))
             # print("Close relocalize replay")
             relocalizeReplay2.close()
             break
