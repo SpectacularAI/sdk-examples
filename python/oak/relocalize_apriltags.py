@@ -106,7 +106,9 @@ def replayRelocalize():
  
     replay.runReplay()
 
-def compute_slam_to_dt(camera_to_slam, camera_to_tag, tag_to_dt):
+def compute_slam_to_dt(camera_to_slam: np.ndarray, 
+                       camera_to_tag: np.ndarray, 
+                       tag_to_dt: np.ndarray) -> np.ndarray:
     """
     Computes the transformation from the SLAM (relocalization) frame to the Digital Twin frame.
 
@@ -114,7 +116,7 @@ def compute_slam_to_dt(camera_to_slam, camera_to_tag, tag_to_dt):
         camera_to_slam (np.ndarray): 4x4 transformation matrix (T^(S)_(C)) representing
                                      the camera pose in the SLAM coordinate frame.
         camera_to_tag (np.ndarray): 4x4 transformation matrix (T^(C)_(A)) representing
-                                     the AprilTag pose in the camera coordinate frame.
+                                    the AprilTag pose in the camera coordinate frame.
         tag_to_dt (np.ndarray): 4x4 transformation matrix (T^(D)_(A)) representing
                                 the AprilTag pose in the Digital Twin coordinate frame.
 
@@ -122,13 +124,15 @@ def compute_slam_to_dt(camera_to_slam, camera_to_tag, tag_to_dt):
         np.ndarray: 4x4 transformation matrix (T^(D)_(S)) that maps a point from the
                     SLAM coordinate frame to the Digital Twin coordinate frame.
     """
-    # Compute the inverse of camera_to_tag (T^(C)_(A))
-    tag_to_camera = np.linalg.inv(camera_to_tag)
-
-    # Compute the transformation from SLAM to Digital Twin (T^(D)_(S))
-    slam_to_dt = tag_to_dt @ tag_to_camera @ camera_to_slam
-
-    return slam_to_dt
+    # Derive the transformation from SLAM to AprilTag coordinates:
+    # T^(S)_(A) = T^(S)_(C) * inverse(T^(A)_(C))
+    T_slam_apr = camera_to_slam @ np.linalg.inv(camera_to_tag)
+    
+    # The transformation from SLAM to Digital Twin coordinates is:
+    # T^(D)_(S) = T^(D)_(A) * inverse(T^(S)_(A))
+    # Since inverse(T^(S)_(A)) = april_tag_pose @ inverse(relocalized_pose)
+    T_digitalTwin_slam = tag_to_dt @ camera_to_tag @ np.linalg.inv(camera_to_slam)
+    return T_digitalTwin_slam
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(__doc__)
