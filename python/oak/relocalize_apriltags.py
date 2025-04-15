@@ -3,7 +3,9 @@ import spectacularAI
 import time
 import threading
 import os
+import numpy as np
 from enum import Enum
+import json
 
 class State(Enum):
     FindRelocalizeTime = 1
@@ -70,7 +72,7 @@ def onAprilTagOutput(output):
     
     aprilTagFrameTime = frameTime
     aprilTagFramePose = marker.pose.asMatrix()
-    print("April Tag to camera at: {}\n{}".format(frameTime, aprilTagFramePose))
+    print("Camera to April Tag at: {}\n{}".format(frameTime, aprilTagFramePose))
 
 def replayAprilTags():
     global args, aprilTagReplay1, aprilTagReplay2, state
@@ -104,12 +106,41 @@ def replayRelocalize():
  
     replay.runReplay()
 
+def compute_slam_to_dt(camera_to_slam, camera_to_tag, tag_to_dt):
+    """
+    Computes the transformation from the SLAM (relocalization) frame to the Digital Twin frame.
+
+    Parameters:
+        camera_to_slam (np.ndarray): 4x4 transformation matrix (T^(S)_(C)) representing
+                                     the camera pose in the SLAM coordinate frame.
+        camera_to_tag (np.ndarray): 4x4 transformation matrix (T^(C)_(A)) representing
+                                     the AprilTag pose in the camera coordinate frame.
+        tag_to_dt (np.ndarray): 4x4 transformation matrix (T^(D)_(A)) representing
+                                the AprilTag pose in the Digital Twin coordinate frame.
+
+    Returns:
+        np.ndarray: 4x4 transformation matrix (T^(D)_(S)) that maps a point from the
+                    SLAM coordinate frame to the Digital Twin coordinate frame.
+    """
+    # Compute the inverse of camera_to_tag (T^(C)_(A))
+    tag_to_camera = np.linalg.inv(camera_to_tag)
+
+    # Compute the transformation from SLAM to Digital Twin (T^(D)_(S))
+    slam_to_dt = tag_to_dt @ tag_to_camera @ camera_to_slam
+
+    return slam_to_dt
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(__doc__)
     p.add_argument("dataFolder", nargs="?", help="Folder containing the recorded session and tags.json", default="data")
     p.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
     args =  p.parse_args()
+
+    print("Pose of first April Tag from tags.json:")
+    with open(args.dataFolder + "/tags.json", 'r') as tags_file:
+        tags_json = json.load(tags_file)
+    aprilTagToWorld = np.array(tags_json[0]['tagToWorld'])
+    print(aprilTagToWorld)
 
     print("Finding first relocalized frame time...")
     state = State.FindRelocalizeTime
@@ -138,7 +169,19 @@ if __name__ == '__main__':
     if relocalizedFramePose is None:
         raise Exception("Paired frame not found in Relocalize replay")
 
-    print("done")
+    print("SLAM to Digital Twin transformation:")
+    slam_to_dt = compute_slam_to_dt(relocalizedFramePose, 
+                                    aprilTagFramePose, 
+                                    aprilTagToWorld)
+    print(slam_to_dt)
+
+    slam_config_json = {
+        "slamToUnity": slam_to_dt.tolist()
+    }
+    slam_config_path = args.dataFolder + "/slam_config.json"
+    with open(slam_config_path, 'w') as slam_config_file:
+        json.dump(slam_config_json, slam_config_file, indent=4)
+    print("Wrote transformation to: {}".format(slam_config_path))
     os._exit(0)
 
     
