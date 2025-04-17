@@ -20,7 +20,32 @@ args = None
 aprilTagReplay1 = None
 relocalizeReplay1 = None
 relocalizeReplay2 = None
-state = None    
+state = None  
+
+vio_config_yaml = """
+depthErrorScale: 0.1
+useSlam: True
+keyframeCandidateInterval: 0
+alreadyRectified: True
+parameterSets: [wrapper-base,oak-d,live]
+"""
+
+def writeVioConfig(): 
+    global vio_config_yaml
+    vio_config_path = os.path.join(args.dataFolder, "vio_config.yaml")
+    with open(vio_config_path, 'w') as vio_config_file:
+        vio_config_file.write(vio_config_yaml)
+    print(f"Updated VIO configuration written to: {vio_config_path}")
+
+def renameMapBin():
+    slam_map_path = os.path.join(args.dataFolder, "slam_map.bin")
+    map_path = os.path.join(args.dataFolder, "map.bin")
+
+    if os.path.exists(slam_map_path):
+        if os.path.exists(map_path):
+            os.remove(map_path)
+        os.rename(slam_map_path, map_path)
+        print(f"Renamed {slam_map_path} to {map_path}")
 
 def onRelocalizeExtendedOutput(output, frameSet):
     global args, relocalizedFrameTime, relocalizedFramePose, relocalizeReplay1, relocalizeReplay2, pairedFrameTime, state
@@ -75,7 +100,7 @@ def onAprilTagOutput(output):
     print("Camera to April Tag at: {}\n{}".format(frameTime, aprilTagFramePose))
 
 def replayAprilTags():
-    global args, aprilTagReplay1, aprilTagReplay2, state
+    global args, aprilTagReplay1, state
     print("[Replay April Tags] {}".format(state))
 
     configInternal = {
@@ -140,6 +165,9 @@ if __name__ == '__main__':
     p.add_argument("--preview", help="Show latest primary image as a preview", action="store_true")
     args =  p.parse_args()
 
+    writeVioConfig()
+    renameMapBin()
+
     print("Pose of first April Tag from tags.json:")
     with open(args.dataFolder + "/tags.json", 'r') as tags_file:
         tags_json = json.load(tags_file)
@@ -183,6 +211,7 @@ if __name__ == '__main__':
         "slamToUnity": slam_to_dt.tolist()
     }
     slam_config_path = args.dataFolder + "/slam_config.json"
+    slam_config_json["slamToUnity"] = np.array(slam_config_json["slamToUnity"]).flatten().tolist()
     with open(slam_config_path, 'w') as slam_config_file:
         json.dump(slam_config_json, slam_config_file, indent=4)
     print("Wrote transformation to: {}".format(slam_config_path))
