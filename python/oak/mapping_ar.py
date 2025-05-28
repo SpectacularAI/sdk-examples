@@ -106,7 +106,11 @@ def handleVioOutput(state, cameraPose, t, img, width, height, colorFormat):
             return
 
     glPixelZoom(state.scale, state.scale)
-    glDrawPixels(width, height, GL_LUMINANCE if colorFormat == spectacularAI.ColorFormat.GRAY else GL_RGB, GL_UNSIGNED_BYTE, img.data)
+    glDrawPixels(
+        width,
+        height,
+        GL_LUMINANCE if colorFormat == spectacularAI.ColorFormat.GRAY else GL_RGB, GL_UNSIGNED_BYTE,
+        np.frombuffer(img. data, dtype=np.uint8))
 
     updateRenderer(state, cameraPose, t)
 
