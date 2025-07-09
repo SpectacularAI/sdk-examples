@@ -50,7 +50,7 @@ def file_vio_reader(in_stream):
             # Ignore all lines that aren't valid json
             pass
 
-def make_plotter():
+def make_plotter(initial_scale=1.0):
     import numpy as np
     from mpl_toolkits.mplot3d import Axes3D
 
@@ -58,7 +58,7 @@ def make_plotter():
     ax = Axes3D(fig)
     fig.add_axes(ax)
 
-    ax_bounds = (-0.5, 0.5) # meters
+    ax_bounds = (-initial_scale/2, initial_scale/2) # meters
     ax.set(xlim=ax_bounds, ylim=ax_bounds, zlim=ax_bounds)
     ax.view_init(azim=-140) # initial plot orientation
 
@@ -101,15 +101,18 @@ def make_plotter():
     return update_data, anim
 
 if __name__ == '__main__':
-    plotter, anim = make_plotter()
     import argparse
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--dataFolder", help="Instead of running live mapping session, replay session from this folder")
     parser.add_argument('--file', type=argparse.FileType('r'),
         help='Read data from a JSONL file or pipe instead of displaying it live',
         default=None)
+    parser.add_argument('--initialScale', type=float, default=1.0,
+        help="Initial size of the figure in meters")
 
     args = parser.parse_args()
+
+    plotter, anim = make_plotter(initial_scale=args.initialScale)
 
     def reader_loop():
         replay = None
