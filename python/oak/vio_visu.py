@@ -50,6 +50,10 @@ def file_vio_reader(in_stream):
             # Ignore all lines that aren't valid json
             pass
 
+def in_memory_vio_reader(data):
+    for vio_out in data:
+        yield(vio_out)
+
 def get_position(vio_out):
     import numpy as np
     # supports two slightly different JSONL formats
@@ -115,29 +119,34 @@ if __name__ == '__main__':
     parser.add_argument('--file', type=argparse.FileType('r'),
         help='Read data from a JSONL file or pipe instead of displaying it live',
         default=None)
-    parser.add_argument('--initialScale', type=float, default=1.0,
-        help="Initial size of the figure in meters")
+    parser.add_argument('--initialScale', type=str, default=None,
+        help="Initial size of the figure in meters (or 'auto')")
 
     args = parser.parse_args()
 
-    # auto-scale figure with file inputs
-    scale = args.initialScale
+    scale = 1.0
     center = (0, 0, 0)
-    data_loaded_from_file = []
-    if args.file:
-        import numpy as np
-        data = { c: [] for c in 'xyz' }
-        for vio_out in file_vio_reader(args.file):
-            data_loaded_from_file.append(vio_out)
-            pos = get_position(vio_out)
-            if not np.isnan(pos['x']):
-                for c, v in pos.items():
-                    if not np.isnan(v):
-                        data[c].append(v)
+    data_loaded_from_file = None
 
-        if len(data['x']) > 1:
-            scale = max([(np.max(data[c]) - np.min(data[c])) for c in 'xyz'] + [1e-10])
-            center = [(np.max(data[c]) + np.min(data[c]))/2 for c in 'xyz']
+    if args.initialScale == 'auto':
+        data_loaded_from_file = []
+        if args.file:
+            import numpy as np
+            data = { c: [] for c in 'xyz' }
+            for vio_out in file_vio_reader(args.file):
+                data_loaded_from_file.append(vio_out)
+                pos = get_position(vio_out)
+                if not np.isnan(pos['x']):
+                    for c, v in pos.items():
+                        if not np.isnan(v):
+                            data[c].append(v)
+
+            if len(data['x']) > 1:
+                scale = max([(np.max(data[c]) - np.min(data[c])) for c in 'xyz'] + [1e-10])
+                center = [(np.max(data[c]) + np.min(data[c]))/2 for c in 'xyz']
+
+    elif args.initialScale is not None:
+        scale = float(args.initialScale)
 
     plotter, anim = make_plotter(initial_scale=scale, center=center)
 
@@ -148,10 +157,10 @@ if __name__ == '__main__':
             replay = spectacularAI.Replay(args.dataFolder)
             vio_source = replay_vio_reader(replay)
         elif args.file:
-            def in_memory_vio_reader():
-                for vio_out in data_loaded_from_file:
-                    yield(vio_out)
-            vio_source = in_memory_vio_reader()
+            if data_loaded_from_file is None:
+                vio_source = file_vio_reader(args.file)
+            else:
+                vio_source = in_memory_vio_reader(data_loaded_from_file)
         else:
             vio_source = live_vio_reader()
 
