@@ -50,16 +50,33 @@ def file_vio_reader(in_stream):
             # Ignore all lines that aren't valid json
             pass
 
-def make_plotter(initial_scale=1.0):
+def in_memory_vio_reader(data):
+    for vio_out in data:
+        yield(vio_out)
+
+def get_position(vio_out):
+    import numpy as np
+    # supports two slightly different JSONL formats
+    if 'pose' in vio_out: vio_out = vio_out['pose']
+    # SDK < 0.12 does not expose the TRACKING status
+    is_tracking = vio_out.get('status', 'TRACKING') == 'TRACKING'
+    data = {}
+    for c in 'xyz':
+        val = vio_out['position'][c]
+        if not is_tracking: val = np.nan
+        data[c] = val
+    return data
+
+def make_plotter(initial_scale=1.0, center=(0, 0, 0)):
     import numpy as np
     from mpl_toolkits.mplot3d import Axes3D
 
     fig = plt.figure()
-    ax = Axes3D(fig)
+    ax = Axes3D(fig, auto_add_to_figure=False)
     fig.add_axes(ax)
 
-    ax_bounds = (-initial_scale/2, initial_scale/2) # meters
-    ax.set(xlim=ax_bounds, ylim=ax_bounds, zlim=ax_bounds)
+    lims = [(c - initial_scale/2, c + initial_scale/2) for c in center]
+    ax.set(xlim=lims[0], ylim=lims[1], zlim=lims[2])
     ax.view_init(azim=-140) # initial plot orientation
 
     vio_plot = ax.plot(
@@ -71,7 +88,7 @@ def make_plotter(initial_scale=1.0):
     ax.set_ylabel("y (m)")
     ax.set_zlabel("z (m)")
 
-    title = ax.set_title("VIO trajectory")
+    ax.set_title("VIO trajectory")
 
     data = { c: [] for c in 'xyz' }
 
@@ -80,13 +97,8 @@ def make_plotter(initial_scale=1.0):
 
     def update_data(vio_out):
         if control['close']: return False
-        # supports two slightly different JSONL formats
-        if 'pose' in vio_out: vio_out = vio_out['pose']
-        # SDK < 0.12 does not expose the TRACKING status
-        is_tracking = vio_out.get('status', 'TRACKING') == 'TRACKING'
-        for c in 'xyz':
-            val = vio_out['position'][c]
-            if not is_tracking: val = np.nan
+        xyz = get_position(vio_out)
+        for c, val in xyz.items():
             data[c].append(val)
         return True
 
@@ -107,12 +119,36 @@ if __name__ == '__main__':
     parser.add_argument('--file', type=argparse.FileType('r'),
         help='Read data from a JSONL file or pipe instead of displaying it live',
         default=None)
-    parser.add_argument('--initialScale', type=float, default=1.0,
-        help="Initial size of the figure in meters")
+    parser.add_argument('--initialScale', type=str, default=None,
+        help="Initial size of the figure in meters (or 'auto')")
 
     args = parser.parse_args()
 
-    plotter, anim = make_plotter(initial_scale=args.initialScale)
+    scale = 1.0
+    center = (0, 0, 0)
+    data_loaded_from_file = None
+
+    if args.initialScale == 'auto':
+        data_loaded_from_file = []
+        if args.file:
+            import numpy as np
+            data = { c: [] for c in 'xyz' }
+            for vio_out in file_vio_reader(args.file):
+                data_loaded_from_file.append(vio_out)
+                pos = get_position(vio_out)
+                if not np.isnan(pos['x']):
+                    for c, v in pos.items():
+                        if not np.isnan(v):
+                            data[c].append(v)
+
+            if len(data['x']) > 1:
+                scale = max([(np.max(data[c]) - np.min(data[c])) for c in 'xyz'] + [1e-10])
+                center = [(np.max(data[c]) + np.min(data[c]))/2 for c in 'xyz']
+
+    elif args.initialScale is not None:
+        scale = float(args.initialScale)
+
+    plotter, anim = make_plotter(initial_scale=scale, center=center)
 
     def reader_loop():
         replay = None
@@ -121,7 +157,10 @@ if __name__ == '__main__':
             replay = spectacularAI.Replay(args.dataFolder)
             vio_source = replay_vio_reader(replay)
         elif args.file:
-            vio_source = file_vio_reader(args.file)
+            if data_loaded_from_file is None:
+                vio_source = file_vio_reader(args.file)
+            else:
+                vio_source = in_memory_vio_reader(data_loaded_from_file)
         else:
             vio_source = live_vio_reader()
 
