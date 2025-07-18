@@ -120,28 +120,47 @@ public:
         data.video1 = nullptr;
         data.accelerometer = nullptr;
         data.gyroscope = nullptr;
+        data.features0.clear();
 
         json j = json::parse(line, nullptr, false); // stream, callback, allow_exceptions
         if (!j.contains("time")) return true;
         data.timestamp = j["time"].get<double>();
 
         if (j.find("sensor") != j.end()) {
-            std::array<double, 3> v = j["sensor"]["values"];
-            *imu = { .x = v[0], .y = v[1], .z = v[2] };
             const std::string sensorType = j["sensor"]["type"];
             if (sensorType == "gyroscope") {
+                std::array<double, 3> v = j["sensor"]["values"];
+                *imu = { .x = v[0], .y = v[1], .z = v[2] };
                 data.gyroscope = imu;
             }
             else if (sensorType == "accelerometer") {
+                std::array<double, 3> v = j["sensor"]["values"];
+                *imu = { .x = v[0], .y = v[1], .z = v[2] };
                 data.accelerometer = imu;
             }
         }
         else if (j.find("frames") != j.end()) {
             json jFrames = j["frames"];
             size_t cameraCount = jFrames.size();
+            if (cameraCount > data.nFrames) data.nFrames = cameraCount;
             assert(cameraCount >= 1);
             int number = j["number"].get<int>();
             for (size_t cameraInd = 0; cameraInd < cameraCount; ++cameraInd) {
+                json jFrame = jFrames[cameraInd];
+                if (cameraInd == 0 && jFrame.contains("features")) {
+                    auto features = jFrame["features"];
+                    for (json::iterator jFeature = features.begin(); jFeature != features.end(); ++jFeature) {
+                        data.features0.push_back({
+                            .id = (*jFeature)["id"],
+                            .point = {
+                                .x = (*jFeature)["point"][0],
+                                .y = (*jFeature)["point"][1]
+                            }
+                        });
+                    }
+                }
+
+                if (jFrame.contains("missingBitmap") && jFrame["missingBitmap"].get<bool>()) continue;
                 std::vector<uint8_t> &video = cameraInd == 0 ? video0 : video1;
                 if (useImageInput) {
                     std::string filePath = stringFormat("%s/frames%zu/%08zu.png",
