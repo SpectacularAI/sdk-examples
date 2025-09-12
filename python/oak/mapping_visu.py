@@ -31,9 +31,7 @@ if __name__ == '__main__':
     args = parseArgs()
 
     configInternal = {
-        "computeStereoPointCloud": "true",
-        "pointCloudNormalsEnabled": "true",
-        "computeDenseStereoDepth": "true",
+        "extendParameterSets" : ["point-cloud"]
     }
 
     if args.dataFolder and args.useRectification:
