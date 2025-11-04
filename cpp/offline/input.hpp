@@ -12,10 +12,12 @@ public:
         double timestamp = 0.0;
         uint8_t *video0 = nullptr;
         uint8_t *video1 = nullptr;
+        std::vector<spectacularAI::MonocularFeature> features0;
         int width = -1;
         int height = -1;
         std::shared_ptr<spectacularAI::Vector3d> accelerometer;
         std::shared_ptr<spectacularAI::Vector3d> gyroscope;
+        size_t nFrames = 0;
     };
     virtual bool next(Data &data) = 0;
     virtual std::string getConfig() const = 0;

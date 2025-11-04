@@ -11,7 +11,7 @@ This example shows how to run basic stereo VIO using offline data to mimic real-
 * Clone the submodules: `cd cpp/offline/target && git submodule update --init --recursive`.
 * Build this example using CMake:
 
-```
+```bash
 mkdir target
 cd target
 cmake -DspectacularAI_DIR=<path/to/spectacularai-sdk/lib/cmake/spectacularAI> ..
