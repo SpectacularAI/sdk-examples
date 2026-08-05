@@ -14,7 +14,7 @@ This example shows how to replay recordings created using Spectacular AI SDK. Th
 mkdir target
 cd target
 cmake -DspectacularAI_DIR=<path/to/spectacularai-sdk/lib/cmake/spectacularAI> ..
-make
+make # On Windows: cmake --build . --config Release
 ```
 
 The `-DspectacularAI_DIR` option is not needed is you have used `sudo make install` for the SDK.
