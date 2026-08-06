@@ -10,7 +10,7 @@ This example shows how to replay recordings created using Spectacular AI SDK. Th
 * Install the Spectacular AI SDK
 * Build this example using CMake:
 
-```
+```bash
 mkdir target
 cd target
 cmake -DspectacularAI_DIR=<path/to/spectacularai-sdk/lib/cmake/spectacularAI> ..
