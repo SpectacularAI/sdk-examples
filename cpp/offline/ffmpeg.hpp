@@ -3,6 +3,20 @@
 
 #include <cassert>
 #include <sstream>
+#include <string>
+#include <array>
+#include <memory>
+#include <vector>
+#include <cstdio>
+
+// Map POSIX popen/pclose to MSVC equivalents and handle null device routing
+#ifdef _WIN32
+#define popen _popen
+#define pclose _pclose
+#define DEV_NULL "nul"
+#else
+#define DEV_NULL "/dev/null"
+#endif
 
 // Run a shell command and return its stdout (not stderr).
 std::string exec(const std::string &cmd) {
@@ -19,7 +33,7 @@ std::string exec(const std::string &cmd) {
 
 bool ffprobeResolution(const std::string &videoPath, int &width, int &height) {
     std::string cmd = "ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 " + videoPath;
-    std::string resolutionText = exec(cmd + " 2>/dev/null");
+    std::string resolutionText = exec(cmd + " 2>" DEV_NULL);
     if (sscanf(resolutionText.c_str(), "%dx%d", &width, &height) == 2) {
         return true;
     }
@@ -40,8 +54,8 @@ public:
         assert(success && width > 0 && height > 0);
         std::stringstream ss;
         ss << "ffmpeg -i " << videoPath
-            << " -f rawvideo -vcodec rawvideo -vsync vfr -pix_fmt gray - 2>/dev/null";
-        pipe = popen(ss.str().c_str(), "r");
+           << " -f rawvideo -vcodec rawvideo -vsync vfr -pix_fmt gray - 2>" << DEV_NULL;
+        pipe = popen(ss.str().c_str(), "rb");
         assert(pipe);
     }
 
