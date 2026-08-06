@@ -2,7 +2,7 @@
 
 This example shows how to run basic stereo VIO using offline data to mimic real-time use case. Functions in the main header `spectacularAI/vio.hpp` are used primarily.
 
-* Tested platforms: Linux
+* Tested platforms: Linux, Windows
 * Dependencies: CMake, FFmpeg (for video input)
 
 ## Setup
@@ -15,7 +15,7 @@ This example shows how to run basic stereo VIO using offline data to mimic real-
 mkdir target
 cd target
 cmake -DspectacularAI_DIR=<path/to/spectacularai-sdk/lib/cmake/spectacularAI> ..
-make
+make # On Windows: cmake --build . --config Release
 ```
 
 The `-DspectacularAI_DIR` option is not needed is you have used `sudo make install` for the SDK.
