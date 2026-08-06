@@ -116,6 +116,7 @@ public:
 
     bool next(Data &data) final {
         if (!std::getline(jsonlFile, line)) return false;
+
         data.video0 = nullptr;
         data.video1 = nullptr;
         data.accelerometer = nullptr;
@@ -130,12 +131,12 @@ public:
             const std::string sensorType = j["sensor"]["type"];
             if (sensorType == "gyroscope") {
                 std::array<double, 3> v = j["sensor"]["values"];
-                *imu = { .x = v[0], .y = v[1], .z = v[2] };
+                *imu = { v[0], v[1], v[2] };
                 data.gyroscope = imu;
             }
             else if (sensorType == "accelerometer") {
                 std::array<double, 3> v = j["sensor"]["values"];
-                *imu = { .x = v[0], .y = v[1], .z = v[2] };
+                *imu = { v[0], v[1], v[2] };
                 data.accelerometer = imu;
             }
         }
@@ -150,13 +151,10 @@ public:
                 if (cameraInd == 0 && jFrame.contains("features")) {
                     auto features = jFrame["features"];
                     for (json::iterator jFeature = features.begin(); jFeature != features.end(); ++jFeature) {
-                        data.features0.push_back({
-                            .id = (*jFeature)["id"],
-                            .point = {
-                                .x = (*jFeature)["point"][0],
-                                .y = (*jFeature)["point"][1]
-                            }
-                        });
+                        spectacularAI::MonocularFeature feature;
+                        feature.id = (*jFeature)["id"],
+                        feature.point = {(*jFeature)["point"][0], (*jFeature)["point"][1]};
+                        data.features0.push_back(feature);
                     }
                 }
 
@@ -223,8 +221,8 @@ public:
 
     std::string getCalibration() const final {
         return R"({ "cameras": [
-            { "focalLengthX": 1.0, "focalLengthY": 1.0, "model": "pinhole", "imuToCamera": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]] },
-            { "focalLengthX": 1.0, "focalLengthY": 1.0, "model": "pinhole", "imuToCamera": [[1,0,0,1],[0,1,0,0],[0,0,1,0],[0,0,0,1]] }
+            { "focalLengthX": 1.0, "focalLengthY": 1.0, "principalPointX": 320, "principalPointY": 240, "imageWidth": 640, "imageHeight": 480, "model": "pinhole", "imuToCamera": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]] },
+            { "focalLengthX": 1.0, "focalLengthY": 1.0, "principalPointX": 320, "principalPointY": 240, "imageWidth": 640, "imageHeight": 480, "model": "pinhole", "imuToCamera": [[1,0,0,1],[0,1,0,0],[0,0,1,0],[0,0,0,1]] }
         ] })";
     }
 };
