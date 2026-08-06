@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.3)
 
 project(spectacularAI_offline_example)
 
+if(MSVC)
+  set(CMAKE_CXX_STANDARD 20)
+endif()
+
 add_executable(vio_jsonl
   vio_jsonl.cpp
   input.cpp
