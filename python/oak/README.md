@@ -18,6 +18,7 @@
     Also requires `PyOpenGL_accelerate` to be installed, see [`mixed_reality.py`](mixed_reality.py) for details.
  * **GNSS-VIO** example, reads external GNSS from standard input [`vio_gnss.py`](vio_gnss.py) (see also [these instructions](https://spectacularai.github.io/docs/pdf/GNSS-VIO_OAK-D_Python.pdf))
  * **April Tag example**: Visualize detected April Tags [`python april_tag.py path/to/tags.json`](april_tag.py). See: https://spectacularai.github.io/docs/pdf/april_tag_instructions.pdf
+ * **Relocalize April Tag example**: Example of how to align a saved SLAM map with a recorded April Tag session [`python relocalize_apriltags.py path/to/recording/data`](relocalize_apriltags.py). For complete instructions on how to use this tool to align a digital twin in Unity with your SLAM map, see the https://github.com/SpectacularAI/unity-wrapper/tree/main/unity-examples/Assets/SpectacularAI/Examples/AprilTag/README.md.
  * **Remote visualization over SSH**. Can be achieved by combining the `vio_jsonl.py` and `vio_visu.py` scripts as follows:
 
         ssh user@example.org 'python -u /full/path/to/vio_jsonl.py' | python -u vio_visu.py --file=-
