@@ -40,6 +40,32 @@ void addFrameSet(spectacularAI::Vio &vio, const Input::Data &data) {
     vio.addFrameSet(&inputFrameSet);
 }
 
+const char* statusValueToString(spectacularAI::StatusValue value) {
+    switch (value) {
+        case spectacularAI::StatusValue::FALSE: return "FALSE";
+        case spectacularAI::StatusValue::TRUE: return "TRUE";
+        case spectacularAI::StatusValue::NA: return "NA";
+        case spectacularAI::StatusValue::DEPRECATED: return "DEPRECATED";
+    }
+    return "";
+}
+
+std::string statusToJson(const spectacularAI::VioOutput &vioOutput) {
+    const spectacularAI::StatusValue *values = vioOutput.getStatusData();
+    const char * const *names = spectacularAI::VioOutput::getStatusNames();
+    const std::size_t n = vioOutput.getStatusSize();
+
+    std::ostringstream oss;
+    oss.precision(17);
+    oss << "{\"time\":" << vioOutput.pose.time << ",\"status\":{";
+    for (std::size_t i = 0; i < n; ++i) {
+        if (i > 0) oss << ",";
+        oss << "\"" << names[i] << "\":\"" << statusValueToString(values[i]) << "\"";
+    }
+    oss << "}}";
+    return oss.str();
+}
+
 int main(int argc, char *argv[]) {
     std::vector<std::string> arguments(argv, argv + argc);
     std::unique_ptr<std::ofstream> outputFile;
@@ -71,8 +97,13 @@ int main(int argc, char *argv[]) {
     if (!recordingFolder.empty()) builder.setRecordingFolder(recordingFolder);
     std::unique_ptr<spectacularAI::Vio> vio = builder.build();
 
+    double prevStatusTime = -1.0;
     vio->setOutputCallback([&](spectacularAI::VioOutputPtr vioOutput) {
         output << vioOutput->asJson().c_str() << std::endl;
+        if (prevStatusTime < 0.0 || vioOutput->pose.time >= prevStatusTime + 1.0) {
+            prevStatusTime = vioOutput->pose.time;
+            output << statusToJson(*vioOutput) << std::endl;
+        }
     });
 
     Input::Data data;

@@ -20,6 +20,32 @@ bool fileExists(const std::string &filePath) {
     return dataFile.is_open();
 }
 
+const char* statusValueToString(spectacularAI::StatusValue value) {
+    switch (value) {
+        case spectacularAI::StatusValue::FALSE: return "FALSE";
+        case spectacularAI::StatusValue::TRUE: return "TRUE";
+        case spectacularAI::StatusValue::NA: return "NA";
+        case spectacularAI::StatusValue::DEPRECATED: return "DEPRECATED";
+    }
+    return "";
+}
+
+std::string statusToJson(const spectacularAI::VioOutput &vioOutput) {
+    const spectacularAI::StatusValue *values = vioOutput.getStatusData();
+    const char * const *names = spectacularAI::VioOutput::getStatusNames();
+    const std::size_t n = vioOutput.getStatusSize();
+
+    std::ostringstream oss;
+    oss.precision(17);
+    oss << "{\"time\":" << vioOutput.pose.time << ",\"status\":{";
+    for (std::size_t i = 0; i < n; ++i) {
+        if (i > 0) oss << ",";
+        oss << "\"" << names[i] << "\":\"" << statusValueToString(values[i]) << "\"";
+    }
+    oss << "}}";
+    return oss.str();
+}
+
 int main(int argc, char *argv[]) {
     std::vector<std::string> arguments(argv, argv + argc);
     std::unique_ptr<std::ofstream> outputFile;
@@ -52,9 +78,16 @@ int main(int argc, char *argv[]) {
         = spectacularAI::Replay::builder(inputFolder, vioBuilder).build();
     replay->setPlaybackSpeed(realtime ? 1.0 : -1.0);
 
+    double prevStatusTime = -1.0;
     replay->setOutputCallback([&](spectacularAI::VioOutputPtr vioOutput) {
         if (outputFile) *outputFile << vioOutput->asJson().c_str() << std::endl;
         if (print) std::cout << vioOutput->asJson().c_str() << std::endl;
+        if (prevStatusTime < 0.0 || vioOutput->pose.time >= prevStatusTime + 1.0) {
+            prevStatusTime = vioOutput->pose.time;
+            const std::string statusJson = statusToJson(*vioOutput);
+            if (outputFile) *outputFile << statusJson << std::endl;
+            if (print) std::cout << statusJson << std::endl;
+        }
     });
 
     const auto t0 = std::chrono::steady_clock::now();
