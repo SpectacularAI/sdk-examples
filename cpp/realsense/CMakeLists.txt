@@ -36,20 +36,15 @@ if(MSVC)
   )
 endif()
 
-set(BUILD_MAPPER ON CACHE STRING "Build VIO mapper example (requires OpenCV)")
+set(BUILD_MAPPER ON CACHE STRING "Build VIO mapper example")
 if (BUILD_MAPPER)
   find_package(Threads REQUIRED)
-  set(USE_STATIC_OPENCV OFF CACHE STRING "Use OpenCV as statically linked library (internal and unsupported flag, do not use)")
-  if (USE_STATIC_OPENCV)
-    find_package(mobile-cv-suite REQUIRED)
-    set(MAPPER_LIBS mobile-cv-suite::static mobile-cv-suite::imgcodecs Threads::Threads)
-  else()
-    find_package(OpenCV REQUIRED)
-    set(MAPPER_LIBS "${OpenCV_LIBS}" Threads::Threads)
-  endif()
+  add_library(lodepng "lodepng/lodepng.cpp")
+  set(MAPPER_LIBS lodepng Threads::Threads)
 
   add_executable(vio_mapper vio_mapper.cpp)
   target_link_libraries(vio_mapper ${EXAMPLE_LIBS} ${MAPPER_LIBS})
+  target_include_directories(vio_mapper PRIVATE ".")
   if(MSVC)
     add_custom_command(TARGET vio_mapper POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_mapper> $<TARGET_FILE_DIR:vio_mapper>
@@ -59,6 +54,7 @@ if (BUILD_MAPPER)
 
   add_executable(vio_mapper_legacy vio_mapper_legacy.cpp)
   target_link_libraries(vio_mapper_legacy ${EXAMPLE_LIBS} ${MAPPER_LIBS})
+  target_include_directories(vio_mapper_legacy PRIVATE ".")
   if(MSVC)
     add_custom_command(TARGET vio_mapper_legacy POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:vio_mapper_legacy> $<TARGET_FILE_DIR:vio_mapper_legacy>

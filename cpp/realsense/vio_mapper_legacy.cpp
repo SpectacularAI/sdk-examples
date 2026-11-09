@@ -2,8 +2,7 @@
 #include <fstream>
 #include <librealsense2/rs.hpp>
 #include <spectacularAI/realsense/plugin.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include <lodepng/lodepng.h>
 #include <cassert>
 #include <string>
 #include <cstdint>
@@ -12,13 +11,21 @@
 #include <deque>
 #include <atomic>
 #include <cstdlib>
+#include <mutex>
+#include <functional>
+#include <utility>
+#include <vector>
 
 #include "helpers.hpp"
 
 namespace {
 struct ImageToSave {
     std::string fileName;
-    cv::Mat mat;
+    unsigned width;
+    unsigned height;
+    LodePNGColorType colorType;
+    unsigned bitDepth;
+    std::vector<std::uint8_t> data;
 };
 
 std::function<void()> buildImageWriter(
@@ -37,11 +44,11 @@ std::function<void()> buildImageWriter(
                 continue;
             }
 
-            auto img = queue.front();
+            auto img = std::move(queue.front());
             queue.pop_front();
             lock.unlock();
-            // If this line crashes, OpenCV probably has been built without PNG support.
-            cv::imwrite(img.fileName.c_str(), img.mat);
+
+            lodepng::encode(img.fileName, img.data, img.width, img.height, img.colorType, img.bitDepth);
         }
     };
 }
@@ -81,9 +88,6 @@ int main(int argc, char** argv) {
     // Start pipeline
     rs2::config rsConfig;
     vioPipeline.configureStreams(rsConfig);
-
-    // VIO works fine with BGR-flipped data too
-    rsConfig.enable_stream(RS2_STREAM_COLOR, RS2_FORMAT_BGR8);
 
     // The RS callback thread should not be blocked for long.
     // Using worker threads for image encoding and disk I/O
@@ -133,30 +137,44 @@ int main(int argc, char** argv) {
             const rs2::video_frame &depth = frameset.get_depth_frame();
             const rs2::video_frame &color = frameset.get_color_frame();
             assert(depth.get_profile().format() == RS2_FORMAT_Z16);
-            assert(color.get_profile().format() == RS2_FORMAT_BGR8);
+            assert(color.get_profile().format() == RS2_FORMAT_RGB8);
 
-            // Display images for testing.
-            uint8_t *colorData = const_cast<uint8_t*>((const uint8_t*)color.get_data());
-            cv::Mat colorMat(color.get_height(), color.get_width(), CV_8UC3, colorData);
+            const unsigned colorW = color.get_width();
+            const unsigned colorH = color.get_height();
+            const std::uint8_t *colorData = reinterpret_cast<const std::uint8_t*>(color.get_data());
+            const std::size_t colorBytes = static_cast<std::size_t>(colorW) * colorH * 3;
 
-            uint8_t *depthData = const_cast<uint8_t*>((const uint8_t*)depth.get_data());
-            cv::Mat depthMat(depth.get_height(), depth.get_width(), CV_16UC1, depthData);
+            const unsigned depthW = depth.get_width();
+            const unsigned depthH = depth.get_height();
+            const std::uint8_t *depthData = reinterpret_cast<const std::uint8_t*>(depth.get_data());
+            const std::size_t depthBytes = static_cast<std::size_t>(depthW) * depthH * 2;
 
             char *fileName = fileNameBuf.data();
             std::snprintf(fileName, fileNameBuf.size(), "%s/depth_%04d.png", recordingFolder.c_str(), keyFrameNumber);
-            cv::imwrite(fileName, depthMat);
 
-            ImageToSave depthImg, colorImg;
-            depthImg.fileName = fileName; // copy
-            depthImg.mat = depthMat.clone();
+            ImageToSave depthImg;
+            depthImg.fileName = fileName;
+            depthImg.width = depthW;
+            depthImg.height = depthH;
+            depthImg.colorType = LCT_GREY;
+            depthImg.bitDepth = 16;
+            depthImg.data.assign(depthData, depthData + depthBytes);
+            for (std::size_t i = 0; i + 1 < depthImg.data.size(); i += 2) {
+                std::swap(depthImg.data[i], depthImg.data[i + 1]);
+            }
 
+            ImageToSave colorImg;
             std::snprintf(fileName, fileNameBuf.size(), "%s/rgb_%04d.png", recordingFolder.c_str(), keyFrameNumber);
             colorImg.fileName = fileName;
-            colorImg.mat = colorMat.clone();
+            colorImg.width = colorW;
+            colorImg.height = colorH;
+            colorImg.colorType = LCT_RGB;
+            colorImg.bitDepth = 8;
+            colorImg.data.assign(colorData, colorData + colorBytes);
 
             std::lock_guard<std::mutex> lock(queueMutex);
-            imageQueue.push_back(depthImg);
-            imageQueue.push_back(colorImg);
+            imageQueue.push_back(std::move(depthImg));
+            imageQueue.push_back(std::move(colorImg));
         }
     };
 
