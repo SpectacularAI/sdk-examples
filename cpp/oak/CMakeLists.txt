@@ -2,7 +2,7 @@ if(MSVC)
   # Windows build uses newer features
   cmake_minimum_required(VERSION 3.21)
 else()
-  cmake_minimum_required(VERSION 3.3)
+  cmake_minimum_required(VERSION 3.10)
 endif()
 
 project(spectacularAI_depthaiPlugin_example)
